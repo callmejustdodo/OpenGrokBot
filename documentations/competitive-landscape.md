@@ -6,11 +6,11 @@ This comparison uses official product pages, documentation, and public repositor
 
 ## Feature matrix
 
-**O** documented · **X** outside the supported product scope · **?** not verified · **Planned** Shared's intended capability, not implemented.
+**O** documented · **X** outside the supported product scope · **?** not verified · **Planned** Formation's intended capability, not implemented.
 
 | Product | Claude and Codex | Teammate participation or messaging | Agent-callable CLI or MCP control | Per-collaborator execution approval delegation | Side questions isolated from the main session |
 |---|:---:|:---:|:---:|:---:|:---:|
-| Shared | Planned | Planned | Planned | Planned | Planned |
+| Formation | Planned | Planned | Planned | Planned | Planned |
 | [Happier](https://github.com/happier-dev/happier) | O | O | O | [O](https://docs.happier.dev/accounts/session-sharing) | ? |
 | [Flowpad](https://flowpad.ai/) | O | O | ? | ? | ? |
 | [Agent Relay](https://github.com/AgentWorkforce/relay) | O | O | O | ? | ? |
@@ -23,15 +23,15 @@ This comparison uses official product pages, documentation, and public repositor
 
 Agent-callable control means an interface for querying or sending messages to sessions, not merely a CLI that installs or launches the product. Approval delegation means granting a particular collaborator approval authority, not simply approving one's own agent from another device.
 
-The matrix distinguishes conversation isolation from filesystem isolation. Generic session forks or subagents do not establish that a product offers Shared's proposed restricted side-question workflow.
+The matrix distinguishes conversation isolation from filesystem isolation. Generic session forks or subagents do not establish that a product offers Formation's proposed restricted side-question workflow.
 
 ## Positioning map
 
-The following is a qualitative map of documented workflows, not a quantitative ranking. Coordinates only arrange labels within categories; they are not measured scores. Products may span more than one category. Shared's position is a target.
+The following is a qualitative map of documented workflows, not a quantitative ranking. Coordinates only arrange labels within categories; they are not measured scores. Products may span more than one category. Formation's position is a target.
 
 ```mermaid
 quadrantChart
-    title Shared positioning
+    title Formation positioning
     x-axis Own sessions --> Team sessions
     y-axis Human operation focus --> Agent-callable control
     quadrant-1 Team agent interfaces
@@ -42,7 +42,7 @@ quadrantChart
     Claude Together: [0.85, 0.76]
     Happier: [0.65, 0.63]
     Paperclip: [0.62, 0.80]
-    Shared planned: [0.80, 0.55]
+    Formation planned: [0.80, 0.55]
     mco squad: [0.25, 0.80]
     Flowpad: [0.82, 0.32]
     Happy: [0.67, 0.16]
@@ -52,7 +52,7 @@ quadrantChart
 
 | Positioning category | Products |
 |---|---|
-| Team workflows with agent-callable interfaces | Agent Relay, Claude Together, Happier, Paperclip; Shared's target. |
+| Team workflows with agent-callable interfaces | Agent Relay, Claude Together, Happier, Paperclip; Formation's target. |
 | Personal agent-to-agent coordination | mco-org squad. |
 | Human team collaboration | Flowpad and current Happy Harness. |
 | Personal remote control emphasis | HAPI and Claude Remote Control. |
@@ -84,7 +84,7 @@ The repository calls the project open source while its license section displays 
 - Landing page: [agentrelay.com](https://agentrelay.com/).
 - Sources: [repository](https://github.com/AgentWorkforce/relay), [introduction](https://agentrelay.com/docs/introduction).
 
-Provides agent messaging across machines and team-session context search. It overlaps with Shared's agent-to-agent query direction and may also be an integration candidate. This comparison refers specifically to AgentWorkforce/relay, not other similarly named projects.
+Provides agent messaging across machines and team-session context search. It overlaps with Formation's agent-to-agent query direction and may also be an integration candidate. This comparison refers specifically to AgentWorkforce/relay, not other similarly named projects.
 
 ### Paperclip
 
@@ -95,7 +95,7 @@ A self-hosted, MIT-licensed Node.js server and React UI that runs teams of agent
 
 The repository documents human roles and permissions, company memberships, invite flows, and agent API keys. Governance includes board approval workflows, review stages, budget hard-stops, and pausing or terminating agents. Calls through its tool gateway can be approved once or saved as a revocable rule. Agents delegate to each other through tasks and comments using agent API keys. An interface for querying or messaging another person's session was not verified, so the matrix marks agent-callable control as unverified. The repository was created in March 2026 and had over 100,000 GitHub stars as of November 9, 2026.
 
-This is the strongest documented overlap on organization-level governance and approvals. Its approval choices resemble Shared's "allow once" and "keep allowing similar commands." Its center is delegating work down an organization hierarchy, not asking a teammate's existing local session a question without disturbing it. Not verified: whether its approvals cover coding agents' local shell and file tool calls, and whether one person can query another person's live session in an isolated conversation.
+This is the strongest documented overlap on organization-level governance and approvals. Its approval choices resemble Formation's "allow once" and "keep allowing similar commands." Its center is delegating work down an organization hierarchy, not asking a teammate's existing local session a question without disturbing it. Not verified: whether its approvals cover coding agents' local shell and file tool calls, and whether one person can query another person's live session in an isolated conversation.
 
 ### squad (mco-org)
 
@@ -103,7 +103,7 @@ This is the strongest documented overlap on organization-level governance and ap
 
 A Rust CLI under the MIT license. Claude Code, Codex CLI, Gemini CLI, and OpenCode terminals use it to message each other through shell commands and a SQLite workspace, with no daemon. A `/squad` slash command (`$squad` in Codex) assigns roles such as manager, worker, and inspector, and the manager splits a goal into tasks for workers.
 
-It overlaps with Shared's agent-to-agent direction but documents a local workspace in one project. Cross-machine or cross-person use, permissions, and approvals were not verified. It is unrelated to the other Squad-named projects listed below.
+It overlaps with Formation's agent-to-agent direction but documents a local workspace in one project. Cross-machine or cross-person use, permissions, and approvals were not verified. It is unrelated to the other Squad-named projects listed below.
 
 ### Claude Together
 
@@ -140,11 +140,11 @@ These tools orchestrate several agents but do not share sessions between people.
 - [Squad](https://github.com/github/squad) (GitHub): human-led AI agent teams for a repository through GitHub Copilot. Specialist members persist as files in the repository. It installs as `@bradygaster/squad-cli`. It is built primarily around GitHub Copilot, and its `--client` option projects the same team into Claude Code, Codex, OpenCode, Cursor, and other hosts. It serves one operator's repository rather than sharing live sessions between people.
 - [Claude Squad](https://github.com/smtg-ai/claude-squad): an AGPL-3.0 terminal app for running several terminal agents, such as Claude Code, Codex, Gemini, Aider, OpenCode, and Amp, in parallel. Team sharing was not verified.
 
-Naming note: at least four agent tools use the Squad name, counting mco-org squad above. squads-cli and SquadCue also appeared in search results but were not reviewed. A quick search on November 9, 2026 found no agent orchestration tool named "Formation". That search was not a trademark, domain, or package-name check.
+Naming note: at least four agent tools use the Squad name, counting mco-org squad above. squads-cli and SquadCue also appeared in search results but were not reviewed. On November 9, 2026, the product's working title changed from Shared to Formation. A quick search that day found no agent orchestration tool named "Formation". That search was not a trademark, domain, or package-name check.
 
-## Shared's differentiation hypotheses
+## Formation's differentiation hypotheses
 
-Shared's strongest proposed experience is: **ask a teammate's agent without disrupting their main task, and turn an answer into work only within the owner's policy.**
+Formation's strongest proposed experience is: **ask a teammate's agent without disrupting their main task, and turn an answer into work only within the owner's policy.**
 
 Validate these together:
 
