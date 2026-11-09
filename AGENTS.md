@@ -8,6 +8,7 @@ Formation is a proposed open-source macOS app and CLI for collaborating through 
 - `.claude/skills/`: project-scoped Claude Code skills for macOS, SwiftUI and Swift development.
 - `crates/`: the Rust workspace (`formation-proto`, `formation-core`, `formationd`, `formation-cli`), described in the [tech spec](documentations/4_techspec.md#code-layout).
 - `apps/desktop/`: the Tauri 2 app, with the React and TypeScript UI in `src/` and the Rust side in `src-tauri/` (a member of the Cargo workspace), described in the [frontend architecture](documentations/5_frontend_architecture.md#code-layout).
+- `tools/fake-formationd/`: serves the M3 mockup's world over formationd's socket protocol for building the app without the real service; see its [README](tools/fake-formationd/README.md).
 - `THIRD_PARTY_NOTICES.md`: every file copied or generated from another project, with its source and license.
 - `scripts/`: repository tooling: the documentation link checker and the pull request issue-link checker, with its tests.
 
@@ -27,6 +28,7 @@ pnpm -C apps/desktop typecheck          # TypeScript
 pnpm -C apps/desktop test               # Vitest
 pnpm -C apps/desktop ipc:generate       # regenerate src/ipc/generated after changing formation-proto; commit the result
 pnpm -C apps/desktop tauri dev          # run the app in development
+cargo run -p fake-formationd            # serve the M3 world for the app (see tools/fake-formationd/README.md)
 ```
 
 ## Working agreements

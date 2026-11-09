@@ -5,6 +5,8 @@ pub mod agents;
 pub mod ask;
 pub mod harness;
 pub mod ports;
+pub mod service;
+pub mod store;
 
 #[cfg(feature = "testkit")]
 #[path = "../testkit/mod.rs"]

@@ -21,7 +21,7 @@ Formation is a Mac app that runs and manages a person's role-based agents and le
 | Detected agent | An agent Formation did not create: a Claude Code or Codex session started elsewhere, or a Hermes or OpenClaw instance on the Mac (D-010). |
 | Session | One conversation of an agent with its runtime. An agent can have many sessions over time; its main session is the one currently doing work. |
 | Side conversation | A separate conversation that answers a teammate from an agent's session conversation, without touching the main session. |
-| Work request | A teammate's request for an agent to do something in its main session. |
+| Work request | A teammate's request for an agent to do something in a fork of its session (FR-014). |
 
 ## Platform
 
@@ -72,7 +72,7 @@ All requirements are **Must** for the first version.
 - A message sent while the agent is working waits and is delivered when the current turn ends; the waiting message is shown as queued and can be edited or withdrawn until it is delivered.
 - The owner can instead choose **Steer now**, which delivers the message into the running turn at the next point the runtime allows, or **Stop**, which ends the turn (FR-003).
 - *Proposed:* permission requests that the runtime raises for the owner's own work appear in the conversation for the owner to answer. Teammates' requests still follow FR-015.
-- For a detected agent that does not accept input from Formation, the conversation shows its activity read-only and states why messages cannot be sent (FR-006).
+- For a detected session, the conversation shows its activity read-only; work through Formation uses forks (FR-006).
 - Teammates never see this conversation; they see only side-conversation answers within the agent's visibility setting (FR-009, FR-012).
 
 **FR-005 Schedule work.** The owner gives an agent a recurring task: a prompt and a schedule (for example, every weekday at 09:00).
@@ -81,6 +81,7 @@ All requirements are **Must** for the first version.
 - *Proposed:* a run missed because the Mac was asleep or off is marked missed and runs once when the Mac wakes.
 
 **FR-006 Detect and connect other agents.** Formation finds Claude Code and Codex sessions started outside Formation, and Hermes and OpenClaw instances on the Mac. The owner can connect a detected agent, which adds it to the overview and makes it shareable.
+- Formation reads detected sessions and works only in forks; it never resumes or writes to the original session (D-056).
 - Formation does not create new agents on Hermes or OpenClaw (D-012).
 - For each detected agent, the app shows which operations work (state, reading the conversation, answering teammates, receiving work requests) and which do not, with the reason.
 - Detection does not change the detected agent's own configuration without the owner's consent.
@@ -129,7 +130,7 @@ Unsharing an agent blocks new questions and requests at once and cancels pending
 
 **FR-014 Request work.** A teammate sends a work request to a shared agent that accepts requests, either written fresh or built from selected messages of a side conversation.
 - The teammate sees the exact prompt that will be delivered before sending.
-- The request waits until the agent's current turn ends, then runs in its main session.
+- The request waits until the agent's current turn ends, then runs in its own fork of the agent's session (D-056).
 - The requester sees its status: received, waiting for approval, queued, running, completed, denied, failed, canceled, or expired.
 - Actions the work leads to follow FR-015.
 
@@ -199,6 +200,7 @@ Not in the first version: a per-agent usage and cost view; Slack; any customer-f
 - Build Formation or extend an existing product such as Reason Network (D-006).
 - How the Macs connect, and the remaining defaults (D-008).
 - The minimum macOS version and the distribution method (tech spec).
+- Request-fork file isolation and result delivery to the owner and main session: see the [tech spec's open decisions](4_techspec.md#open-decisions).
 
 ## Proposed defaults to confirm in this review
 

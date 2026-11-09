@@ -50,7 +50,7 @@ After kickoff, each role works down its own lane without waiting for another rol
 
 | | Kickoff (together) | Phase 1 · Proofs | Phase 2 → IC-1 | Phase 3 → IC-2 | Phase 4 → IC-3 (today) |
 | --- | --- | --- | --- | --- | --- |
-| **A** | TASK-001 scaffold; TASK-002 (A files) | TASK-003 fakes; TASK-004 Claude Code control | TASK-010 service; TASK-011 store; TASK-012 agent folders; TASK-013 Claude Code agents | TASK-022 session info for ask | TASK-024 run requests in the main session |
+| **A** | TASK-001 scaffold; TASK-002 (A files) | TASK-003 fakes; TASK-004 Claude Code control | TASK-010 service; TASK-011 store; TASK-012 agent folders; TASK-013 Claude Code agents | TASK-022 session info for ask | TASK-024 run requests in forks |
 | **B** | TASK-002 (B files) | TASK-042 fakes; TASK-005 permission routing; TASK-006 forked answers; TASK-007 two-Mac identity | TASK-017 team (start early, against fakes) | TASK-018 peer protocol; TASK-019 sharing, routing, answers | TASK-023 requests; TASK-025 approvals; TASK-044 permission gate |
 | **C** | TASK-002 (C files) | TASK-043 fake-formationd; TASK-008 Tauri shell; TASK-009 LaunchAgent from the app | TASK-014 app store; TASK-015 my-agent screens | TASK-020 asking screens | TASK-026 request and approval screens |
 | **D** | Reads M3; sets up styles once TASK-001 lands | TASK-016 tokens, avatars, copy for IC-1 | TASK-016 (continued) | TASK-021 | TASK-027 |
@@ -130,7 +130,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: B
 
 ### TASK-043: C's fake-formationd serves the mockup's world
-- Status: pending
+- Status: in progress
 - References: [data flow](5_frontend_architecture.md#data-flow), mockup M3 sample data
 - Prerequisites: TASK-002
 - Change locations: `tools/fake-formationd/` with fixtures
@@ -147,7 +147,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Work: start `claude -p --input-format stream-json --output-format stream-json --verbose --include-partial-messages --replay-user-messages --session-id <uuid>` in a folder; send a message; send a second while the first turn runs; stop a turn; resume with `--resume`; test whether a message can steer a running turn. Record outputs as fixtures for `fake-claude`.
 - Acceptance criteria: a written result for each behavior (works, does not, workaround) in the pull request; fixtures committed.
 - Verification: the spike's integration test against the real `claude` (ignored in CI).
-- Blockers/assumptions: steering may not work in print mode; fallback is stop-then-send (TASK-039).
+- Results: see [Claude Code integration](4_techspec.md#claude-code-integration-first-harness) for the proven queue, steer, and stop behavior (TASK-039).
 - Owner: A
 
 ### TASK-005: Permission routing covers every tool call
@@ -345,18 +345,18 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - References: FR-014, US-019, SC-016
 - Prerequisites: TASK-018
 - Change locations: `crates/formation-core/src/requests/`, peer endpoints `POST /v1/requests`, `GET /v1/requests/{id}`, `POST /v1/requests/{id}/cancel`
-- Work: create with idempotency; status machine; "accepts requests" check; cancel before start; implement the `RequestQueue` port that A's executor consumes.
+- Work: create with idempotency; status machine; "accepts requests" check; cancel before start; implement the `RequestQueue` port that A's fork executor consumes, carrying requester and request ID for the per-request policy context (see [Claude Code integration](4_techspec.md#claude-code-integration-first-harness)).
 - Acceptance criteria: US-019 criteria; a repeated idempotency key returns the original request.
 - Verification: unit tests (idempotency under concurrency); two-Mac test at IC-3.
 - Owner: B
 
-### TASK-024: Requests run in the main session
+### TASK-024: Requests run in forks
 - Status: pending
 - References: FR-014, FR-022
 - Prerequisites: TASK-013, TASK-042 (uses `FakeRequestQueue` until IC-3)
 - Change locations: `crates/formation-core/src/harness/claude/` (executor)
-- Work: take requests from the `RequestQueue` port after the current turn and run them in the agent's main session; report progress and results back through the port.
-- Acceptance criteria: queued requests run in order after the current turn; status events reach the requester.
+- Work: take requests from the `RequestQueue` port after the current turn and run each in its own fork of the agent's session (FR-014); bind its requester and request ID at fork startup per [Claude Code integration](4_techspec.md#claude-code-integration-first-harness); report progress and results back through the port. File isolation and delivery to the owner and main session remain [open](4_techspec.md#open-decisions).
+- Acceptance criteria: queued requests run in separate forks in order after the current turn; the main session transcript is unchanged; status events reach the requester.
 - Verification: tests with `fake-claude` and `FakeRequestQueue`.
 - Owner: A
 
@@ -400,7 +400,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Verification: D's review.
 - Owner: D
 
-**IC-3 · Today's milestone (two Macs):** switch remaining fakes to real pieces. After IC-2, Minsu sends "Add token expiry tests" to Dohyeon's Backend; it waits for the current turn; when it needs `npm test`, Dohyeon sees the approval and allows once; Minsu sees the status move to completed. Repeat with Deny and check the command never runs. Quit Dohyeon's app during the request and confirm it continues.
+**IC-3 · Today's milestone (two Macs):** switch remaining fakes to real pieces. After IC-2, Minsu sends "Add token expiry tests" to Dohyeon's Backend; it waits for the current turn, then runs in its own fork (FR-014), leaving the main session transcript unchanged; when it needs `npm test`, Dohyeon sees the approval and allows once; Minsu sees the status move to completed. Repeat with Deny and check the command never runs. Quit Dohyeon's app during the request and confirm it continues.
 
 ### Phase 5 · Complete the first version (IC-4)
 
@@ -417,7 +417,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 | TASK-036 | CLI and MCP teammate tools with chain limits | B | FR-017 to FR-019, US-022, US-023, IF-001, IF-002 | TASK-023 |
 | TASK-037 | Offline outbox re-checks, deletion propagation, activity record | B | FR-013, FR-016, FR-020 | TASK-018 |
 | TASK-038 | History page and Inbox "questions sent to me" (answer, hand to agent) | C | SC-010, SC-017, US-010 | TASK-014 (fake data until TASK-037) |
-| TASK-039 | Steer now (or the stop-then-send fallback), edit and withdraw queued messages | A, then C for UI | FR-022, TASK-004 results | TASK-013 |
+| TASK-039 | Steer now, edit and withdraw queued messages per [TASK-004 results](4_techspec.md#claude-code-integration-first-harness) | A, then C for UI | FR-022, TASK-004 results | TASK-013 |
 | TASK-040 | Preview page complete, Korean and English pass, live avatars, VoiceOver pass | D with C | NFR-009, D-033, D-042, D-050 | TASK-026 |
 
 Each Phase 5 task uses the same fields as the tasks above when it starts: change locations from the [ownership table](#roles-and-ownership), acceptance criteria from its stories, verification by tests plus the matching M3 states. UI tasks start against `fake-formationd` and switch to real data when the backend task merges.

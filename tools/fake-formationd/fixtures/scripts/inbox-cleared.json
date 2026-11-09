@@ -1,0 +1,28 @@
+{
+  "description": "Every Inbox item resolves: Jiwoo's question is answered and Research is active again",
+  "steps": [
+    {
+      "event": { "type": "notify", "payload": { "alert": false, "item": {
+        "id": "01930000-0000-7000-8000-000000000601",
+        "kind": "question_for_you",
+        "target": { "kind": "question", "question_id": "01930000-0000-7000-8000-000000000305" },
+        "subject": "Jiwoo · When will the payment refactor be done?",
+        "at": "2026-11-09T01:30:00Z",
+        "resolved_at": "2026-11-09T01:53:00Z"
+      } } }
+    },
+    {
+      "event": { "type": "agent.state", "payload": { "agent_id": "01930000-0000-7000-8000-000000000103", "state": "working", "reason": null, "exit_code": null } }
+    },
+    {
+      "event": { "type": "notify", "payload": { "alert": false, "item": {
+        "id": "01930000-0000-7000-8000-000000000602",
+        "kind": "agent_stalled",
+        "target": { "kind": "agent", "agent_id": "01930000-0000-7000-8000-000000000103" },
+        "subject": "Research · no activity for 14 minutes",
+        "at": "2026-11-09T01:39:00Z",
+        "resolved_at": "2026-11-09T01:53:00Z"
+      } } }
+    }
+  ]
+}

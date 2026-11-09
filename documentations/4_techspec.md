@@ -48,7 +48,7 @@ flowchart LR
     Core <--> DB[("SQLite")]
     Core -- "spawn, stdin/stdout stream-json" --> CC["claude -p (per agent)"]
     Core -- "spawn, JSON-RPC (later)" --> CX["codex app-server"]
-    Core -- "reads" --> TR["~/.claude transcripts"]
+    Core -- "reads" --> TR["$CLAUDE_CONFIG_DIR/projects/ transcripts"]
     CC -- "permission prompts (MCP)" --> MCPp["formation mcp (permission tool)"]
     MCPp <--> Core
     CLI["formation CLI"] <--> Core
@@ -65,21 +65,21 @@ flowchart LR
 
 ## Claude Code integration (first harness)
 
-All flags below are from the [Claude Code CLI reference](https://code.claude.com/docs/en/cli-reference) (checked 2026-11-09).
+Flags below follow the [Claude Code CLI reference](https://code.claude.com/docs/en/cli-reference) (checked 2026-11-09), with process-control and permission-routing results from TASK-004 (#13) and TASK-005 (#10).
 
 | Need | How | PRD |
 | --- | --- | --- |
 | Run an agent and chat with it | One long-lived process per running agent: `claude -p --input-format stream-json --output-format stream-json --verbose --include-partial-messages --replay-user-messages --session-id <uuid>` started in the agent's folder. The core writes user messages as JSON lines to stdin and reads events from stdout. | FR-003, FR-022 |
-| Queue while working | Messages written to stdin while a turn runs stay queued and start the next turn (the `--max-turns` entry documents queued stdin messages starting new turns). The UI shows them as queued until the replayed user message arrives. | FR-022 |
-| Steer now | Assumed: delivering a queued message into the running turn. Not documented for print mode; verify in the integration proof. Fallback: Stop the turn, then send the message first. | FR-022 |
-| Stop | Send an interrupt on stdin if supported; otherwise SIGINT to the process, then restart it with `--resume <id>`. Verify. | FR-003 |
+| Queue while working | formationd holds queued messages itself so they can be edited or withdrawn, then sends each with `"priority":"later"` to start a later turn. Without `priority`, a message joins the running turn (TASK-004). The UI shows it as queued until the replayed user message arrives. | FR-022 |
+| Steer now | Send a default-priority message; it is applied at the next tool boundary (TASK-004). | FR-022 |
+| Stop | Send the stdin `control_request` interrupt to stop the turn. SIGINT ends the process (TASK-004). | FR-003 |
 | Restart and continue | `claude -p ... --resume <session-id>`. | FR-003 |
 | Owner's own permission prompts | `--permission-prompt-tool mcp__formation__permission` with `--mcp-config` pointing at `formation mcp --permission`. The tool forwards each prompt to the core, which shows it in the conversation (proposed default 11) and returns the owner's answer. | FR-022 |
-| Teammates' work requests | Same permission tool. Requests from teammates run in forks with a per-request policy context; file isolation and how results reach the owner are open (#14). formationd passes `FORMATION_RUN_ID` to each run, permission server and hook; the permission tool has no session ID in its input. The core answers prompts from saved rules and the always-allowed reads (D-028), otherwise it raises an approval (SC-011). | FR-014, FR-015 |
-| Defense in depth | Inject a `PreToolUse` hook through `--settings` that asks the core before every tool call, so a harness auto-approval path cannot skip Formation's policy (NFR-004). Verify which tool calls reach the permission tool and which reach only hooks. | NFR-004 |
+| Teammates' work requests | Same permission tool. Requests from teammates run in forks with a per-request policy context; bind the requester and request ID when each separate fork process starts (D-056). File isolation and result delivery are [open](#open-decisions). formationd passes `FORMATION_RUN_ID` to each run, permission server and hook; the permission tool has no session ID in its input. The core answers prompts from saved rules and the always-allowed reads (D-028), otherwise it raises an approval (SC-011). | FR-014, FR-015 |
+| Required policy hook | Inject a required `PreToolUse` hook through `--settings` that asks the core before every tool call (NFR-004). In acceptEdits, auto, and bypassPermissions, writes, commands, and network calls can skip the permission tool; the hook sees every call, and a hook deny wins (TASK-005). | NFR-004 |
 | Agent instructions and skills | The agent folder's `AGENTS.md` is canonical; `CLAUDE.md` contains one line importing it (`@AGENTS.md`), and skills live in `.claude/skills/`. Codex reads `AGENTS.md` natively. | FR-001, FR-004 |
-| Read a session conversation | Transcript files (`.jsonl`) under `~/.claude/projects/`; `--resume` also accepts a transcript path. | FR-012 |
-| Detect sessions started elsewhere | Scan transcript folders for recent activity. Live-process detection (for example `~/.claude/sessions/<pid>.json`, used by Reason Network) is undocumented; treat as best effort and label states "unknown" when unsure. Skip sessions Formation created as forks: every fork writes a full transcript copy (`<fork-id>.jsonl`) into the same project folder (TASK-006). | FR-006 |
+| Read a session conversation | Transcript files (`.jsonl`) under `$CLAUDE_CONFIG_DIR/projects/` (default `~/.claude/projects/`); `--resume` also accepts a transcript path. | FR-012 |
+| Detect sessions started elsewhere | Read detected sessions and work only in forks; never resume or write to the original (FR-006). Scan transcript folders for recent activity. Live-process detection (for example `~/.claude/sessions/<pid>.json`, used by Reason Network) is undocumented; treat as best effort and label states "unknown" when unsure. Skip sessions Formation created as forks: every fork writes a full transcript copy (`<fork-id>.jsonl`) into the same project folder (TASK-006). | FR-006 |
 
 **Codex (second harness):** launch `codex app-server` and speak its JSON-RPC protocol (thread, turn, and approval requests), per the [Codex App Server docs](https://learn.chatgpt.com/docs/app-server) referenced in the product plan. Verify the protocol and approval hooks before building it.
 
@@ -153,7 +153,7 @@ Every request is authenticated by Tailscale WhoIs on the connection and mapped t
 
 ## Concurrency, ordering, and offline
 
-- One writer per agent main session: the core serializes turns; queued messages and teammate requests share one ordered queue per agent.
+- Only the owner writes to the main session (D-056); the core serializes its turns and queued owner messages. Teammate requests use separate fork processes after the current turn, in request order (FR-014).
 - Questions are answered in parallel with the main session because forks are separate processes.
 - When the owner's Mac is unreachable, the asker's core keeps the question or request in an outbox and retries when the peer reappears; the owner's core re-checks membership and sharing before acting (FR-016).
 - Stalled detection: a working agent with no stdout event for 10 minutes raises an alert (FR-007).
@@ -195,8 +195,8 @@ UI work (developer C and the designer) stays in `apps/desktop/src`; the core (de
 
 | Assumption | Why it matters | Verification |
 | --- | --- | --- |
-| Messages can steer a running turn in print mode | FR-022 "Steer now" | Integration proof with `stream-json` input; fall back to Stop-then-send |
-| Every tool call that needs approval reaches the permission tool or the hook | NFR-004 | Run each permission mode and tool type; log what reaches the tool and the hook |
+| Messages can steer a running turn in print mode | FR-022 "Steer now" | Proven in TASK-004: see [Claude Code integration](#claude-code-integration-first-harness) |
+| Every tool call that needs approval reaches the permission tool or the hook | NFR-004 | Proven in TASK-005: the [required policy hook](#claude-code-integration-first-harness) covers calls that skip the permission tool |
 | Transcript format and location are stable enough to read | FR-012, FR-006 | Parse current transcripts; pin the Claude Code version in the team's setup |
 | Tailscale WhoIs is reachable from Rust | Peer identity | Call the `tailscale whois --json` CLI or the LocalAPI socket; the Rust bindings lack WhoIs ([tailscale-rs #478](https://github.com/tailscale/tailscale-rs/issues/478)) |
 | formationd can be registered as a LaunchAgent from the app on macOS 13, and can open the app hidden for notifications | D-048, FR-007 | Plist plus `launchctl` chosen (TASK-009). On macOS 27.2, formationd survived quitting the app, and launchd restarted it after a kill. Still to check: macOS 13, and formationd opening the app with `--hidden` (formationd side comes with TASK-034). |
@@ -207,3 +207,5 @@ UI work (developer C and the designer) stays in `apps/desktop/src`; the core (de
 
 - UI foundation: plain CSS tokens plus Radix primitives (proposed) or shadcn/ui.
 - D-044 build-first reading.
+- Request-fork file isolation (D-056): forks share the main session's folder; a git worktree per request is one option, not decided.
+- How a request fork's result reaches the owner and the main session (D-056), for example a reviewed diff; not decided.

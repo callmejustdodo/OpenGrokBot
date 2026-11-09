@@ -1,0 +1,38 @@
+{
+  "description": "Minsu turns sharing off for Auth: it disappears from Minsu's shared agents, and past answers stay readable",
+  "steps": [
+    {
+      "event": { "type": "peer.presence", "payload": {
+        "member_id": "01930000-0000-7000-8000-000000000002",
+        "online": true,
+        "last_seen_at": null,
+        "agents": [
+          {
+            "owner": "01930000-0000-7000-8000-000000000002",
+            "agent_id": "01930000-0000-7000-8000-000000000202",
+            "slug": "frontend",
+            "name": "Frontend",
+            "role": "Web UI",
+            "harness": "claude_code",
+            "avatar": { "shape": "palette", "color": "#ec4899" },
+            "state": "idle",
+            "last_activity_at": "2026-11-09T01:05:00Z",
+            "accepts_requests": false
+          },
+          {
+            "owner": "01930000-0000-7000-8000-000000000002",
+            "agent_id": "01930000-0000-7000-8000-000000000203",
+            "slug": "qa",
+            "name": "QA",
+            "role": "Regression tests",
+            "harness": "codex",
+            "avatar": { "shape": "camera", "color": "#7a7a7a" },
+            "state": "idle",
+            "last_activity_at": "2026-11-08T08:00:00Z",
+            "accepts_requests": false
+          }
+        ]
+      } }
+    }
+  ]
+}

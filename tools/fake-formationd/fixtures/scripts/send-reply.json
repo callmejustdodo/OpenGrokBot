@@ -1,0 +1,57 @@
+{
+  "description": "After agent_message_send: the message waits in the queue, then a turn starts and a reply streams in",
+  "steps": [
+    {
+      "event": { "type": "agent.queue", "payload": { "agent_id": "{{params.agent_id}}", "items": [
+        { "id": "{{id:msg}}", "agent_id": "{{params.agent_id}}", "source": { "kind": "owner" }, "text": "{{params.text}}", "queued_at": "{{now}}" }
+      ] } }
+    },
+    {
+      "after_ms": 1500,
+      "event": { "type": "agent.queue", "payload": { "agent_id": "{{params.agent_id}}", "items": [] } }
+    },
+    {
+      "event": { "type": "agent.state", "payload": { "agent_id": "{{params.agent_id}}", "state": "working", "reason": null, "exit_code": null } }
+    },
+    {
+      "event": { "type": "agent.stream", "payload": { "agent_id": "{{params.agent_id}}", "session_id": "session-{{params.agent_id}}", "stream_seq": 0,
+        "delta": { "kind": "turn_started", "message_id": "{{id:msg}}" } } }
+    },
+    {
+      "event": { "type": "agent.stream", "payload": { "agent_id": "{{params.agent_id}}", "session_id": "session-{{params.agent_id}}", "stream_seq": 0,
+        "delta": { "kind": "item_started", "item": { "kind": "user_message", "id": "{{id:user}}", "at": "{{now}}", "author": { "kind": "owner" }, "text": "{{params.text}}" } } } }
+    },
+    {
+      "after_ms": 600,
+      "event": { "type": "agent.stream", "payload": { "agent_id": "{{params.agent_id}}", "session_id": "session-{{params.agent_id}}", "stream_seq": 0,
+        "delta": { "kind": "item_started", "item": { "kind": "assistant_text", "id": "{{id:reply}}", "at": "{{now}}", "text": "" } } } }
+    },
+    {
+      "after_ms": 300,
+      "event": { "type": "agent.stream", "payload": { "agent_id": "{{params.agent_id}}", "session_id": "session-{{params.agent_id}}", "stream_seq": 0,
+        "delta": { "kind": "text_delta", "item_id": "{{id:reply}}", "text": "Got it. " } } }
+    },
+    {
+      "after_ms": 400,
+      "event": { "type": "agent.stream", "payload": { "agent_id": "{{params.agent_id}}", "session_id": "session-{{params.agent_id}}", "stream_seq": 0,
+        "delta": { "kind": "text_delta", "item_id": "{{id:reply}}", "text": "I'll take care of that " } } }
+    },
+    {
+      "after_ms": 400,
+      "event": { "type": "agent.stream", "payload": { "agent_id": "{{params.agent_id}}", "session_id": "session-{{params.agent_id}}", "stream_seq": 0,
+        "delta": { "kind": "text_delta", "item_id": "{{id:reply}}", "text": "and report back here." } } }
+    },
+    {
+      "after_ms": 200,
+      "event": { "type": "agent.stream", "payload": { "agent_id": "{{params.agent_id}}", "session_id": "session-{{params.agent_id}}", "stream_seq": 0,
+        "delta": { "kind": "item_completed", "item": { "kind": "assistant_text", "id": "{{id:reply}}", "at": "{{now}}", "text": "Got it. I'll take care of that and report back here." } } } }
+    },
+    {
+      "event": { "type": "agent.stream", "payload": { "agent_id": "{{params.agent_id}}", "session_id": "session-{{params.agent_id}}", "stream_seq": 0,
+        "delta": { "kind": "turn_ended", "message_id": "{{id:msg}}", "outcome": "completed" } } }
+    },
+    {
+      "event": { "type": "agent.state", "payload": { "agent_id": "{{params.agent_id}}", "state": "idle", "reason": null, "exit_code": null } }
+    }
+  ]
+}

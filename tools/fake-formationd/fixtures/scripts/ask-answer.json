@@ -1,0 +1,39 @@
+{
+  "description": "After ask to an agent: received, answering, then answered from the agent's conversation (M3 timing)",
+  "steps": [
+    {
+      "event": { "type": "question.update", "payload": { "change": "upsert", "question": {
+        "id": "{{id:q}}", "thread_id": "{{id:q}}", "asker": "01930000-0000-7000-8000-000000000001", "target": "{{params.target}}",
+        "text": "{{params.text}}", "status": "received", "candidates": [], "agent_id": "{{params.target.agent_id}}",
+        "answer": null, "error": null, "created_at": "{{now}}", "updated_at": "{{now}}"
+      } } }
+    },
+    {
+      "after_ms": 900,
+      "event": { "type": "question.update", "payload": { "change": "upsert", "question": {
+        "id": "{{id:q}}", "thread_id": "{{id:q}}", "asker": "01930000-0000-7000-8000-000000000001", "target": "{{params.target}}",
+        "text": "{{params.text}}", "status": "answering", "candidates": [], "agent_id": "{{params.target.agent_id}}",
+        "answer": null, "error": null, "created_at": "{{now}}", "updated_at": "{{now}}"
+      } } }
+    },
+    {
+      "after_ms": 1400,
+      "event": { "type": "question.update", "payload": { "change": "upsert", "question": {
+        "id": "{{id:q}}", "thread_id": "{{id:q}}", "asker": "01930000-0000-7000-8000-000000000001", "target": "{{params.target}}",
+        "text": "{{params.text}}", "status": "answered", "candidates": [], "agent_id": "{{params.target.agent_id}}",
+        "answer": {
+          "id": "{{id:a}}",
+          "agent_id": "{{params.target.agent_id}}",
+          "text": "From the conversation: the login API is done and token refresh is in progress. It doesn't say when it will be finished.",
+          "excerpts": [
+            { "role": "assistant", "text": "Implementing refresh-token rotation; the re-login flow isn't done yet.", "at": "2026-11-09T01:40:00Z" }
+          ],
+          "as_of": "{{now}}",
+          "possibly_stale": false,
+          "answered_at": "{{now}}"
+        },
+        "error": null, "created_at": "{{now}}", "updated_at": "{{now}}"
+      } } }
+    }
+  ]
+}

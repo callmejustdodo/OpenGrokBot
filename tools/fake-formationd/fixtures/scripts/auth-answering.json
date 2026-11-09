@@ -1,0 +1,24 @@
+{
+  "description": "Minsu's Auth agent is answering my question in a fork; Minsu's work isn't interrupted",
+  "steps": [
+    {
+      "event": { "type": "question.update", "payload": { "change": "removed", "question_id": "01930000-0000-7000-8000-000000000302" } }
+    },
+    {
+      "event": { "type": "question.update", "payload": { "change": "upsert", "question": {
+        "id": "01930000-0000-7000-8000-000000000301",
+        "thread_id": "01930000-0000-7000-8000-000000000301",
+        "asker": "01930000-0000-7000-8000-000000000001",
+        "target": { "kind": "agent", "member_id": "01930000-0000-7000-8000-000000000002", "agent_id": "01930000-0000-7000-8000-000000000201" },
+        "text": "How far is the login work?",
+        "status": "answering",
+        "candidates": [],
+        "agent_id": "01930000-0000-7000-8000-000000000201",
+        "answer": null,
+        "error": null,
+        "created_at": "2026-11-09T01:53:00Z",
+        "updated_at": "2026-11-09T01:53:00Z"
+      } } }
+    }
+  ]
+}

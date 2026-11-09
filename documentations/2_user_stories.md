@@ -69,6 +69,7 @@ As an owner, I want Formation to find the Claude Code and Codex sessions I start
 
 - **Given** a Claude Code session is running in Terminal, **when** Formation detects it, **then** it appears in the overview labeled as detected.
 - **When** Dohyeon connects a detected agent, **then** it can be shared like other agents, and the app lists which operations work for it and which do not, with reasons.
+- Formation reads detected sessions and works only in forks, never resuming or writing to the original (FR-006).
 - Formation does not change a detected agent's own configuration without Dohyeon's consent, and does not create new agents on Hermes or OpenClaw.
 
 ### US-007 Be alerted only when I'm needed
@@ -172,7 +173,7 @@ As a teammate, I want to leave a question when a colleague's Mac is offline, so 
 As a teammate, I want to ask a colleague's agent to do something and see what happens to the request, so that I can plan around it.
 
 - **Given** an agent accepts work requests, **when** Minsu writes a request or builds one from selected messages of a side conversation, **then** Minsu sees the exact prompt that will be delivered before sending.
-- **Then** the request waits for the agent's current turn to end, and Minsu sees its status move through received, waiting for approval, queued, running, and completed, denied, failed, canceled, or expired.
+- **Then** the request waits for the agent's current turn to end, runs in its own fork (FR-014), and Minsu sees its status move through received, waiting for approval, queued, running, and completed, denied, failed, canceled, or expired.
 - **Given** an agent does not accept work requests, **then** the option is unavailable and says so.
 - **Cancel:** Minsu can cancel a request that has not started.
 
