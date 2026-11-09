@@ -92,6 +92,7 @@ fn commands(cfg: &Config) -> Vec<Entry> {
         entry::<harness::AgentMessageEdit>(cfg),
         entry::<harness::AgentTurnInterrupt>(cfg),
         entry::<harness::AgentMessageWithdraw>(cfg),
+        entry::<harness::AgentRequestStop>(cfg),
         // ask.rs (B)
         entry::<ask::Ask>(cfg),
         entry::<ask::QuestionCancel>(cfg),

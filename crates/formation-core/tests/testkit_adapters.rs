@@ -32,6 +32,7 @@ fn agent(slug: &str) -> Agent {
         created_at: time(0),
         last_activity_at: None,
         detected: None,
+        running_requests: vec![],
     }
 }
 fn session(agent_id: AgentId, id: &str) -> SessionInfo {

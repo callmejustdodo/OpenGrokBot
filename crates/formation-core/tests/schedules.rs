@@ -62,6 +62,7 @@ fn agent() -> Agent {
         created_at: Utc::now(),
         last_activity_at: None,
         detected: None,
+        running_requests: vec![],
     }
 }
 struct Fixture {
