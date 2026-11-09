@@ -32,8 +32,8 @@ use formation_core::policy::TeamPolicy;
 use formation_core::policy::approvals::{ApprovalStore, Approvals, SystemClock};
 use formation_core::policy::sharing::ShareChange;
 use formation_core::ports::{
-    CollabStore, CommandHandler, Harness, Notifier, Peers, PermissionGate, Policy, RequestQueue,
-    Store, TeamRepo,
+    CollabStore, CommandHandler, EventSink, Harness, Notifier, Peers, PermissionGate, Policy,
+    RequestQueue, Store, TeamRepo,
 };
 use formation_core::requests::peer::{PeerRequests, forward_updates};
 use formation_core::requests::{RequestClient, Requests};
@@ -51,6 +51,7 @@ use formation_core::testkit::collab::{
 };
 use formation_proto::agent::{HarnessKind, HarnessStatus, StopMode};
 use formation_proto::common::AgentId;
+use formation_proto::events::Event;
 use formation_proto::peer::{PEER_PORT, PeerEvent, RosterResponse};
 use formation_proto::request::RequestStatus;
 use formation_proto::team::{Member, MemberRole};
@@ -490,6 +491,7 @@ fn start_peers(service: &Service) -> Result<Vec<JoinHandle<()>>, Error> {
             service.ask_commands.clone(),
             service.request_client.clone(),
             service.team.clone(),
+            service.bus.clone(),
         ),
     ];
     match &service.peer_client {
@@ -511,14 +513,17 @@ fn start_peers(service: &Service) -> Result<Vec<JoinHandle<()>>, Error> {
     Ok(tasks)
 }
 
-/// Feeds teammates' question and request updates into this Mac's copies, and the
-/// creator's roster pushes into the team. The peer client forwards an update only
-/// from the item's owner, and a roster only from the creator's Mac.
+/// Feeds teammates' question and request updates into this Mac's copies, the
+/// creator's roster pushes into the team, and each teammate's presence (online
+/// state and shared agents) to the app as `peer.presence`. The peer client
+/// forwards an update only from the item's owner, and a roster only from the
+/// creator's Mac.
 fn forward_peer_events(
     mut events: tokio::sync::broadcast::Receiver<PeerEvent>,
     asks: Arc<AskCommands>,
     requests: Arc<RequestClient>,
     team: Arc<TeamService<dyn CollabStore>>,
+    bus: Arc<EventBus>,
 ) -> JoinHandle<()> {
     tokio::spawn(async move {
         loop {
@@ -531,6 +536,13 @@ fn forward_peer_events(
                 }
                 Ok(PeerEvent::Roster { members, version }) => {
                     apply_creator_roster(&team, members, version)
+                }
+                // Without this the app sees teammates' agents only in the snapshot
+                // it took when it connected: a teammate who comes online or shares
+                // an agent later never shows up.
+                Ok(PeerEvent::Presence { presence }) => {
+                    bus.publish(Event::PeerPresence(presence));
+                    Ok(())
                 }
                 Ok(_) => Ok(()),
                 // Owners re-send open items when the events connection reopens.
