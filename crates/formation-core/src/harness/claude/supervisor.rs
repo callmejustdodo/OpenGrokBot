@@ -133,11 +133,18 @@ impl ClaudeSupervisor {
         requests: Option<Arc<dyn RequestQueue>>,
     ) -> Self {
         let (streams, _) = broadcast::channel(256);
-        // No fork outlives the process that ran it: drop lists a previous run left.
+        // No fork or process outlives the daemon that ran it: drop lists a previous run
+        // left, and stop agents it left running. An error stays until the next start.
         if let Ok(agents) = store.agents() {
             for mut agent in agents {
-                if !agent.running_requests.is_empty() {
+                let running = agent.harness == HarnessKind::ClaudeCode
+                    && agent.detected.is_none()
+                    && !matches!(agent.state, AgentState::Stopped | AgentState::Error);
+                if !agent.running_requests.is_empty() || running {
                     agent.running_requests.clear();
+                    if running {
+                        agent.state = AgentState::Stopped;
+                    }
                     let _ = store.update_agent(&agent);
                 }
             }
@@ -199,6 +206,14 @@ impl ClaudeSupervisor {
         let mut agents = self.inner.agents.lock().unwrap();
         let r = agents.get_mut(&id).expect("registered supervisor");
         r.state = state;
+        // The snapshot reads agents from the store, so it must hold the last state.
+        // Writing under the lock keeps the stored order the same as the events'.
+        if let Ok(Some(mut agent)) = self.inner.store.agent(id)
+            && agent.state != state
+        {
+            agent.state = state;
+            let _ = self.inner.store.update_agent(&agent);
+        }
         self.inner.sink.publish(Event::AgentState(AgentStateEvent {
             agent_id: id,
             state,
@@ -261,10 +276,10 @@ impl ClaudeSupervisor {
         if !change(&mut agent.running_requests) {
             return Ok(());
         }
-        self.inner.store.update_agent(&agent)?;
         if let Some(r) = self.inner.agents.lock().unwrap().get(&id) {
             agent.state = r.state;
         }
+        self.inner.store.update_agent(&agent)?;
         self.inner
             .sink
             .publish(Event::AgentUpdate(AgentUpdateEvent::Upsert {
@@ -358,7 +373,14 @@ impl Harness for ClaudeSupervisor {
         // No await between checking and registering: concurrent starts cannot spawn twice.
         let mut agents = self.inner.agents.lock().unwrap();
         if let Some(r) = agents.get(&agent.id).filter(|r| !r.finished) {
-            return Ok(r.session.clone());
+            let session = r.session.clone();
+            // The process outlived a failed turn: starting again clears the error.
+            let failed = r.state == AgentState::Error;
+            drop(agents);
+            if failed {
+                self.state(agent.id, AgentState::Idle, None, None);
+            }
+            return Ok(session);
         }
         let stored = self.inner.store.main_session(agent.id)?;
         let restored = self.inner.store.owner_queue(agent.id)?;
