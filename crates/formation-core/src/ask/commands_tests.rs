@@ -617,7 +617,76 @@ async fn teammate_agents_lists_who_answers() {
 }
 
 #[tokio::test]
-async fn only_the_owner_calls_and_unserved_methods_say_why() {
+async fn teammate_agents_drops_views_a_teammate_claims_for_someone_else() {
+    let mac = mac();
+    let third = member("minsu", MemberRole::Member);
+    mac.collab.put_member(&third).unwrap();
+    mac.peers.add_teammate(third.id, vec![]);
+    // The teammate's Mac credits an agent it made up to the third member.
+    let forged = shared_agent(third.id, "forged", false);
+    mac.peers
+        .set_agents(mac.teammate.id, vec![mac.api.clone(), forged])
+        .unwrap();
+
+    let one = mac
+        .commands
+        .teammate_agents(Some(mac.teammate.id))
+        .await
+        .unwrap();
+    assert_eq!(one, vec![mac.api.clone()]);
+    let all = mac.commands.teammate_agents(None).await.unwrap();
+    assert_eq!(all, vec![mac.api.clone()]);
+}
+
+/// The best-effort cancel makes the owner publish a `canceled` update while the
+/// delete runs. Whichever lands first, the copy stays deleted and `Removed` is
+/// the last event for it.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn an_owner_update_during_a_delete_does_not_bring_the_question_back() {
+    for _ in 0..50 {
+        let mac = mac();
+        let commands = Arc::new(AskCommands::new(
+            mac.collab.clone(),
+            mac.peers.clone(),
+            mac.harness.clone(),
+            mac.agents.clone(),
+            mac.events.clone(),
+        ));
+        let asked = commands.ask(mac.ask_api("Status?")).await.unwrap();
+        let mut canceled = mac.copy(asked.id).unwrap();
+        canceled.status = QuestionStatus::Canceled;
+        canceled.updated_at = Timestamp::from(std::time::SystemTime::now());
+
+        let update = {
+            let commands = commands.clone();
+            let from = mac.teammate.id;
+            tokio::task::spawn_blocking(move || commands.apply_update(from, canceled))
+        };
+        commands.delete(asked.id).await.unwrap();
+        update.await.unwrap().unwrap();
+
+        assert!(mac.copy(asked.id).is_none());
+        let last = mac
+            .question_events()
+            .into_iter()
+            .rfind(|event| match event {
+                QuestionUpdateEvent::Upsert { question } => question.id == asked.id,
+                QuestionUpdateEvent::Removed { question_id } => *question_id == asked.id,
+            });
+        assert!(
+            matches!(last, Some(QuestionUpdateEvent::Removed { .. })),
+            "{last:?}"
+        );
+    }
+}
+
+#[tokio::test]
+async fn only_the_owner_calls_and_the_in_person_commands_are_left_out() {
+    let methods = mac().commands.methods();
+    // Left for the owner-side handler, so it can register them beside this one.
+    assert!(!methods.contains(&"question_handoff"));
+    assert!(!methods.contains(&"question_answer"));
+
     let mac = mac();
     let mut teammate_call = call("ask", json!({}));
     teammate_call.caller = member_caller(mac.teammate.id);
@@ -626,26 +695,6 @@ async fn only_the_owner_calls_and_unserved_methods_say_why() {
         ErrorCode::Denied
     );
 
-    for (method, params) in [
-        (
-            "question_handoff",
-            json!({ "question_id": QuestionId::generate(), "agent_id": mac.api.agent_id }),
-        ),
-        (
-            "question_answer",
-            json!({ "question_id": QuestionId::generate(), "text": "Done" }),
-        ),
-    ] {
-        let err = mac.commands.handle(call(method, params)).await.unwrap_err();
-        assert_eq!(err.code, ErrorCode::Internal);
-        assert!(err.message.contains("not available yet"), "{err:?}");
-    }
-    let err = mac
-        .commands
-        .handle(call("question_answer", json!({})))
-        .await
-        .unwrap_err();
-    assert_eq!(err.code, ErrorCode::InvalidParams);
     let err = mac
         .commands
         .handle(call("request_create", json!({})))
@@ -694,6 +743,10 @@ impl CommandHandler for OtherHandlers {
             "team_invite",
             "team_join",
             "team_remove",
+            // The owner's in-person question commands, for the handler that
+            // will serve them beside AskCommands
+            "question_handoff",
+            "question_answer",
         ]
     }
 
@@ -731,7 +784,7 @@ fn the_router_takes_these_methods_beside_the_other_handlers() {
         mac.events.clone(),
     );
     let methods = mac.commands.methods();
-    assert_eq!(methods.len(), 10);
+    assert_eq!(methods.len(), 8);
     let router = Router::new(vec![
         Arc::new(mac.commands),
         Arc::new(requests),

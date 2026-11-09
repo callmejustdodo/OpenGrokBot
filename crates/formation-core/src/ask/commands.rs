@@ -18,12 +18,15 @@
 //!   owner's Mac and store the copy it returns.
 //!
 //! `question_handoff` and `question_answer` are the owner's commands for a
-//! question sent to them in person (SC-010). They change a question that lives on
-//! this Mac and must reach the asker through the peer server's
-//! [`PeerEventHub`](crate::peer::api::PeerEventHub), so they belong with the
-//! owner's [`AskEndpoints`](crate::peer::api::AskEndpoints) adapter, which runs
-//! the [`AskPipeline`] and publishes to the asker. Until that adapter serves them,
-//! this handler answers them with an `internal` error naming the gap.
+//! question sent to them in person (SC-010), and this handler does not claim
+//! them. They change a question that lives on this Mac and must reach the asker
+//! through the peer server's [`PeerEventHub`](crate::peer::api::PeerEventHub),
+//! so they need the [`AskPipeline`] and the hub together, which the owner's
+//! [`AskEndpoints`](crate::peer::api::AskEndpoints) adapter has. That adapter is
+//! a peer-server trait, so the two local-socket methods still need their own
+//! [`CommandHandler`] beside this one; leaving them out of
+//! [`AskCommands::methods`] lets it register them without a duplicate method,
+//! and until then the router answers them as unknown methods.
 
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::SystemTime;
@@ -33,8 +36,8 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 
 use formation_proto::ask::{
-    Ask, AskTarget, Question, QuestionAnswer, QuestionCancel, QuestionDelete, QuestionHandoff,
-    QuestionRefresh, QuestionRouteChoose, QuestionStatus, QuestionUpdateEvent,
+    Ask, AskTarget, Question, QuestionCancel, QuestionDelete, QuestionRefresh, QuestionRouteChoose,
+    QuestionStatus, QuestionUpdateEvent,
 };
 use formation_proto::common::{
     ApiError, ChainId, Command, ErrorCode, MemberId, QuestionId, RunId, Timestamp,
@@ -282,16 +285,19 @@ impl AskCommands {
                     .await?;
             }
         } else {
-            for question in doomed.iter().filter(|q| is_open(q.status)) {
-                // Best effort: the copy goes either way, and an update that
-                // arrives later finds no copy and is dropped.
-                let _ = self
-                    .peers
-                    .question_action(owner, question.id, PeerQuestionAction::Cancel)
-                    .await;
-            }
+            // Best effort and at once: the copy goes either way, and an update
+            // that arrives later finds no copy and is dropped. Sent together so an
+            // unreachable owner costs one timeout, not one per open question.
+            let cancels = doomed.iter().filter(|q| is_open(q.status)).map(|q| {
+                self.peers
+                    .question_action(owner, q.id, PeerQuestionAction::Cancel)
+            });
+            futures_util::future::join_all(cancels).await;
         }
 
+        // Held so an owner update (likely, since the cancel above triggers one)
+        // cannot read the copy before this delete and store it again after.
+        let _copies = self.lock_copies()?;
         for question in doomed {
             match self.collab.delete_question(question.id) {
                 Ok(()) => self.publish_removed(question.id),
@@ -338,6 +344,9 @@ impl AskCommands {
     }
 
     /// `teammate_agents`: one teammate's shared agents, or every teammate's.
+    /// A teammate's Mac speaks only for its own agents: a view it returns that
+    /// names another owner is dropped, so an agent is never credited to (and
+    /// asked of) the wrong teammate.
     ///
     /// - For one teammate, their Mac's answer, errors included (`peer_offline`
     ///   when it cannot be reached). Naming this Mac's own member returns this
@@ -356,7 +365,7 @@ impl AskCommands {
             )),
             Some(member) => {
                 self.require_teammate(member)?;
-                self.peers.agents(member).await
+                Ok(owned_by(member, self.peers.agents(member).await?))
             }
             None => {
                 let teammates: Vec<MemberId> = self
@@ -370,9 +379,10 @@ impl AskCommands {
                     teammates.iter().map(|id| self.peers.agents(*id)),
                 )
                 .await;
-                Ok(answers
+                Ok(teammates
                     .into_iter()
-                    .flat_map(|a| a.unwrap_or_default())
+                    .zip(answers)
+                    .flat_map(|(id, a)| owned_by(id, a.unwrap_or_default()))
                     .collect())
             }
         }
@@ -522,8 +532,6 @@ impl CommandHandler for AskCommands {
             QuestionCancel::METHOD,
             QuestionRefresh::METHOD,
             QuestionRouteChoose::METHOD,
-            QuestionHandoff::METHOD,
-            QuestionAnswer::METHOD,
             QuestionDelete::METHOD,
             ShareUpdate::METHOD,
             SharePreview::METHOD,
@@ -550,20 +558,6 @@ impl CommandHandler for AskCommands {
             respond(self.refresh(question_id).await)
         } else if method == QuestionRouteChoose::METHOD {
             respond(self.route_choose(params(&call)?).await)
-        } else if method == QuestionHandoff::METHOD || method == QuestionAnswer::METHOD {
-            // Decode anyway, so a malformed call still reads as `invalid_params`.
-            if method == QuestionHandoff::METHOD {
-                params::<QuestionHandoff>(&call)?;
-            } else {
-                params::<QuestionAnswer>(&call)?;
-            }
-            Err(error(
-                ErrorCode::Internal,
-                format!(
-                    "{method} is not available yet: questions sent to you in person are \
-                     served with the peer ask endpoints, which formationd has not connected"
-                ),
-            ))
         } else if method == QuestionDelete::METHOD {
             let QuestionDelete { question_id } = params(&call)?;
             respond(self.delete(question_id).await)
@@ -605,6 +599,11 @@ fn supersedes(remote: &Question, local: &Question) -> bool {
         local.status,
         QuestionStatus::Received | QuestionStatus::WaitingOffline
     ) || remote.updated_at >= local.updated_at
+}
+
+/// The views a teammate's Mac returned that are of its own agents.
+fn owned_by(member: MemberId, views: Vec<SharedAgentView>) -> Vec<SharedAgentView> {
+    views.into_iter().filter(|v| v.owner == member).collect()
 }
 
 /// Not answered, canceled, or failed: canceling it still changes something.
