@@ -120,8 +120,10 @@ Stored in SQLite on each member's Mac. Times are UTC in storage and shown in loc
 
 The Tauri app's Rust side is a thin client: it forwards each command to formationd as newline-delimited JSON-RPC 2.0 over the local socket and relays formationd's events to the React UI. On connect, the UI asks for a snapshot and then applies events, so it can close and reopen at any time without losing state.
 
-- **Commands** (request and response): `agents_list`, `agent_create`, `agent_start`, `agent_stop`, `agent_message_send`, `agent_message_steer`, `agent_message_withdraw`, `agent_files_read`, `agent_files_write`, `schedule_*`, `share_update`, `share_preview`, `ask`, `question_cancel`, `request_create`, `request_cancel`, `approval_decide`, `rules_*`, `team_*`, `history_*`, `settings_*`.
-- **Events** (core → UI): `agent.state`, `agent.stream` (partial text and steps), `agent.queue`, `approval.raised`, `question.update`, `request.update`, `peer.presence`, `notify`.
+The exact names and shapes live in `crates/formation-proto` (TASK-002): each command's params type implements `Command`, which binds its method name and result type, and the `Event` enum lists every event.
+
+- **Commands** (request and response): `snapshot`, `agents_list`, `agent_create`, `agent_update`, `agent_start`, `agent_stop`, `agents_detect`, `agent_connect`, `agent_files_read`, `agent_files_write`, `harness_check`, `conversation_page`, `agent_message_send`, `agent_message_steer`, `agent_message_withdraw`, `schedule_*`, `share_update`, `share_preview`, `teammate_agents`, `ask`, `question_*`, `request_create`, `request_get`, `request_cancel`, `approval_decide`, `rules_*`, `team_*`, `history_*`, `settings_update`, and `permission_decide` (used by `formation mcp --permission` and the `PreToolUse` hook).
+- **Events** (core → UI), sent as `event` notifications with a sequence number: `agent.state`, `agent.stream` (partial text and steps, with a per-agent stream sequence), `agent.queue`, `agent.update`, `schedule.update`, `harness.update`, `notify`, `approval.raised`, `approval.update`, `question.update`, `request.update`, `share.update`, `rule.update`, `team.update`, `peer.presence`, `settings.update`. Every part of the snapshot has an event that keeps it current.
 
 ### Peer protocol (over the tailnet)
 
@@ -130,12 +132,15 @@ The core listens on the Mac's Tailscale address only, port 7413 (assumed), versi
 | Endpoint | Purpose |
 | --- | --- |
 | `GET /v1/agents` | The caller's view of this member's shared agents (name, role, harness, state, last activity, accepts_requests). |
-| `POST /v1/ask` | Ask a person or agent; returns a question ID immediately. |
+| `POST /v1/ask` | Ask a person or agent; returns a question ID immediately. The asker's Mac picks the ID, so outbox retries are idempotent. |
+| `POST /v1/questions/{id}/action` | The asker cancels, refreshes, or routes a question ("Ask another agent", "Ask Minsu"). |
 | `POST /v1/requests` | Create a work request with an idempotency key. |
 | `GET /v1/requests/{id}` · `POST /v1/requests/{id}/cancel` | Status and cancel. |
-| `WS /v1/events` | Presence, question, and request updates for this caller. |
+| `GET /v1/team` | The roster; the creator's Mac is authoritative. |
+| `POST /v1/team/join` | Creator's Mac only: join with an invitation code and a GitHub login. |
+| `WS /v1/events` | Presence, question, request, and roster updates for this caller. |
 
-Every request is authenticated by Tailscale WhoIs on the connection and mapped to a member; unknown callers get `403`. Errors use `{ "error": { "code", "message" } }`.
+Every request is authenticated by Tailscale WhoIs on the connection and mapped to a member; unknown callers get `403`, except `POST /v1/team/join`, which checks the invitation code instead. Errors use `{ "error": { "code", "message" } }`.
 
 ### CLI (`formation`) and MCP server
 
