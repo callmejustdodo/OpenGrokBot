@@ -113,7 +113,7 @@ Not yet proven: file-edit approvals (`item/fileChange/requestApproval`), `accept
 
 ## Data model
 
-Stored in SQLite on each member's Mac. Times are UTC in storage and shown in local time. IDs are UUIDv7 strings. The member, invitation, team, sharing, question, request, queue, approval and rule tables are B's migrations 2000–2999 (`crates/formation-core/src/collab_store/`); nested values that are never queried are JSON text.
+Stored in SQLite on each member's Mac. Times are UTC in storage and shown in local time. IDs are UUIDv7 strings. The member, invitation, team, sharing, question, request, queue, approval, rule and outbox tables are B's migrations 2000–2999 (`crates/formation-core/src/collab_store/`); nested values that are never queried are JSON text.
 
 | Entity | Key fields | Rules |
 | --- | --- | --- |
@@ -131,6 +131,7 @@ Stored in SQLite on each member's Mac. Times are UTC in storage and shown in loc
 | `queue_item` | id, agent_id, source (JSON: owner, request, or schedule), text, queued_at | Each agent's queue in arrival order, kept so a restart re-queues it. |
 | `approval` | id, agent_id, request_id (nullable for the owner's own work), requester, requester_agent, purpose, call (JSON: tool and input), summary, proposed_rule (JSON), status, choice, created_at, decided_at, expires_at | Expires after 24 hours (FR-015). |
 | `rule` | id, requester, agent_id, scope (JSON: all, or program, arg_pattern, folder), expires_at, max_uses, uses, created_at, revoked_at | Never matches command chaining or another folder (FR-015). |
+| `outbox_entry` | key_kind (`question` or `request`), key_id (the asker-chosen `question_id` or `request_id`), member, entry (JSON: the peer call, queued_at, attempts, last_error) | The asker's calls waiting for an unreachable teammate, kept so a restart retries them in the order they were queued (FR-016). |
 | `activity` | id, kind, actor, agent_id, ref_id, at, summary | Local record (FR-020). |
 
 **Invariants:** a private agent never appears in any peer response; approval decisions are made only by the owner's core; a request with a repeated idempotency key returns the original; each agent's main session accepts one turn at a time, in arrival order.
