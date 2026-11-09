@@ -13,6 +13,7 @@ import { uiStore } from "../../store/ui";
 import Alert, { AlertCancel } from "../../ui/Alert";
 import Sheet from "../../ui/Sheet";
 import { agentName, approvalFolder, blockReturn, errorCode, memberName, timeLeft, timeLeftText, useNow } from "./model";
+import "./approval.css";
 
 type Expiry = "proposed" | "never";
 
@@ -79,10 +80,10 @@ export default function ApprovalSheet({ approvalId }: { approvalId: ApprovalId }
           setError(t("approval.error.conflict", "This approval was already decided."));
           break;
         case "invalid_params":
-          setError(t("approval.error.invalid", "Formation couldn't accept this choice. Allow once or deny instead."));
+          setError(t("approval.error.invalid", "OpenGrokBot couldn't accept this choice. Allow once or deny instead."));
           break;
         case "disconnected":
-          setError(t("approval.error.disconnected", "Formation isn't reachable. Try again in a moment."));
+          setError(t("approval.error.disconnected", "OpenGrokBot isn't reachable. Try again in a moment."));
           break;
         default:
           setError(t("approval.error.other", "Your choice wasn't saved. Try again."));

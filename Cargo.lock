@@ -1140,6 +1140,15 @@ dependencies = [
 [[package]]
 name = "formation-cli"
 version = "0.1.0"
+dependencies = [
+ "formation-core",
+ "formation-proto",
+ "rmcp",
+ "schemars 1.2.3",
+ "serde",
+ "serde_json",
+ "tokio",
+]
 
 [[package]]
 name = "formation-core"

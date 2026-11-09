@@ -1,0 +1,18 @@
+/* SC-005 Conversation with my agent: screen rules copied from documentations/mockups/index.html.
+   The shared layer (src/styles/) owns .conversation, .c-head, .msgs, .sep-t, .ag, .me, .working, .dots,
+   .composer, .cbtn, .c-note, .tagpill and .code. */
+/* Conversation items are wrapped in .block (and .q in question conversations); flatten them so bubbles
+   align left and right in the .msgs flex column, as in the mockup. */
+.msgs .block, .msgs .q { display: contents; }
+.ag .src { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--sep); color: var(--text2); font-size: 12.5px; }
+.steps { align-self: flex-start; width: 72%; }
+.steps-toggle { border: 0; background: none; font: inherit; cursor: pointer; color: var(--text2); font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px; border-radius: 6px; }
+.steps-toggle .chev { width: 6px; height: 6px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(-45deg); transition: transform .15s; margin-right: 2px; }
+.steps[data-open="true"] .steps-toggle .chev { transform: rotate(45deg); }
+.steps-toggle:hover { background: var(--hover); }
+.step { display: flex; align-items: center; gap: 8px; padding: 4px 6px 4px 10px; color: var(--text2); font-size: 13px; border-left: 2px solid color-mix(in srgb, var(--brand, var(--focus)) 30%, var(--sep)); margin-left: 8px; }
+.step .mono { color: var(--text); }
+.queued { margin: 0 24px 8px; display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 14px; border-radius: 16px; background: var(--card); border: 0; box-shadow: 0 2px 12px rgba(47,80,140,.07), 0 0 0 1px var(--glass-line); font-size: 13px; }
+.queued .qt { flex: 1; min-width: 0; }
+.queued .qt small { display: block; color: var(--text2); font-size: 12px; }
+.stopped-bar { margin: 0 20px 18px; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 14px; border-radius: 26px; background: var(--card); border: 0; box-shadow: 0 4px 16px rgba(47,80,140,.10); color: var(--text2); }

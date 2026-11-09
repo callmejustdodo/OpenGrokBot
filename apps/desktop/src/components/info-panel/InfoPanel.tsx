@@ -1,14 +1,16 @@
 // SC-020 information panel, beside the conversation: my agent (details, the
-// Instructions & skills card, and the schedules and sharing sections other tasks
-// own), a teammate's agent (nothing private), or a person (their shared agents).
+// compact Instructions & skills, Schedules and Sharing cards, and teammates'
+// questions), a teammate's agent (nothing private), or a person (their shared agents).
 // The collapse button hides it; the conversation header's panel button brings it back.
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import "./info-panel.css";
 import type { AgentId } from "../../ipc/generated/AgentId";
 import type { MemberId } from "../../ipc/generated/MemberId";
 import { useAppStore } from "../../store/store";
 import { uiStore, useUi } from "../../store/ui";
 import { harnessLabel as detectedHarnessLabel } from "../../views/connect/capabilities";
-import SchedulesPanelSection from "../../views/schedules/SchedulesPanelSection";
+import { dayAndTime, selectAgentSchedules, setSheetFocus } from "../../views/schedules/format";
 import SharingSection from "../../views/sharing/SharingSection";
 import AgentAvatar, { PersonAvatar } from "../sidebar/AgentAvatar";
 import { harnessLabel, stateLabel } from "../sidebar/labels";
@@ -27,6 +29,104 @@ function CollapseButton() {
       title={t("panel.collapse", "Hide information panel")}
       onClick={() => uiStore.getState().setPanelOpen(false)}
     />
+  );
+}
+
+/** A compact card: title, one-line summary, and a › chevron. */
+function LinkCard({
+  title,
+  summary,
+  onClick,
+  expanded,
+  controls,
+}: {
+  title: string;
+  summary: string;
+  onClick: () => void;
+  expanded?: boolean;
+  controls?: string;
+}) {
+  return (
+    <button
+      type="button"
+      className="p-card p-link"
+      aria-expanded={expanded}
+      aria-controls={controls}
+      data-expanded={expanded}
+      onClick={onClick}
+    >
+      <span className="pr">
+        <b>{title}</b>
+        <span className="chev" aria-hidden="true" />
+      </span>
+      <small>{summary}</small>
+    </button>
+  );
+}
+
+const NO_SCHEDULES: ReturnType<typeof selectAgentSchedules> = [];
+
+function SchedulesCard({ agentId }: { agentId: AgentId }) {
+  const { t, i18n } = useTranslation();
+  const schedules = useAppStore((s) => (s.mirror ? selectAgentSchedules(s.mirror, agentId) : NO_SCHEDULES));
+  const next = schedules
+    .filter((s) => !s.paused && s.next_run_at)
+    .map((s) => s.next_run_at as string)
+    .sort()[0];
+  const summary =
+    schedules.length === 0
+      ? t("schedules.panel.empty", "No schedules")
+      : [
+          t("panel.scheduleCount", {
+            count: schedules.length,
+            defaultValue_one: "{{count}} schedule",
+            defaultValue_other: "{{count}} schedules",
+          }),
+          next ? t("schedules.panel.next", "Next: {{when}}", { when: dayAndTime(next, i18n.language) }) : null,
+        ]
+          .filter(Boolean)
+          .join(" · ");
+  return (
+    <LinkCard
+      title={t("schedules.title", "Schedules")}
+      summary={summary}
+      onClick={() => {
+        setSheetFocus(agentId, null);
+        uiStore.getState().openSheet({ kind: "schedules", agentId });
+      }}
+    />
+  );
+}
+
+function SharingCard({ agentId }: { agentId: AgentId }) {
+  const { t } = useTranslation();
+  const share = useAppStore((s) => s.mirror?.shares[agentId] ?? null);
+  const [open, setOpen] = useState(false);
+  const controlsId = `sharing-${agentId}`;
+  const summary = share?.shared
+    ? [
+        t("panel.sharing.shared", "Shared with team"),
+        share.visibility === "answer"
+          ? t("sharing.answerOnly", "Answer only")
+          : t("sharing.answerExcerpts", "Answer and excerpts"),
+        share.accepts_requests ? t("panel.sharing.requests", "Accepts work requests") : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : t("panel.sharing.private", "Private");
+  return (
+    <>
+      <LinkCard
+        title={t("sharing.title", "Sharing")}
+        summary={summary}
+        expanded={open}
+        controls={controlsId}
+        onClick={() => setOpen((o) => !o)}
+      />
+      <div id={controlsId} hidden={!open}>
+        {open ? <SharingSection agentId={agentId} /> : null}
+      </div>
+    </>
   );
 }
 
@@ -74,24 +174,19 @@ function MyAgentPanel({ agentId }: { agentId: AgentId }) {
           <small>
             {t(
               "panel.detectedNote",
-              "Detected agent. Instructions, schedules, and sharing are for agents Formation created.",
+              "Detected agent. Instructions, schedules, and sharing are for agents OpenGrokBot created.",
             )}
           </small>
         </div>
       ) : (
         <>
-          <button
-            type="button"
-            className="p-card"
+          <LinkCard
+            title={t("panel.instructions", "Instructions & skills")}
+            summary="AGENTS.md"
             onClick={() => uiStore.getState().openSheet({ kind: "instructions", agentId })}
-          >
-            <span className="pr">
-              <b>{t("panel.instructions", "Instructions & skills")}</b>
-            </span>
-            <small>AGENTS.md</small>
-          </button>
-          <SchedulesPanelSection agentId={agentId} />
-          <SharingSection agentId={agentId} />
+          />
+          <SchedulesCard agentId={agentId} />
+          <SharingCard agentId={agentId} />
           {teammateQuestions.length > 0 ? (
             <>
               <div className="p-lbl">{t("panel.teammateQuestions", "Teammates' questions")}</div>
@@ -192,7 +287,7 @@ function PersonPanel({ memberId }: { memberId: MemberId }) {
       </div>
       <div className="p-card">
         <small>
-          {t("panel.personNote", "When you ask a person, Formation picks which shared agent answers.")}
+          {t("panel.personNote", "When you ask a person, OpenGrokBot picks which shared agent answers.")}
         </small>
       </div>
       <div className="p-lbl">{t("panel.sharedAgents", "Shared agents")}</div>

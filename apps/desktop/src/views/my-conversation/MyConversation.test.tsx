@@ -36,9 +36,16 @@ describe("SC-005 working", () => {
     expect(region).toHaveAttribute("data-state", "working");
     expect(screen.getByText("Clean up the login API endpoints and add a token expiry check.")).toHaveClass("me");
     expect(screen.getByText("Sure. I'll tidy the three endpoints, then add the expiry check.")).toHaveClass("ag");
-    const group = screen.getByText("4 steps · 3 files edited, 1 command run").closest("details");
-    expect(group).toHaveAttribute("open");
-    expect(within(group as HTMLElement).getByText("Editing auth/token.ts")).toBeInTheDocument();
+    const toggle = screen.getByRole("button", { name: "4 steps · 3 files edited, 1 command run" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    const list = document.getElementById(toggle.getAttribute("aria-controls") as string) as HTMLElement;
+    expect(list).not.toBeVisible();
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(list).toBeVisible();
+    expect(within(list).getByText("Editing auth/token.ts")).toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByRole("region", { name: "Work request from Minsu" })).toHaveTextContent("Runs after this turn");
     expect(screen.getByRole("status")).toHaveTextContent("Working · Editing auth/token.ts");
     expect(screen.getByRole("button", { name: "Stop ⌘." })).toBeInTheDocument();
@@ -88,7 +95,7 @@ describe("SC-005 idle", () => {
     expect(screen.getByText("The expiry check is in. I haven't run the tests yet.")).toBeInTheDocument();
     expect(screen.queryByRole("status")).toBeNull();
     expect(screen.queryByRole("button", { name: "Stop ⌘." })).toBeNull();
-    expect(screen.getByText("4 steps · 3 files edited, 1 command run").closest("details")).not.toHaveAttribute("open");
+    expect(screen.getByRole("button", { name: "4 steps · 3 files edited, 1 command run" })).toHaveAttribute("aria-expanded", "false");
   });
 
   it("marks scheduled messages", () => {

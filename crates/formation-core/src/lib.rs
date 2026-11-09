@@ -3,9 +3,11 @@
 
 pub mod agents;
 pub mod ask;
+pub mod collab_store;
 pub mod harness;
 pub mod notify;
 pub mod peer;
+pub mod permission;
 pub mod policy;
 pub mod ports;
 pub mod requests;

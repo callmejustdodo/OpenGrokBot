@@ -1,0 +1,20 @@
+/* SC-001 welcome. Copied from documentations/mockups/index.html (.wbody, .wstep, .check);
+   the mockup's floating-window placement of .welcome is left out. */
+.welcome { display: flex; flex-direction: column; }
+.welcome .wbody { flex: 1; overflow: auto; padding: 28px 32px 24px; max-width: 640px; width: 100%; margin: 0 auto; }
+.welcome .wbody > h2 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -.01em; text-align: center; }
+.welcome .wbody > p.muted { margin: 6px 0 18px; text-align: center; color: var(--text2); font-size: 14px; }
+/* v2: the steps are flat rows divided by hairlines, not cards. */
+.wstep { display: flex; gap: 14px; padding: 14px 2px 16px; border-bottom: 1px solid var(--sep); }
+.wstep > div b, .wstep .form-row b { font-size: 14px; font-weight: 700; }
+.wstep > div { flex: 1; }
+.wstep .n { width: 22px; height: 22px; border-radius: 50%; background: var(--sec); color: var(--text); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; flex: none; }
+.wstep .row-actions { margin: 8px 0; }
+.wstep .row-actions .input { flex: 1; }
+.welcome .checks { list-style: none; margin: 0 0 8px; padding: 0; }
+.check { display: flex; align-items: center; gap: 8px; margin: 6px 0; font-size: 14px; }
+.check::before { content: "\2713"; width: 14px; flex: none; color: var(--green); font-weight: 700; text-align: center; }
+.check[data-state="missing"]::before, .check[data-state="signed-out"]::before { content: "!"; color: var(--orange); }
+.ok { color: var(--green); } .bad { color: var(--orange); }
+.welcome .wstep > .form-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0; border-bottom: 0; }
+.welcome .form-row small { display: block; color: var(--text2); font-size: 12px; }

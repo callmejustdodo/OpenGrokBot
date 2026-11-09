@@ -8,6 +8,7 @@ import GeneralTab from "./GeneralTab";
 import HarnessesTab from "./HarnessesTab";
 import NotificationsTab from "./NotificationsTab";
 import TeamTab from "./TeamTab";
+import "./settings.css";
 
 export type SettingsTab = "general" | "harnesses" | "notifications" | "team";
 

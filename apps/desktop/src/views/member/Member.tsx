@@ -1,6 +1,7 @@
 // SC-014 member's agents: a teammate's online state and shared agents, reached
 // from Team. Asking an agent or the person opens SC-015, which adds it to the chat list.
 import { useTranslation } from "react-i18next";
+import "../team/team.css";
 import type { MemberId } from "../../ipc/generated/MemberId";
 import type { SharedAgentView } from "../../ipc/generated/SharedAgentView";
 import { useAppStore } from "../../store/store";

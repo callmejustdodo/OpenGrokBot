@@ -1,0 +1,9 @@
+/* SC-006 Instructions & skills: screen rules copied from documentations/mockups/index.html. */
+.instructions { display: grid; grid-template-columns: 1.5fr 1fr; gap: 14px; }
+.instructions > .banner, .instructions > .err { grid-column: 1 / -1; margin: 0 0 12px; }
+.instructions .textarea.mono { min-height: 260px; border-radius: 14px; }
+/* v2 frame SC-006: a wide sheet, the editor beside a white skills card with mono names. */
+.sheet:has(.instructions) { width: min(720px, calc(100vw - 40px)); }
+.instructions .field > span { font-size: 13px; font-weight: 700; }
+.instructions .list .row { padding: 14px 16px; }
+.instructions .list .mono { font-weight: 700; font-size: 13px; }

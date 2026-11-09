@@ -1,0 +1,17 @@
+/* SC-013 team, also used by SC-014 member and SC-017 history. Copied from
+   documentations/mockups/index.html (.page, .online, .empty). */
+.page { flex: 1; overflow: auto; padding: 24px 28px; }
+.page h1 { font-size: 22px; font-weight: 700; letter-spacing: -.01em; margin: 0; display: flex; align-items: center; gap: 10px; }
+.page .h1row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; min-height: 30px; }
+.page ul.list > li.row { padding: 12px 16px; min-height: 60px; }
+.page ul.list > li.row .t b { font-size: 14.5px; font-weight: 700; }
+.page .lead { color: var(--text2); font-size: 13px; }
+.page ul.list { list-style: none; margin: 0; padding: 0; }
+.list.invite { padding: 14px 16px; margin-bottom: 18px; background: var(--card); border: 1px solid var(--sep); border-radius: 20px; box-shadow: var(--soft); }
+.online { display: inline-flex; align-items: center; gap: 5px; color: var(--text2); font-size: 12.5px; font-weight: 400; }
+.online::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+.online.off::before { background: var(--text3); }
+.empty { text-align: center; padding: 90px 20px; color: var(--text2); }
+.empty > .ic { width: 34px; height: 34px; color: var(--primary); margin-bottom: 10px; }
+.empty b { display: block; color: var(--text); font-size: 17px; margin-bottom: 6px; font-weight: 600; }
+.empty .row-actions { justify-content: center; margin-top: 16px; }

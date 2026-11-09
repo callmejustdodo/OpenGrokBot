@@ -1,3 +1,4 @@
+import "./schedules.css";
 // SC-007 schedule sheet (mockup `schedules`): an agent's schedules, and a form
 // to add or edit one (task, repeat, time, paused) with its recent runs.
 import * as Switch from "@radix-ui/react-switch";
@@ -44,7 +45,7 @@ function close() {
 function errorText(t: TFunction, error: unknown): string {
   const e = error as Partial<CallError>;
   if (e.code === "disconnected" || e.code === "timeout") {
-    return t("schedules.error.disconnected", "Formation isn't reachable right now. Your changes are still here; try again.");
+    return t("schedules.error.disconnected", "OpenGrokBot isn't reachable right now. Your changes are still here; try again.");
   }
   switch (e.data?.code) {
     case "invalid_params":

@@ -1,9 +1,11 @@
-// SC-003 sidebar: top icons, the "+" menu, the Needs-you line, the chat list
+// SC-003 sidebar: top icons, the "+" menu, the New agent button, the search
+// field (filters the chat list by name and preview), the Needs-you line, the chat list
 // (most recent first), and the profile with Connect agents. States: default,
 // empty (no agents yet), detecting (an `agents_detect` call is running).
 // Settings (the gear) comes with TASK-035.
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import type { KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
+import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import type { ChatListItem } from "../../store/selectors";
 import { selectChatList, selectNeedsYouCount } from "../../store/selectors";
@@ -12,6 +14,7 @@ import { uiStore, useUi, type View } from "../../store/ui";
 import type { MirrorState } from "../../store/reducer";
 import AgentAvatar, { PersonAvatar } from "./AgentAvatar";
 import { itemLine, stateLabel } from "./labels";
+import "./Sidebar.css";
 import { inboxNewestFirst, latestAgentQuestion, latestPersonQuestion, memberName } from "./selectors";
 
 const ATTENTION_STATES = new Set(["waiting_for_approval", "stalled", "error", "stopped"]);
@@ -32,46 +35,61 @@ function timeText(at: string | null): string {
   return new Date(at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
-function ChatRow({ item, mirror, selected }: { item: ChatListItem; mirror: MirrorState; selected: boolean }) {
-  const { t } = useTranslation();
-  let avatar;
-  let name: string;
-  let line: string;
-  let attention = false;
-  let state: string | undefined;
-  let target: View;
+interface RowView {
+  avatar: ReactNode;
+  name: string;
+  line: string;
+  attention: boolean;
+  state: string | undefined;
+  target: View;
+}
 
+function describeRow(t: TFunction, item: ChatListItem, mirror: MirrorState): RowView {
   if (item.kind === "agent") {
     const agent = item.agent;
     const items = mirror.conversations[agent.id]?.items ?? [];
     const last = items[items.length - 1];
-    attention = ATTENTION_STATES.has(agent.state);
-    line = attention ? stateLabel(t, agent.state) : last ? itemLine(t, last) : "";
-    avatar = <AgentAvatar avatar={agent.avatar} state={agent.state} />;
-    name = agent.name;
-    state = agent.state;
-    target = { kind: "agent", agentId: agent.id };
-  } else if (item.kind === "teammate_agent") {
+    const attention = ATTENTION_STATES.has(agent.state);
+    return {
+      attention,
+      line: attention ? stateLabel(t, agent.state) : last ? itemLine(t, last) : "",
+      avatar: <AgentAvatar avatar={agent.avatar} state={agent.state} />,
+      name: agent.name,
+      state: agent.state,
+      target: { kind: "agent", agentId: agent.id },
+    };
+  }
+  if (item.kind === "teammate_agent") {
     const owner = memberName(mirror, item.owner);
     const question = latestAgentQuestion(mirror, item.owner, item.agent_id);
     const answer = question?.answer?.text ?? question?.text ?? "";
-    line = `${owner} · ${answer}`;
-    avatar = item.agent ? (
-      <AgentAvatar avatar={item.agent.avatar} ownerInitial={owner.slice(0, 1).toUpperCase()} />
-    ) : (
-      <PersonAvatar name={owner} />
-    );
-    name = item.agent?.name ?? t("sidebar.unsharedAgent", "Agent no longer shared");
-    state = item.agent?.state;
-    target = { kind: "teammate-agent", owner: item.owner, agentId: item.agent_id };
-  } else {
-    const question = latestPersonQuestion(mirror, item.member_id);
-    line = question?.answer?.text ?? question?.text ?? "";
-    name = item.member?.display_name ?? "";
-    avatar = <PersonAvatar name={name} />;
-    target = { kind: "person", memberId: item.member_id };
+    return {
+      attention: false,
+      line: `${owner} · ${answer}`,
+      avatar: item.agent ? (
+        <AgentAvatar avatar={item.agent.avatar} ownerInitial={owner.slice(0, 1).toUpperCase()} />
+      ) : (
+        <PersonAvatar name={owner} />
+      ),
+      name: item.agent?.name ?? t("sidebar.unsharedAgent", "Agent no longer shared"),
+      state: item.agent?.state,
+      target: { kind: "teammate-agent", owner: item.owner, agentId: item.agent_id },
+    };
   }
+  const question = latestPersonQuestion(mirror, item.member_id);
+  const name = item.member?.display_name ?? "";
+  return {
+    attention: false,
+    line: question?.answer?.text ?? question?.text ?? "",
+    name,
+    avatar: <PersonAvatar name={name} />,
+    state: undefined,
+    target: { kind: "person", memberId: item.member_id },
+  };
+}
 
+function ChatRow({ item, row, selected }: { item: ChatListItem; row: RowView; selected: boolean }) {
+  const { avatar, name, line, attention, state, target } = row;
   return (
     <li className="chat-item" data-kind={item.kind} data-state={state}>
       <button
@@ -115,7 +133,32 @@ export default function Sidebar() {
   const view = useUi((s) => s.view);
   const ui = uiStore.getState();
 
-  const chats = mirror ? selectChatList(mirror) : [];
+  const [query, setQuery] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    // ⌘K focuses the search field from anywhere in the window.
+    function onKey(event: globalThis.KeyboardEvent) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        searchRef.current?.focus();
+        searchRef.current?.select();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  const needle = query.trim().toLocaleLowerCase();
+  const rows = mirror
+    ? selectChatList(mirror)
+        .map((item) => ({ item, row: describeRow(t, item, mirror) }))
+        .filter(
+          ({ row }) =>
+            !needle ||
+            row.name.toLocaleLowerCase().includes(needle) ||
+            row.line.toLocaleLowerCase().includes(needle),
+        )
+    : [];
   const needsYou = mirror ? selectNeedsYouCount(mirror) : 0;
   const inbox = mirror ? inboxNewestFirst(mirror) : [];
   const empty = mirror !== null && Object.keys(mirror.agents).length === 0 && !detecting;
@@ -131,7 +174,7 @@ export default function Sidebar() {
 
   return (
     <aside className="side" aria-label={t("sidebar.label", "Sidebar")} data-state={empty ? "empty" : detecting ? "detecting" : "default"}>
-      <div className="side-top">
+      <div className="side-top" data-tauri-drag-region>
         {top.map((icon) => (
           <button
             key={icon.view.kind}
@@ -165,6 +208,31 @@ export default function Sidebar() {
         </DropdownMenu.Root>
       </div>
 
+      {/* The empty state carries its own New agent button. */}
+      {empty ? null : (
+        <button type="button" className="new-agent" onClick={() => ui.openSheet({ kind: "new-agent" })}>
+          {t("sidebar.newAgent", "New agent")}
+        </button>
+      )}
+
+      <label className="side-search">
+        <input
+          ref={searchRef}
+          type="search"
+          value={query}
+          placeholder={t("sidebar.search", "Search agents and chats")}
+          aria-label={t("sidebar.search", "Search agents and chats")}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") {
+              e.preventDefault();
+              setQuery("");
+            }
+          }}
+        />
+        <kbd aria-hidden="true">⌘K</kbd>
+      </label>
+
       {needsYou > 0 ? (
         <button type="button" className="needs" onClick={() => navigate({ kind: "inbox" })}>
           <b>{t("sidebar.needsYou", "{{count}} need you", { count: needsYou })}</b>
@@ -180,17 +248,25 @@ export default function Sidebar() {
       ) : null}
 
       <nav className="chats" aria-label={t("sidebar.conversations", "Conversations")} onKeyDown={moveFocus}>
-        {chats.length > 0 && mirror ? (
-          <ul className="chat-list">
-            {chats.map((item) => (
-              <ChatRow
-                key={item.kind === "person" ? item.member_id : `${item.kind}/${item.agent_id}`}
-                item={item}
-                mirror={mirror}
-                selected={isSelected(view, item)}
-              />
-            ))}
-          </ul>
+        {rows.length > 0 ? (
+          <>
+            <h2 className="side-group">{t("sidebar.myAgents", "My agents")}</h2>
+            <ul className="chat-list">
+              {rows.map(({ item, row }) => (
+                <ChatRow
+                  key={item.kind === "person" ? item.member_id : `${item.kind}/${item.agent_id}`}
+                  item={item}
+                  row={row}
+                  selected={isSelected(view, item)}
+                />
+              ))}
+            </ul>
+          </>
+        ) : null}
+        {needle && rows.length === 0 ? (
+          <p className="side-nomatch" role="status">
+            {t("sidebar.noMatches", "No matches")}
+          </p>
         ) : null}
         {detecting ? (
           <div className="chat detecting" role="status">
