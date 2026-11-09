@@ -278,6 +278,16 @@ pub struct AgentMessageWithdraw {
     pub message_id: MessageId,
 }
 
+/// Stops a teammate's request running in a fork of this agent (#35): the fork is
+/// interrupted and the request reports `interrupted`. `not_found` when that request
+/// is not running on the agent.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct AgentRequestStop {
+    pub agent_id: AgentId,
+    pub request_id: RequestId,
+}
+
 commands! {
     ConversationPage => "conversation_page" -> ConversationPageResult;
     AgentMessageSend => "agent_message_send" -> QueueItem;
@@ -285,6 +295,7 @@ commands! {
     AgentMessageEdit => "agent_message_edit" -> QueueItem;
     AgentTurnInterrupt => "agent_turn_interrupt" -> ();
     AgentMessageWithdraw => "agent_message_withdraw" -> ();
+    AgentRequestStop => "agent_request_stop" -> ();
 }
 
 #[cfg(test)]
@@ -376,6 +387,10 @@ mod tests {
             text: "Updated".into(),
         });
         roundtrip(&AgentTurnInterrupt { agent_id });
+        roundtrip(&AgentRequestStop {
+            agent_id,
+            request_id: RequestId::generate(),
+        });
         roundtrip(&AgentMessageSteer {
             agent_id,
             message_id,

@@ -10,8 +10,8 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::common::{
-    ActivityId, AgentId, ApprovalId, AttentionId, MemberId, QuestionId, RequestId, ScheduleId,
-    ScheduleRunId, SessionId, Timestamp, commands,
+    ActivityId, AgentId, ApprovalId, AttentionId, MemberId, QuestionId, RequestId, RunId,
+    ScheduleId, ScheduleRunId, SessionId, Timestamp, commands,
 };
 
 /// The harness an agent runs on (D-002: Claude Code first, then Codex).
@@ -87,6 +87,20 @@ pub struct DetectedSource {
     pub capabilities: DetectedCapabilities,
 }
 
+/// A teammate's work request running in its own fork of the agent's session (#35).
+/// Shown over the agent's state; the main session stays free for the owner.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct RunningRequest {
+    pub request_id: RequestId,
+    pub requester: MemberId,
+    pub prompt: String,
+    pub started_at: Timestamp,
+    pub run_id: RunId,
+    /// `None` until Claude names the fork's session.
+    pub fork_session_id: Option<SessionId>,
+}
+
 /// An agent on this Mac. Its folder holds `AGENTS.md`, `CLAUDE.md`, `.claude/skills/`,
 /// and `formation.toml` (FR-001).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -111,6 +125,9 @@ pub struct Agent {
     pub last_activity_at: Option<Timestamp>,
     /// Set only for connected detected agents.
     pub detected: Option<DetectedSource>,
+    /// Teammates' requests running in forks now; empty after a restart.
+    #[serde(default)]
+    pub running_requests: Vec<RunningRequest>,
 }
 
 /// Install and sign-in state of a harness on this Mac (SC-001, SC-018).
@@ -541,6 +558,7 @@ pub(crate) mod samples {
             created_at: t0(),
             last_activity_at: Some(t0()),
             detected: None,
+            running_requests: vec![],
         }
     }
 
@@ -595,7 +613,7 @@ mod tests {
     use super::samples::*;
     use super::*;
     use crate::testutil::{roundtrip, t0};
-    use serde_json::json;
+    use serde_json::{Value, json};
 
     #[test]
     fn agent_round_trips_with_snake_case() {
@@ -619,7 +637,16 @@ mod tests {
                 receive_requests: unsupported,
             },
         });
+        agent.running_requests = vec![RunningRequest {
+            request_id: RequestId::generate(),
+            requester: MemberId::generate(),
+            prompt: "Review the API diff".into(),
+            started_at: t0(),
+            run_id: RunId::generate(),
+            fork_session_id: None,
+        }];
         let json = roundtrip(&agent);
+        assert_eq!(json["running_requests"][0]["fork_session_id"], Value::Null);
         assert_eq!(json["harness"], "detected");
         assert_eq!(json["state"], "waiting_for_approval");
         assert_eq!(json["detected"]["harness"], "open_claw");
@@ -691,6 +718,10 @@ mod tests {
             content: Some("# API".into()),
             base_revision: "r1".into(),
         });
+        let mut older = serde_json::to_value(&agent).unwrap();
+        older.as_object_mut().unwrap().remove("running_requests");
+        let older: Agent = serde_json::from_value(older).unwrap();
+        assert!(older.running_requests.is_empty());
         let state: AgentState = serde_json::from_str(r#""added_later""#).unwrap();
         assert_eq!(state, AgentState::Unknown);
         roundtrip(&HarnessUpdateEvent {

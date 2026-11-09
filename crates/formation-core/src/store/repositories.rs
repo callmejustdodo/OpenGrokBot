@@ -21,6 +21,7 @@ fn timestamp(at: Timestamp) -> String {
 const JSON_FIELDS: &[&str] = &[
     "repositories",
     "detected",
+    "running_requests",
     "rule",
     "last_run",
     "target",
