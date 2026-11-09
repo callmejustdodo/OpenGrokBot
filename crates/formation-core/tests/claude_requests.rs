@@ -280,7 +280,11 @@ async fn tool_free_fork_preserves_main_and_stores_result() {
     let launch = s
         .launches()
         .into_iter()
-        .find(|l| !l["run_id"].is_null())
+        .find(|l| {
+            l["args"]
+                .as_array()
+                .is_some_and(|args| args.contains(&Value::from("--fork-session")))
+        })
         .unwrap();
     let args = launch["args"].as_array().unwrap();
     assert!(
