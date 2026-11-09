@@ -36,7 +36,8 @@ async fn check_wiring(fakes: &str, fake_peers: bool) {
             hermes: vec![],
             openclaw: vec![],
         },
-        no_tailnet(),
+        Tailnet::tailscale(no_tailnet()),
+        &[],
     )
     .unwrap();
     assert!(directory.join("formation.db").is_file());
@@ -211,7 +212,8 @@ async fn a_roster_push_from_the_creator_updates_a_members_team() {
             hermes: vec![],
             openclaw: vec![],
         },
-        no_tailnet(),
+        Tailnet::tailscale(no_tailnet()),
+        &[],
     )
     .unwrap();
 

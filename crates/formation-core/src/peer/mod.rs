@@ -68,7 +68,7 @@ pub(crate) mod http;
 pub mod identity;
 pub mod outbox;
 pub mod presence;
-pub(crate) mod process;
+pub mod process;
 pub mod server;
 pub mod tailnet;
 pub mod tailscale;

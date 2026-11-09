@@ -1,6 +1,7 @@
 mod fake_commands;
 mod identity;
 mod login_path;
+mod owner_emails;
 
 use std::io;
 use std::net::SocketAddr;
@@ -23,7 +24,7 @@ use formation_core::peer::api::{
     AskEndpoints, CallerIdentity, JoinEndpoint, PeerApi, PeerApiConfig, PeerApiDeps, PeerEventHub,
     RequestEndpoints,
 };
-use formation_core::peer::client::{PeerClient, PeerClientConfig};
+use formation_core::peer::client::{PeerClient, PeerClientConfig, PeerDirectory};
 use formation_core::peer::outbox::{MemoryOutboxStore, OutboxStore};
 use formation_core::peer::{TailnetDirectory, Tailscale, TailscaleCallers, Via};
 use formation_core::permission::{Gate, PermissionCommands};
@@ -42,7 +43,7 @@ use formation_core::service::{
 };
 use formation_core::store::{MIGRATIONS, SqliteStore};
 use formation_core::team::{
-    TeamConfig, TeamJoinEndpoint, TeamService, forward_roster, system_clock,
+    LocalIdentity, TeamConfig, TeamJoinEndpoint, TeamService, forward_roster, system_clock,
 };
 use formation_core::testkit::FakeHarness;
 use formation_core::testkit::collab::{
@@ -80,8 +81,8 @@ struct Service {
     schedules: Arc<Schedules>,
     approvals: Arc<Approvals>,
     peers: Arc<dyn Peers>,
-    /// The real peer client and its directory; `None` with `FORMATION_FAKE=peers`.
-    peer_client: Option<(Arc<PeerClient>, Arc<TailnetDirectory>)>,
+    /// The real peer client; `None` with `FORMATION_FAKE=peers`.
+    peer_client: Option<Arc<PeerClient>>,
     /// What the peer server serves; `None` with `FORMATION_FAKE=peers`, whose
     /// roster is not a real team.
     peer_server: Option<PeerServer>,
@@ -90,6 +91,40 @@ struct Service {
     owner_requests: Arc<Requests>,
     request_client: Arc<RequestClient>,
     ask_commands: Arc<AskCommands>,
+    /// The fake harness with `FORMATION_FAKE=harness`, so tests can script agents.
+    #[cfg(test)]
+    fake_harness: Option<Arc<FakeHarness>>,
+}
+
+/// Builds the teammates' directory over the team store `wiring` opens.
+type DirectoryFactory = Box<dyn FnOnce(Arc<dyn TeamRepo + Send + Sync>) -> Arc<dyn PeerDirectory>>;
+
+/// How this Mac knows itself and reaches its teammates. formationd uses
+/// Tailscale ([`Tailnet::tailscale`]); the loopback test injects fixed answers.
+struct Tailnet {
+    /// This Mac's own node, host and GitHub login, for the team service.
+    local: Arc<dyn LocalIdentity>,
+    /// Who is calling the peer server.
+    callers: Arc<dyn CallerIdentity>,
+    directory: DirectoryFactory,
+    /// The port invitation links carry.
+    peer_port: u16,
+}
+
+impl Tailnet {
+    fn tailscale(tailscale: Arc<Tailscale>) -> Self {
+        Self {
+            local: Arc::new(TailnetIdentity),
+            callers: Arc::new(TailscaleCallers::new(tailscale.clone())),
+            directory: Box::new(move |team| {
+                let directory = Arc::new(TailnetDirectory::new(team, tailscale));
+                // Reads the peer list in the background, ahead of the first call.
+                directory.warm_up();
+                directory
+            }),
+            peer_port: PEER_PORT,
+        }
+    }
 }
 
 /// The parts of [`PeerApiDeps`], kept so each bind attempt can build them again.
@@ -121,7 +156,8 @@ fn wiring(
     directory: &Path,
     fake_list: &str,
     detect_paths: DetectPaths,
-    tailscale: Arc<Tailscale>,
+    tailnet: Tailnet,
+    owner_emails: &[String],
 ) -> Result<Service, Error> {
     let fakes: Vec<_> = fake_list
         .split(',')
@@ -185,6 +221,8 @@ fn wiring(
         )
         .with_request_watcher(owner_requests.clone()),
     );
+    #[cfg(test)]
+    let mut fake_harness = None;
     let (harness, commands, readiness): (
         Arc<dyn Harness>,
         Arc<dyn CommandHandler>,
@@ -203,6 +241,10 @@ fn wiring(
             status.clone(),
             [],
         ));
+        #[cfg(test)]
+        {
+            fake_harness = Some(harness.clone());
+        }
         let commands = Arc::new(FakeCommands {
             harness: harness.clone(),
             store: store.clone(),
@@ -287,21 +329,23 @@ fn wiring(
         );
         (peers, None)
     } else {
-        let directory = Arc::new(TailnetDirectory::new(team_repo.clone(), tailscale.clone()));
         let client = Arc::new(PeerClient::new(
-            directory.clone(),
+            (tailnet.directory)(team_repo.clone()),
             outbox,
             PeerClientConfig::default(),
         )?);
-        (client.clone(), Some((client, directory)))
+        (client.clone(), Some(client))
     };
     let team: Arc<TeamService<dyn CollabStore>> = Arc::new(TeamService::new(
         collab.clone(),
-        Arc::new(TailnetIdentity),
+        tailnet.local,
         peers.clone(),
         bus.clone(),
         system_clock(),
-        TeamConfig::default(),
+        TeamConfig {
+            peer_port: tailnet.peer_port,
+            ..TeamConfig::default()
+        },
     ));
     let request_client = Arc::new(RequestClient::new(
         collab.clone(),
@@ -327,7 +371,7 @@ fn wiring(
         policy.clone(),
         hub.clone(),
         pipeline(),
-        Vec::<String>::new(),
+        owner_emails,
     ));
     // Before the peer server accepts calls: fails answers a restart interrupted.
     let recovered = owner_asks.recover()?;
@@ -356,7 +400,7 @@ fn wiring(
         .with_share_hook(share_hook),
     );
     let peer_server = peer_client.as_ref().map(|_| PeerServer {
-        identity: Arc::new(TailscaleCallers::new(tailscale.clone())),
+        identity: tailnet.callers,
         policy: policy.clone(),
         team: team_repo.clone(),
         join: Arc::new(TeamJoinEndpoint::new(team.clone())),
@@ -407,6 +451,8 @@ fn wiring(
         owner_requests,
         request_client,
         ask_commands,
+        #[cfg(test)]
+        fake_harness,
     })
 }
 
@@ -446,8 +492,7 @@ fn start_peers(service: &Service) -> Result<Vec<JoinHandle<()>>, Error> {
         ),
     ];
     match &service.peer_client {
-        Some((client, directory)) => {
-            directory.warm_up();
+        Some(client) => {
             client.start()?;
             let client = client.clone();
             tasks.push(forward_roster(
@@ -617,11 +662,16 @@ async fn serve(path_source: login_path::Source) -> Result<(), Error> {
             .await
             .map_err(io::Error::other)?,
     );
+    // `git` and `gh` may block for a few seconds each.
+    let owner_emails = tokio::task::spawn_blocking(owner_emails::collect)
+        .await
+        .map_err(io::Error::other)?;
     let mut service = wiring(
         &directory,
         &fake_list,
         DetectPaths::default(),
-        tailscale.clone(),
+        Tailnet::tailscale(tailscale.clone()),
+        &owner_emails,
     )?;
     let peer_tasks = start_peers(&service)?;
     let peer_api_task = service
@@ -697,7 +747,7 @@ async fn serve(path_source: login_path::Source) -> Result<(), Error> {
     for task in peer_tasks {
         task.abort();
     }
-    if let Some((client, _)) = &service.peer_client {
+    if let Some(client) = &service.peer_client {
         client.shutdown();
     }
     for agent in service.store.agents()? {
@@ -719,5 +769,7 @@ async fn serve(path_source: login_path::Source) -> Result<(), Error> {
     Ok(())
 }
 
+#[cfg(test)]
+mod loopback_tests;
 #[cfg(test)]
 mod tests;
