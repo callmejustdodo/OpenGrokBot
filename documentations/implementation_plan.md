@@ -51,6 +51,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 | --- | --- | --- |
 | `node scripts/check-documentation.mjs` | Markdown links and anchors | Exists |
 | `cargo test --workspace` | Rust unit and integration tests | Proposed (TASK-001) |
+| `cargo fmt --all -- --check` | Rust formatting | Exists |
 | `cargo clippy --workspace -- -D warnings` | Rust lint | Proposed (TASK-001) |
 | `pnpm -C apps/desktop test` | Vitest | Proposed (TASK-001) |
 | `pnpm -C apps/desktop lint` and `pnpm -C apps/desktop typecheck` | ESLint and TypeScript | Proposed (TASK-001) |

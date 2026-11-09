@@ -67,7 +67,10 @@ mod tests {
     use super::*;
 
     fn args(list: &[&str]) -> impl Iterator<Item = String> {
-        list.iter().map(|s| s.to_string()).collect::<Vec<_>>().into_iter()
+        list.iter()
+            .map(|s| s.to_string())
+            .collect::<Vec<_>>()
+            .into_iter()
     }
 
     #[test]
