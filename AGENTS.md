@@ -29,6 +29,7 @@ pnpm -C apps/desktop test               # Vitest
 pnpm -C apps/desktop ipc:generate       # regenerate src/ipc/generated after changing formation-proto; commit the result
 pnpm -C apps/desktop tauri dev          # run the app in development
 cargo run -p fake-formationd            # serve the M3 world for the app (see tools/fake-formationd/README.md)
+pnpm -C apps/desktop release [--publish] # signed release build, and with --publish the GitHub release (see the tech spec's "App updates")
 ```
 
 ## Working agreements

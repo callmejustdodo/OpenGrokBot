@@ -2,6 +2,7 @@ pub mod formationd;
 mod launch_agent;
 mod notifications;
 mod shell;
+mod updater;
 
 use serde_json::Value;
 use tauri::{AppHandle, Emitter, Manager, State};
@@ -106,7 +107,9 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(notifications::Shown::default())
+        .manage(updater::Checking::default())
         .invoke_handler(tauri::generate_handler![
             formationd_call,
             formationd_status,
@@ -140,7 +143,17 @@ pub fn run() {
             let conn = tauri::async_runtime::block_on(async move { Connection::start(path, sink) });
             app.manage(conn);
 
-            shell::create_app_menu(app.handle())?;
+            // An update restarts formationd too, unless the app runs against
+            // the fake, whose service it never registered.
+            let restart_service = !fake_daemon;
+            shell::create_app_menu(app.handle(), move |app| {
+                updater::check(app, updater::Trigger::Menu, restart_service)
+            })?;
+            // Development builds run from `target/`, not an installed bundle,
+            // so only release builds check at launch.
+            if !cfg!(debug_assertions) {
+                updater::check(app.handle(), updater::Trigger::Launch, restart_service);
+            }
             shell::create_tray(app.handle())?;
             app.manage(shell::TrayIcons::new());
             notifications::on_click(app.handle());
