@@ -39,7 +39,7 @@ describe("SC-005 working", () => {
     const group = screen.getByText("4 steps · 3 files edited, 1 command run").closest("details");
     expect(group).toHaveAttribute("open");
     expect(within(group as HTMLElement).getByText("Editing auth/token.ts")).toBeInTheDocument();
-    expect(screen.getByLabelText("RequestCard")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Work request from Minsu" })).toHaveTextContent("Runs after this turn");
     expect(screen.getByRole("status")).toHaveTextContent("Working · Editing auth/token.ts");
     expect(screen.getByRole("button", { name: "Stop ⌘." })).toBeInTheDocument();
     expect(screen.getByText("Teammates never see this conversation")).toBeInTheDocument();
@@ -149,7 +149,9 @@ describe("SC-005 permission and approval", () => {
   it("permission: renders the permission card for the approval item", () => {
     play(backendPermission);
     open(BACKEND);
-    expect(screen.getByLabelText("PermissionCard")).toBeInTheDocument();
+    const card = screen.getByRole("region", { name: "Claude Code asks for permission" });
+    expect(card).toHaveTextContent("rm -rf dist/ && npm run build");
+    expect(within(card).getByRole("button", { name: "Allow" })).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("Waiting for approval");
     expect(screen.getByRole("button", { name: "Stop ⌘." })).toBeInTheDocument();
   });
@@ -161,7 +163,13 @@ describe("SC-005 permission and approval", () => {
       "data-state",
       "waiting_for_approval",
     );
-    expect(screen.getByLabelText("RequestCard")).toBeInTheDocument();
+    const card = screen.getByRole("region", { name: "Work request from Minsu" });
+    expect(card).toHaveTextContent("1 approval waiting");
+    // The request card's Review covers the approval; its compact approval row is not repeated.
+    expect(screen.getAllByRole("button", { name: "Review" })).toHaveLength(1);
+    expect(screen.queryByRole("region", { name: "Approval" })).toBeNull();
+    fireEvent.click(within(card).getByRole("button", { name: "Review" }));
+    expect(uiStore.getState().sheet).toEqual({ kind: "approval", approvalId: "01930000-0000-7000-8000-000000000501" });
     expect(screen.getByRole("status")).toHaveTextContent("Waiting for approval");
   });
 });

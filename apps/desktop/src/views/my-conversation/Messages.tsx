@@ -7,6 +7,10 @@ import PermissionCard from "../../components/cards/PermissionCard";
 import RequestCard from "../../components/cards/RequestCard";
 import { stepLine } from "../../components/sidebar/labels";
 import type { ConversationItem } from "../../ipc/generated/ConversationItem";
+import type { MirrorState } from "../../store/reducer";
+import { useAppStore } from "../../store/store";
+
+const NO_APPROVALS: MirrorState["approvals"] = {};
 
 type StepItem = Extract<ConversationItem, { kind: "step" }>;
 type Block = { kind: "item"; item: ConversationItem } | { kind: "steps"; id: string; steps: StepItem[] };
@@ -97,10 +101,29 @@ function withSeparators(items: readonly ConversationItem[]): { block: Block; sep
   });
 }
 
+/**
+ * A teammate's approval belongs to a request whose card in this conversation
+ * already shows "N approvals waiting" with Review (SC-005 approval), so its own
+ * approval item would repeat that Review; only approvals without such a card show.
+ */
+function withoutCoveredApprovals(
+  items: readonly ConversationItem[],
+  approvals: MirrorState["approvals"],
+): readonly ConversationItem[] {
+  const requests = new Set(items.flatMap((i) => (i.kind === "request" ? [i.request_id] : [])));
+  if (requests.size === 0) return items;
+  return items.filter((i) => {
+    if (i.kind !== "approval") return true;
+    const requestId = approvals[i.approval_id]?.request_id;
+    return !(requestId && requests.has(requestId));
+  });
+}
+
 export default function Messages({ items }: { items: readonly ConversationItem[] }) {
+  const approvals = useAppStore((s) => s.mirror?.approvals ?? NO_APPROVALS);
   return (
     <>
-      {withSeparators(items).map(({ block, separator }) => (
+      {withSeparators(withoutCoveredApprovals(items, approvals)).map(({ block, separator }) => (
         <div key={block.kind === "item" ? block.item.id : block.id} className="block">
           {separator ? (
             <div className="sep-t">
