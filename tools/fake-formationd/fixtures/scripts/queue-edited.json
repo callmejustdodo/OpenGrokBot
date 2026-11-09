@@ -1,0 +1,10 @@
+{
+  "description": "After agent_message_edit: the queued message shows its new text",
+  "steps": [
+    {
+      "event": { "type": "agent.queue", "payload": { "agent_id": "{{params.agent_id}}", "items": [
+        { "id": "{{params.message_id}}", "agent_id": "{{params.agent_id}}", "source": { "kind": "owner" }, "text": "{{params.text}}", "queued_at": "{{now}}" }
+      ] } }
+    }
+  ]
+}
