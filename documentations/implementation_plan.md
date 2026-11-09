@@ -181,13 +181,13 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: B
 
 ### TASK-008: The Tauri shell shows the tray, the window, and fake data
-- Status: in progress
+- Status: complete
 - References: [windows](5_frontend_architecture.md#windows), SC-002, SC-003
 - Prerequisites: TASK-043
 - Change locations: `apps/desktop/src-tauri/`, `apps/desktop/src/main.tsx`, `menubar.tsx`
 - Work: tray icon (check for a duplicate icon on macOS 13 and the latest macOS), main window with traffic lights and sidebar vibrancy, menu bar panel under the tray icon, connection to `fake-formationd` over the local socket.
 - Acceptance criteria: one tray icon; the panel opens under it; the main window shows fixture data.
-- Verification: run on macOS 13 and the latest macOS.
+- Verification: run on macOS 13 and the latest macOS. Not done at completion, by the owner's decision: the macOS 13 run, and an on-screen check of the tray, menu bar panel, traffic lights and vibrancy; the latest macOS run checked the windows, the fake connection and the window content (off-screen render).
 - Owner: C
 
 ### TASK-009: The app registers formationd as a LaunchAgent that outlives it
