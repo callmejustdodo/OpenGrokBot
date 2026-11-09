@@ -181,7 +181,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: B
 
 ### TASK-008: The Tauri shell shows the tray, the window, and fake data
-- Status: pending
+- Status: in progress
 - References: [windows](5_frontend_architecture.md#windows), SC-002, SC-003
 - Prerequisites: TASK-043
 - Change locations: `apps/desktop/src-tauri/`, `apps/desktop/src/main.tsx`, `menubar.tsx`
@@ -243,7 +243,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: A
 
 ### TASK-014: The app's store mirrors formationd
-- Status: pending
+- Status: in progress
 - References: [data flow](5_frontend_architecture.md#data-flow)
 - Prerequisites: TASK-008
 - Change locations: `apps/desktop/src/ipc/`, `apps/desktop/src/store/`, `apps/desktop/src-tauri/` (socket client)
@@ -341,7 +341,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 ### Phase 4 · Work requests and approvals (IC-3, today's milestone)
 
 ### TASK-023: Work request lifecycle
-- Status: pending
+- Status: complete
 - References: FR-014, US-019, SC-016
 - Prerequisites: TASK-018
 - Change locations: `crates/formation-core/src/requests/`, peer endpoints `POST /v1/requests`, `GET /v1/requests/{id}`, `POST /v1/requests/{id}/cancel`
@@ -361,7 +361,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: A
 
 ### TASK-025: Approvals: allowed reads, allow once, deny, expiry
-- Status: pending
+- Status: complete
 - References: FR-015, US-011, D-028, SC-011
 - Prerequisites: TASK-019
 - Change locations: `crates/formation-core/src/policy/`

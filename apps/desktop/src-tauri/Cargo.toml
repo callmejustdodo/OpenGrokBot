@@ -16,12 +16,15 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["tray-icon", "macos-private-api"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 libc = "0.2"
+tokio = { version = "1", features = ["net", "io-util", "sync", "time", "rt", "macros"] }
 
 [dev-dependencies]
 # tests/typescript_commands.rs generates the TypeScript method map from the contract.
 formation-proto = { path = "../../../crates/formation-proto" }
 ts-rs = "12.0.1"
+# tests/formationd_client.rs drives the socket client against the fake.
+fake-formationd = { path = "../../../tools/fake-formationd" }

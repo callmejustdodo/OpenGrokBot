@@ -345,7 +345,19 @@ impl Harness for ClaudeSupervisor {
         rx.await.map_err(internal)?
     }
     async fn session_info(&self, id: AgentId) -> Result<Option<SessionInfo>> {
-        self.inner.store.main_session(id)
+        let Some(mut session) = self.inner.store.main_session(id)? else {
+            return Ok(None);
+        };
+        if let Some(path) = transcript::find_transcript(
+            &self.inner.config.config_dir,
+            &session.cwd,
+            &session.session_id.0,
+        )
+        .map_err(internal)?
+        {
+            session.transcript_path = path;
+        }
+        Ok(Some(session))
     }
     async fn run(&self, id: RunId) -> Option<RunInfo> {
         self.inner
