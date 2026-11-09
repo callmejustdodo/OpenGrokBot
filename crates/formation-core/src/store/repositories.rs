@@ -2,9 +2,10 @@ use formation_proto::{
     agent::{Activity, Agent, Attention, AttentionTarget, Schedule, ScheduleRun},
     common::{ActivityId, AgentId, ApiError, ErrorCode, MemberId, RunId, ScheduleId, Timestamp},
     harness::SessionInfo,
+    request::QueueItem,
     snapshot::Settings,
 };
-use rusqlite::{Connection, Params, params, types::Value as SqlValue};
+use rusqlite::{Connection, OptionalExtension, Params, params, types::Value as SqlValue};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::{Map, Value};
 
@@ -227,6 +228,31 @@ impl SessionRepo for SqliteStore {
         let mut fields = fields(session)?;
         fields.insert("run_id".into(), Value::String(run_id.to_string()));
         self.with_connection(|c| put(c, "fork_sessions", "run_id", fields, false))
+    }
+    fn owner_queue(&self, agent_id: AgentId) -> Result<Vec<QueueItem>> {
+        let items: Option<String> = self.with_connection(|c| {
+            c.query_row(
+                "SELECT items FROM owner_queues WHERE agent_id=?1",
+                [agent_id.to_string()],
+                |r| r.get(0),
+            )
+            .optional()
+            .map_err(db_error)
+        })?;
+        items.map_or(Ok(Vec::new()), |items| {
+            serde_json::from_str(&items).map_err(json_error)
+        })
+    }
+    fn put_owner_queue(&self, agent_id: AgentId, items: &[QueueItem]) -> Result<()> {
+        let items = serde_json::to_string(items).map_err(json_error)?;
+        self.with_connection(|c| {
+            c.execute(
+                "INSERT INTO owner_queues (agent_id, items) VALUES (?1, ?2) ON CONFLICT(agent_id) DO UPDATE SET items=excluded.items",
+                (agent_id.to_string(), items),
+            )
+            .map(drop)
+            .map_err(db_error)
+        })
     }
 }
 
