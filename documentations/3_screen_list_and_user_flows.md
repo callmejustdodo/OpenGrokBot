@@ -1,6 +1,6 @@
 # Formation — Screens and user flows
 
-Rev 3 · 2026-11-09 · Based on the confirmed [product requirements](1_product_requirements_documentation.md) (Rev 2) and [user stories](2_user_stories.md) (Rev 2). Decision IDs refer to the [planning progress](0_one_pager.md#planning-progress) record. Rev 2 replaces Rev 1's six-section sidebar with an agent chat list and a new visual tone, following mockup M1 feedback (D-034 to D-039). Rev 3 draws agent avatars as open-bot-avatar characters, following mockup M2 feedback (D-042).
+Rev 4 · 2026-11-09 · Based on the [product requirements](1_product_requirements_documentation.md) (Rev 3) and [user stories](2_user_stories.md) (Rev 3). Decision IDs refer to the [planning progress](0_one_pager.md#planning-progress) record. Rev 2 replaces Rev 1's six-section sidebar with an agent chat list and a new visual tone, following mockup M1 feedback (D-034 to D-039). Rev 3 draws agent avatars as open-bot-avatar characters, following mockup M2 feedback (D-042). Rev 4 adds the teammates on an agent to the chat list and the asking conversation (FR-023, D-055).
 
 ## App structure
 
@@ -35,7 +35,7 @@ Every member uses the same app as owner and as teammate.
 
 | Item | Avatar | Second line | Opens |
 | --- | --- | --- | --- |
-| My agent | Agent avatar with a state dot | Latest message or step | SC-005, conversation with my agent (FR-022) |
+| My agent | Agent avatar with a state dot | Latest message or step; at its right end, the avatars of teammates on the agent (FR-023) | SC-005, conversation with my agent (FR-022) |
 | Teammate's agent | Agent avatar with the owner's initial | "Minsu · " and the latest answer | SC-015, asking that agent |
 | Teammate (person-level) | Person avatar | Latest answer and the agent that gave it | SC-015, asking a person (Formation routes) |
 | Connected detected agent | Agent avatar with a state dot | Latest activity | SC-005, read-only when it does not accept input |
@@ -48,7 +48,7 @@ The list is ordered by most recent activity, mixing my agents and teammates' age
 | --- | --- | --- | --- | --- | --- |
 | SC-001 | Welcome and setup | First launch: check harnesses, create or join a team, allow notifications. | Any member | Create team; paste invitation; allow notifications | US-008, US-020 · FR-008 |
 | SC-002 | Menu bar panel | Glance at agent states and needs-attention items without opening the window. | Owner | Open item; open main window; pause alerts | US-001, US-007 · FR-002, FR-007 |
-| SC-003 | Sidebar: chat list | See every agent and conversation with its state; reach everything else. | Any member | Open a conversation; open top-icon screens; new agent or question; connect agents | US-001, US-006, US-013, US-015, US-024 · FR-002, FR-006, FR-010, FR-011, FR-022 |
+| SC-003 | Sidebar: chat list | See every agent and conversation with its state; reach everything else. | Any member | Open a conversation; open top-icon screens; new agent or question; connect agents; see who is on an agent | US-001, US-006, US-013, US-015, US-024, US-025 · FR-002, FR-006, FR-010, FR-011, FR-022, FR-023 |
 | SC-004 | New agent (sheet) | Create an agent for any role and pick its harness (D-039). | Owner | Enter name, role, harness, instructions, repositories; create | US-002 · FR-001 |
 | SC-005 | Conversation with my agent | Give my agent work by chat and follow its activity in the same conversation. | Owner | Send; steer now; edit or withdraw a queued message; stop; answer the harness's permission requests; review teammate requests | US-001, US-003, US-024 · FR-002, FR-003, FR-022 |
 | SC-006 | Instructions & skills (sheet) | Edit the agent's instructions and skills, opened from the information panel. | Owner | Edit and save instructions; add, edit, remove skills | US-004 · FR-004 |
@@ -60,7 +60,7 @@ The list is ordered by most recent activity, mixing my agents and teammates' age
 | SC-012 | Rules (center) | Saved approval rules. | Owner | Edit limits; revoke | US-012 · FR-015 |
 | SC-013 | Team (center) | Members, online state, invitations. | Any member | Invite; remove (team creator); open member | US-008, US-020 · FR-008 |
 | SC-014 | Member's agents (center) | A teammate's shared agents, reached from Team; starting a conversation adds it to the chat list. | Teammate | Ask this member; ask an agent; request work | US-013, US-015, US-019 · FR-010, FR-011, FR-014 |
-| SC-015 | Asking conversation | Ask a teammate's agent or a teammate: answers, routing choice, follow-ups, refresh. | Teammate | Ask; choose agent when unsure; follow up; refresh; ask again; request work; cancel waiting question | US-013 to US-018 · FR-010 to FR-013, FR-016 |
+| SC-015 | Asking conversation | Ask a teammate's agent or a teammate: answers, routing choice, follow-ups, refresh. | Teammate | Ask; choose agent when unsure; follow up; refresh; ask again; request work; cancel waiting question | US-013 to US-018, US-025 · FR-010 to FR-013, FR-016, FR-023 |
 | SC-016 | Work request (sheet and status) | Compose a request with a preview, then follow its status. | Teammate | Send; cancel before start | US-019 · FR-014 |
 | SC-017 | History (center) | Questions, answers, requests, approval decisions, results. | Owner, teammate | Filter; open; delete (own as asker, any about own agents as owner) | US-012, US-021 · FR-013, FR-020 |
 | SC-018 | Settings window | Harnesses, notifications, team, language. | Any member | Locate harnesses; notification options; leave team | US-002, US-007 · FR-001, FR-007 |
@@ -89,8 +89,9 @@ Interfaces without screens:
 - **Top icons:** Inbox (count badge), Team, History, Rules, and "+" with "New agent" and "New question."
 - **Needs you line:** "2 need you" with the most urgent item; click opens Inbox.
 - **List item:** avatar (state dot for my agents; owner's initial for teammates' agents), name, second line, time. Selected item has a soft gray background; items needing attention show their state in the second line.
+- **Who is on it (FR-023):** on my agents' rows, the avatars of teammates viewing or asking the agent sit at the right end of the second line: 18 pt person circles with a white ring, overlapping, up to three, then "+N". The second line ends with an ellipsis before them. Pointing at them opens a small popover, "Who's on this agent," listing each person with what they are doing and since when ("Minsu · asking · just now", "Jiwoo · viewing · 2 min"); asking is marked with a small accent dot. VoiceOver reads the row as, for example, "Backend, 2 teammates here."
 - **Bottom:** profile with online state; "Connect agents" (detected agents, SC-009); Settings.
-- **States:** default; needs you; empty (no agents or conversations: "Create your first agent" and "Connect agents already running"); detecting (rows appear as agents are found).
+- **States:** default; needs you; empty (no agents or conversations: "Create your first agent" and "Connect agents already running"); detecting (rows appear as agents are found); teammates on an agent (avatars, with the popover on pointing).
 
 ### SC-004 New agent (sheet)
 - **Inputs:** name (required, unique on this Mac); role (required, free text, any role); avatar, a character shape and color suggested from the role and changeable (D-042); harness, picked from a list showing each harness and whether it is ready (Claude Code or Codex in the first version; more can be added later, D-039); starting instructions (optional); repositories (optional, typical for coding).
@@ -147,6 +148,7 @@ Interfaces without screens:
 - **Top pill:** the agent ("Minsu · Auth") or the person ("Minsu"); for a person, a note that Formation picks the agent.
 - **Answer bubble:** the answer; a footer with the agent that answered and "As of 10:42"; "Possibly out of date" when the source is older than 1 hour; excerpts, collapsible, when visibility allows; actions "Refresh," "Ask another agent," "Ask Minsu," "Request work…"
 - **Routing unsure:** one card with the best-guess agent first, other candidates, and "Ask Minsu."
+- **Presence notice (FR-023):** under the top pill, a quiet line: "Dohyeon can see you're here."
 - **States:** new; received (within 5 seconds); answering; answered; unsure; possibly out of date; waiting because the owner is offline (cancel or ask again); sent to owner; no longer shared (composer disabled); error (retry).
 
 ### SC-016 Work request (sheet and status)
@@ -310,7 +312,8 @@ flowchart TD
 **Components and states:**
 
 - Top icon button: default, hover, with count badge.
-- Chat list item: default, hover, selected, needs attention.
+- Chat list item: default, hover, selected, needs attention, teammates on it.
+- Presence avatars (one to three, "+N") and the who's-on-this-agent popover.
 - Pill header with avatar and state.
 - Agent avatar: still, working (gentle motion), with state dot or owner initial; avatar picker (shape and color).
 - Agent bubble, my bubble, step row (collapsed or expanded), date separator.
@@ -346,6 +349,8 @@ No third-party UI template is proposed: native controls cover every screen, and 
 | M1 | mockups/index.html (replaced by M2) | changes requested | 1b6cbf8f193d | 2026-11-09 | Agent chat-list sidebar like Reason and Grok Bot; chat with own agents; icons at the top of the sidebar; right information panel; follow their overall tone (D-034 to D-038). |
 | M2 | mockups/index.html (replaced by M3) | changes requested | aae05d425df7 | 2026-11-09 | Use agent avatar libraries such as open-bot-avatar and OpenAvatar (D-042). |
 | M3 | [mockups/index.html](mockups/index.html) | approved | 3f2d91bf1917 | 2026-11-09 | Approved 2026-11-09: "승인" ("Approved"), together with document 3 Rev 3. Committed as 24516c7 on main. |
+
+M3 predates FR-023: the presence avatars, popover, and asking-conversation notice are designed in the team's Figma renewal and are not in mockups/index.html.
 
 Open the file in a browser. A review bar (English, not product UI) selects the screen, its state, the theme, and the UI language (Korean or English, D-033). Links open a screen and state directly.
 

@@ -1,6 +1,6 @@
 # Formation — Backend architecture
 
-Rev 1 · 2026-11-09 · Implements the [tech spec](4_techspec.md) (Rev 3) for the requirements in the [PRD](1_product_requirements_documentation.md) (Rev 2). The frontend side is in the [frontend architecture](5_frontend_architecture.md). Decision IDs refer to the [planning progress](0_one_pager.md#planning-progress) record.
+Rev 2 · 2026-11-09 · Implements the [tech spec](4_techspec.md) (Rev 4) for the requirements in the [PRD](1_product_requirements_documentation.md) (Rev 3). Rev 2 adds agent presence (FR-023, D-055). The frontend side is in the [frontend architecture](5_frontend_architecture.md). Decision IDs refer to the [planning progress](0_one_pager.md#planning-progress) record.
 
 ## Scope
 
@@ -27,7 +27,7 @@ Rev 1 · 2026-11-09 · Implements the [tech spec](4_techspec.md) (Rev 3) for the
 | `policy` | Membership and sharing checks, visibility, always-allowed reads, rule matching, approvals and expiry, chain depth and rate limits | FR-009, FR-015, FR-019, D-024 to D-028 |
 | `ask` | Routing (score shared agents, decide confident or unsure), answer runner (an isolated, tool-less fork; see the tech spec's [ask pipeline](4_techspec.md#ask-pipeline)), excerpts, `as_of` and staleness, secret masking | FR-010 to FR-013, NFR-003, NFR-005 |
 | `requests` | Per-agent ordered queue for work requests and owner messages, idempotency, status machine | FR-014, FR-017 |
-| `peer` | HTTP and WebSocket server on the Tailscale address; client with an outbox and retries; Tailscale WhoIs identity; presence | FR-016, NFR-006 |
+| `peer` | HTTP and WebSocket server on the Tailscale address; client with an outbox and retries; Tailscale WhoIs identity; member presence and agent viewers (`POST /v1/viewing`, in-memory with expiry) | FR-016, FR-023, NFR-006 |
 | `team` | Members, invitations, GitHub identity binding, roster changes | FR-008, D-046 |
 | `store` | SQLite schema, migrations, transactions | D-029, FR-020 |
 | `notify` | Needs-attention items, mute settings, opening the app hidden to show notifications | FR-007 |
@@ -48,6 +48,7 @@ All enforcement happens in formationd on the owner's Mac. The UI, CLI, MCP clien
 | One turn at a time per agent | `requests` queue feeding `harness::claude` | Single consumer per agent |
 | Removed members lose access at once | `team` and `peer` | Roster check on every request; open WebSocket connections of removed members are closed |
 | Chains cannot run away | `policy::limits` | Depth over 3 or over 30 requests per minute per caller returns `rate_limited` |
+| Presence goes only to the agent's owner | `peer` with `policy` | Accept `POST /v1/viewing` only for shared agents; emit `agent.viewers` only on the local socket; never include presence in peer responses or the question text in presence (FR-023) |
 
 ## Request handling
 
@@ -129,6 +130,6 @@ Inspect and copy before writing from scratch. Licenses checked 2026-11-09; keep 
 | `harness::claude` | Replay recorded `stream-json` from a fake `claude`; queue, stop, resume, stalled detection |
 | `ask` | Routing thresholds; fork invocation flags; excerpt dropping by visibility; masking patterns; staleness |
 | `requests` | Idempotency and ordering under concurrent inserts |
-| `peer` | Two formationd instances over loopback with a stub WhoIs; outbox retry; removed-member disconnect |
+| `peer` | Two formationd instances over loopback with a stub WhoIs; outbox retry; removed-member disconnect; viewer presence appears, refreshes, and expires after 60 seconds; private agents refuse it |
 | Recovery | Kill formationd during a turn and during a queued request; check the rebuilt state |
 | Manual | Two Macs on the tailnet: ask a teammate's agent; send a work request and approve it |

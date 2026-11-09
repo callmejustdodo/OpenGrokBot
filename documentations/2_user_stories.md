@@ -1,6 +1,6 @@
 # Formation — User stories
 
-Rev 2 · 2026-11-09 · Based on the [product requirements](1_product_requirements_documentation.md) (Rev 2). Rev 2 adds US-024 for chatting with one's own agent. Roles and terms follow that document. All stories are **Must** for the first version (D-023).
+Rev 3 · 2026-11-09 · Based on the [product requirements](1_product_requirements_documentation.md) (Rev 3). Rev 2 adds US-024 for chatting with one's own agent. Rev 3 adds US-025 for seeing which teammates are on an agent. Roles and terms follow that document. All stories are **Must** for the first version (D-023).
 
 Examples use Dohyeon as an owner and Minsu as a teammate. Every team member plays both roles: owner of their own agents, teammate to the others.
 
@@ -94,6 +94,17 @@ As an owner, I want to choose which agents my teammates can ask and what they se
 - **Given** a new agent, **then** it is private and invisible to teammates.
 - **When** Dohyeon shares it, **then** they first see a preview of what a teammate would receive, then choose visibility (answer only, or answer plus excerpts, default the latter) and whether work requests are accepted (off by default).
 - **When** Dohyeon unshares it, **then** new questions and requests are refused at once, pending ones are canceled, and a running task continues unless Dohyeon stops it.
+
+### US-025 See who is on my agent
+**FR:** FR-023
+As an owner, I want to see which teammates are looking at or asking each of my agents, so that I know when someone is following that work and can talk to them directly.
+
+- **Given** Minsu has Dohyeon's Backend open in an asking conversation, **when** Dohyeon looks at the chat list, **then** Backend's row shows Minsu's avatar within 5 seconds.
+- **When** Minsu asks Backend a question, **then** pointing at the avatars shows "Minsu · asking · just now", and never the question text.
+- **When** Minsu closes the conversation or quits the app, **then** the avatar disappears within 60 seconds.
+- **Given** three or more teammates are on Backend, **then** the row shows three avatars and "+N" for the rest.
+- **Given** an agent is private, **then** no presence appears for it, because teammates cannot open it.
+- **Given** Minsu opens an asking conversation, **then** it tells Minsu that Dohyeon can see Minsu is there.
 
 ### US-010 Answer a question sent to me
 **FR:** FR-010
@@ -232,5 +243,6 @@ As a teammate's agent, I want the same operations as MCP tools, so that MCP clie
 | FR-020 | US-012 |
 | FR-021 | No user story: a design requirement on the agent folder model, verified in the tech spec. |
 | FR-022 | US-024 |
+| FR-023 | US-025 |
 
 Non-functional requirements NFR-001 to NFR-009 are verified through technical checks in the implementation plan rather than separate stories; NFR-001, NFR-002, and NFR-005 also appear in the acceptance criteria of US-013.

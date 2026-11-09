@@ -1,6 +1,6 @@
 # Formation — Frontend architecture
 
-Rev 1 · 2026-11-09 · Implements the approved [mockup M3](mockups/index.html) and [screens and flows](3_screen_list_and_user_flows.md) (Rev 3) on the stack in the [tech spec](4_techspec.md) (Rev 3). Decision IDs refer to the [planning progress](0_one_pager.md#planning-progress) record.
+Rev 2 · 2026-11-09 · Implements the approved [mockup M3](mockups/index.html) and [screens and flows](3_screen_list_and_user_flows.md) (Rev 4) on the stack in the [tech spec](4_techspec.md) (Rev 4). Rev 2 adds agent presence (FR-023, D-055), which M3 does not show. Decision IDs refer to the [planning progress](0_one_pager.md#planning-progress) record.
 
 ## Scope
 
@@ -41,7 +41,7 @@ apps/desktop/
 ```mermaid
 flowchart LR
   D["formationd"] -- "snapshot on connect" --> R["store reducer"]
-  D -- "events (agent.*, schedule.update, harness.update, notify, approval.*, question.update, request.update, share.update, rule.update, team.update, peer.presence, settings.update)" --> R
+  D -- "events (agent.*, schedule.update, harness.update, notify, approval.*, question.update, request.update, share.update, rule.update, team.update, peer.presence, agent.viewers, settings.update)" --> R
   R --> V["views (React)"]
   V -- "commands via ipc/" --> T["src-tauri client"] --> D
 ```
@@ -63,7 +63,7 @@ flowchart LR
 | --- | --- | --- | --- | --- |
 | SC-001 | `views/welcome` | harness check, team | `team_create`, `team_join`, `settings_notifications` | default, harness-missing, invite-expired |
 | SC-002 | `menubar.tsx` | agents, inbox counts | `focus_item` | default, all-clear, offline |
-| SC-003 | `components/sidebar` (TopIcons, NeedsYou, ChatList, ChatItem, ProfileBar) | agents, conversations, people, inbox count | `navigate` (UI only) | default, empty, detecting |
+| SC-003 | `components/sidebar` (TopIcons, NeedsYou, ChatList, ChatItem, PresenceStack, PresencePopover, ProfileBar) | agents (with `viewers`), conversations, people, inbox count | `navigate` (UI only) | default, empty, detecting, teammates on an agent |
 | SC-004 | `views/new-agent` (PlusMenu, NewAgentSheet, AvatarPicker, HarnessPicker) | harness status | `agent_create` | plus-menu, default, harness-not-ready, name-taken |
 | SC-005 | `views/my-conversation` (PillHeader, MessageList, StepGroup, RequestCard, PermissionCard, QueuedChip, Composer) | conversation, queue, approvals | `agent_message_send`, `agent_message_steer`, `agent_message_withdraw`, `agent_stop`, `agent_start`, `approval_decide` | working, idle, queued, permission, approval, stalled, error, stopped, detected, stop-confirm |
 | SC-006 | `views/instructions` (InstructionsSheet) | agent files | `agent_files_read`, `agent_files_write` | default, unsaved, changed-on-disk |
@@ -75,7 +75,7 @@ flowchart LR
 | SC-012 | `views/rules` | rules | `rules_update`, `rules_revoke` | default, empty |
 | SC-013 | `views/team` | members, invitation | `team_invite`, `team_remove` | default, only-me, invite |
 | SC-014 | `views/member` | member, shared agents | `ask`, `request_create` | online, offline, no-shared |
-| SC-015 | `views/ask-conversation` (PillHeader, AnswerBubble, ChoiceCard, WaitingCard, Composer) | question thread | `ask`, `question_cancel`, `question_refresh`, `question_route_choose` | answered, new, received, answering, unsure, stale, offline-waiting, sent-to-owner, unshared, error |
+| SC-015 | `views/ask-conversation` (PillHeader, PresenceNotice, AnswerBubble, ChoiceCard, WaitingCard, Composer) | question thread | `ask`, `question_cancel`, `question_refresh`, `question_route_choose`, `viewing_set` on open and close | answered, new, received, answering, unsure, stale, offline-waiting, sent-to-owner, unshared, error |
 | SC-016 | `views/work-request` (ComposeSheet, StatusSheet) | request | `request_create`, `request_cancel` | compose, status, not-accepted |
 | SC-017 | `views/history` | activity, questions | `history_delete` | default, delete-confirm, empty-filter |
 | SC-018 | `settings.tsx` | settings, harness status | `settings_*`, `team_leave` | general, harnesses, notifications, team |

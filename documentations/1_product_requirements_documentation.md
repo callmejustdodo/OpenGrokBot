@@ -1,6 +1,6 @@
 # Formation — Product requirements
 
-Rev 2 · 2026-11-09 · Based on the [one-pager](0_one_pager.md) (Rev 6). Rev 2 adds FR-022, chatting with one's own agent (D-035). Decision IDs (D-xxx) refer to the [planning progress](0_one_pager.md#planning-progress) record.
+Rev 3 · 2026-11-09 · Based on the [one-pager](0_one_pager.md) (Rev 7). Rev 2 adds FR-022, chatting with one's own agent (D-035). Rev 3 adds FR-023, seeing which teammates are on an agent (D-055). Decision IDs (D-xxx) refer to the [planning progress](0_one_pager.md#planning-progress) record.
 
 ## Goals and boundaries
 
@@ -105,6 +105,13 @@ Everything else stays visible in the overview without alerts. Alerts use macOS n
 
 Unsharing an agent blocks new questions and requests at once and cancels pending ones. A task already running continues unless the owner stops it. Content already delivered cannot be recalled.
 
+**FR-023 See who is on an agent.** The owner sees which teammates are on each of their shared agents right now (D-055).
+- A teammate is **viewing** while that agent's asking conversation is open in their app, and **asking** while one of their questions to it is being answered.
+- In the owner's chat list, the agent's row shows the avatars of those teammates (up to three, then "+N"). Pointing at them lists each person, what they are doing, and since when.
+- Presence appears or clears within 5 seconds (assumed) and ends 60 seconds (assumed) after a teammate's app stops reporting it, for example when it quits or goes offline.
+- Presence shows only who and what, never the question text. It is not kept in history.
+- *Proposed:* only the agent's owner sees it, teammates are not shown each other, and it cannot be turned off; the asking conversation tells the teammate that the owner can see they are there.
+
 ### Asking
 
 **FR-010 Ask a person.** A teammate picks a member and asks a question, for example "how far is the login work?". Formation on the owner's Mac picks the shared agent most able to answer, using the agents' roles, instructions, and recent session content (D-015, D-016).
@@ -202,7 +209,7 @@ Not in the first version: a per-agent usage and cost view; Slack; any customer-f
 
 ## Proposed defaults to confirm in this review
 
-Items 1 to 10 were accepted with Rev 1. Item 11 is new in Rev 2 and is not yet the user's decision; confirming this revision accepts it.
+Items 1 to 10 were accepted with Rev 1 and item 11 with Rev 2. Item 12 is new in Rev 3 and is not yet the user's decision; confirming this revision accepts it.
 
 1. A coding agent's folder lists the repositories it works in (FR-001).
 2. A missed scheduled run runs once when the Mac wakes (FR-005).
@@ -215,3 +222,4 @@ Items 1 to 10 were accepted with Rev 1. Item 11 is new in Rev 2 and is not yet t
 9. Questions and requests sent while the owner is offline wait and run when the owner returns (FR-016).
 10. Customer-facing channels are designed for but not shipped in the first version (FR-021, D-021).
 11. New in Rev 2: the runtime's permission requests for the owner's own work appear in the agent's conversation (FR-022).
+12. New in Rev 3: presence is shown to the agent's owner only, cannot be turned off, and is announced to the teammate in the asking conversation; it appears within 5 seconds and ends 60 seconds after the last report (FR-023).

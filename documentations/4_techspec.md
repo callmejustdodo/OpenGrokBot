@@ -1,6 +1,6 @@
 # Formation — Technical specification
 
-Rev 3 · 2026-11-09 · Based on the confirmed [product requirements](1_product_requirements_documentation.md) (Rev 2), [user stories](2_user_stories.md) (Rev 2), and [screens and flows](3_screen_list_and_user_flows.md) (Rev 3) with the approved [mockup M3](mockups/index.html). Decision IDs refer to the [planning progress](0_one_pager.md#planning-progress) record. Rev 2 sets the minimum macOS version to 13 (D-047). Rev 3 moves the core out of the app into a background service, because agents are harness sessions that outlive the app (D-048).
+Rev 4 · 2026-11-09 · Based on the [product requirements](1_product_requirements_documentation.md) (Rev 3), [user stories](2_user_stories.md) (Rev 3), and [screens and flows](3_screen_list_and_user_flows.md) (Rev 4) with the approved [mockup M3](mockups/index.html). Decision IDs refer to the [planning progress](0_one_pager.md#planning-progress) record. Rev 2 sets the minimum macOS version to 13 (D-047). Rev 3 moves the core out of the app into a background service, because agents are harness sessions that outlive the app (D-048). Rev 4 adds agent presence (FR-023, D-055): `POST /v1/viewing`, the `agent.viewers` event, and the snapshot's `viewers` field.
 
 ## Context and constraints
 
@@ -124,8 +124,9 @@ The Tauri app's Rust side is a thin client: it forwards each command to formatio
 
 The exact names and shapes live in `crates/formation-proto` (TASK-002): each command's params type implements `Command`, which binds its method name and result type, and the `Event` enum lists every event.
 
-- **Commands** (request and response): `snapshot`, `agents_list`, `agent_create`, `agent_update`, `agent_start`, `agent_stop`, `agents_detect`, `agent_connect`, `agent_files_read`, `agent_files_write`, `harness_check`, `conversation_page`, `agent_message_send`, `agent_message_steer`, `agent_message_edit`, `agent_turn_interrupt`, `agent_message_withdraw`, `schedule_*`, `share_update`, `share_preview`, `teammate_agents`, `ask`, `question_*`, `request_create`, `request_get`, `request_cancel`, `approval_decide`, `rules_*`, `team_*`, `history_*`, `settings_update`, and `permission_decide` (used by `formation mcp --permission` and the `PreToolUse` hook).
-- **Events** (core → UI), sent as `event` notifications with a sequence number: `agent.state`, `agent.stream` (partial text and steps, with a per-agent stream sequence), `agent.queue`, `agent.update`, `schedule.update`, `harness.update`, `notify`, `approval.raised`, `approval.update`, `question.update`, `request.update`, `share.update`, `rule.update`, `team.update`, `peer.presence`, `settings.update`. Every part of the snapshot has an event that keeps it current.
+- **Commands** (request and response): `snapshot`, `agents_list`, `agent_create`, `agent_update`, `agent_start`, `agent_stop`, `agents_detect`, `agent_connect`, `agent_files_read`, `agent_files_write`, `harness_check`, `conversation_page`, `agent_message_send`, `agent_message_steer`, `agent_message_edit`, `agent_turn_interrupt`, `agent_message_withdraw`, `schedule_*`, `share_update`, `share_preview`, `teammate_agents`, `ask`, `question_*`, `request_create`, `request_get`, `request_cancel`, `approval_decide`, `rules_*`, `team_*`, `history_*`, `settings_update`, `viewing_set` (FR-023), and `permission_decide` (used by `formation mcp --permission` and the `PreToolUse` hook).
+- **Events** (core → UI), sent as `event` notifications with a sequence number: `agent.state`, `agent.stream` (partial text and steps, with a per-agent stream sequence), `agent.queue`, `agent.update`, `schedule.update`, `harness.update`, `notify`, `approval.raised`, `approval.update`, `question.update`, `request.update`, `share.update`, `rule.update`, `team.update`, `peer.presence`, `agent.viewers`, `settings.update`. Every part of the snapshot has an event that keeps it current.
+- **Agent presence** (FR-023): the snapshot carries, for each of the owner's agents, `viewers`: a list of `{ member_id, activity: "viewing" | "asking", since }`. `agent.viewers` replaces one agent's list whenever it changes. The teammate's UI reports an open asking conversation with the `viewing_set` command (agent, open or closed), which the teammate's core forwards to the owner.
 
 ### Peer protocol (over the tailnet)
 
@@ -140,6 +141,7 @@ The core listens on the Mac's Tailscale address only, port 7413 (assumed), versi
 | `GET /v1/requests/{id}` · `POST /v1/requests/{id}/cancel` | Status and cancel. |
 | `GET /v1/team` | The roster; the creator's Mac is authoritative. |
 | `POST /v1/team/join` | Creator's Mac only: join with an invitation code and a GitHub login. |
+| `POST /v1/viewing` | The caller has an agent's asking conversation open (`{ agent_id, open }`). Sent on open and close and every 30 seconds (assumed) while open; the owner's core drops it after 60 seconds (assumed) without a refresh. Only for shared agents; a private or unknown agent returns `404`, as for any other request. |
 | `WS /v1/events` | Presence, question, request, and roster updates for this caller. |
 
 Every request is authenticated by Tailscale WhoIs on the connection and mapped to a member; unknown callers get `403`, except `POST /v1/team/join`, which checks the invitation code instead. Errors use `{ "error": { "code", "message" } }`.
@@ -157,6 +159,7 @@ Every request is authenticated by Tailscale WhoIs on the connection and mapped t
 - Questions are answered in parallel with the main session because forks are separate processes.
 - When the owner's Mac is unreachable, the asker's core keeps the question or request in an outbox and retries when the peer reappears; the owner's core re-checks membership and sharing before acting (FR-016).
 - Stalled detection: a working agent with no stdout event for 10 minutes raises an alert (FR-007).
+- Agent presence is kept in memory on the owner's Mac only and is never stored or sent to other teammates. "Asking" comes from the owner's own question records (a question in `received` or `answering`), so it needs no report from the teammate. A peer going offline or being removed clears its presence at once.
 
 ## Security
 
