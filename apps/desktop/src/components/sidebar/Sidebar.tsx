@@ -131,7 +131,7 @@ export default function Sidebar() {
 
   return (
     <aside className="side" aria-label={t("sidebar.label", "Sidebar")} data-state={empty ? "empty" : detecting ? "detecting" : "default"}>
-      <div className="side-top">
+      <div className="side-top" data-tauri-drag-region>
         {top.map((icon) => (
           <button
             key={icon.view.kind}
