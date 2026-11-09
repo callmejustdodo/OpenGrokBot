@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- Menu bar (template) icon: the app icon's front chat bubble, eyes cut out.
+       Opaque black on clear; macOS tints it to the menu bar's text color. -->
+  <path fill-rule="evenodd" fill="#000000" d="M230 180h480c113 0 204 91 204 204v216c0 113-91 204-204 204H380L210 932c-17 13-41-1-37-22l26-128C107 755 26 674 26 572V384c0-113 91-204 204-204zM352 392a52 52 0 0 0-52 52v152a52 52 0 0 0 104 0V444a52 52 0 0 0-52-52zm240 0a52 52 0 0 0-52 52v152a52 52 0 0 0 104 0V444a52 52 0 0 0-52-52z"/>
+</svg>
