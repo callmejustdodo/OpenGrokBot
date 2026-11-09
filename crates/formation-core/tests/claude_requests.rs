@@ -35,7 +35,7 @@ impl Setup {
             role: "developer".into(),
             harness: HarnessKind::ClaudeCode,
             folder_path: root.clone(),
-            repositories: vec![],
+            repositories: vec![root.join("repo")],
             avatar: Avatar {
                 shape: "circle".into(),
                 color: "blue".into(),
@@ -231,6 +231,20 @@ async fn requests_wait_for_turn_then_fork_in_order_and_report_to_requester() {
     assert_ne!(launches[1]["session"], launches[2]["session"]);
     let main_args = &launches[0]["args"];
     assert!(has(main_args, "--permission-prompt-tool"));
+    // The main session and each gated fork can work in the agent's repositories.
+    let add_dir = [
+        Value::from("--add-dir"),
+        Value::from(s.root.join("repo").display().to_string()),
+    ];
+    for launch in &launches {
+        assert!(
+            launch["args"]
+                .as_array()
+                .unwrap()
+                .windows(2)
+                .any(|w| w == add_dir)
+        );
+    }
     assert!(!has(main_args, "--setting-sources"));
     assert!(!has(main_args, "--permission-mode"));
     for launch in &launches[1..] {

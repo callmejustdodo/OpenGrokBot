@@ -17,6 +17,7 @@ impl ClaudeSupervisor {
                 mcp_config: Some(&config.mcp_config),
                 settings: Some(&settings),
                 permission_mode: request.then_some("default"),
+                add_dirs: &agent.repositories,
             },
         };
         let mut args = protocol::launch_args(

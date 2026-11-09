@@ -48,7 +48,7 @@ All requirements are **Must** for the first version.
 
 ### Managing agents (owner)
 
-**FR-001 Create an agent.** The owner creates an agent by giving a name, a role in free text, a runtime (Claude Code or Codex), and optional starting instructions. OpenGrokBot creates the agent's dedicated folder with its instructions, skills, memory, and schedules in a documented layout. *Proposed:* a coding agent's folder also lists the repositories it works in.
+**FR-001 Create an agent.** The owner creates an agent by giving a name, a role in free text, a runtime (Claude Code or Codex), and optional starting instructions. OpenGrokBot creates the agent's dedicated folder with its instructions, skills, memory, and schedules in a documented layout. The owner can instead choose an existing folder as the agent's folder: OpenGrokBot adds only the missing parts of the layout and keeps every file already there, including an existing `AGENTS.md` and `CLAUDE.md`. A folder that is already another agent's is refused. *Proposed:* a coding agent's folder also lists the repositories it works in.
 - A new agent appears in the overview as stopped and private (D-026).
 - The folder opens in Finder from the app, and its instructions file contains what the owner entered.
 - Any role can be created, for example marketing or customer support, not only coding.

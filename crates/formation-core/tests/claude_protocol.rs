@@ -263,6 +263,7 @@ fn a_resume_passes_every_option_set() {
             mcp_config: Some("/x/mcp.json"),
             settings: Some("/x/settings.json"),
             permission_mode: Some("default"),
+            add_dirs: &["/code/api".into(), "/code/web".into()],
         },
     );
     let mut expected = BASE_ARGS.to_vec();
@@ -277,6 +278,10 @@ fn a_resume_passes_every_option_set() {
         "/x/settings.json",
         "--permission-mode",
         "default",
+        "--add-dir",
+        "/code/api",
+        "--add-dir",
+        "/code/web",
     ]);
     assert_eq!(args, expected);
 }

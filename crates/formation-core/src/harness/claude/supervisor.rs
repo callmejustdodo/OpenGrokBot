@@ -464,6 +464,7 @@ impl Harness for ClaudeSupervisor {
                 mcp_config: Some(&config.mcp_config),
                 settings: Some(&settings),
                 permission_mode: None,
+                add_dirs: &agent.repositories,
             },
         );
         let process_run = RunId::generate();

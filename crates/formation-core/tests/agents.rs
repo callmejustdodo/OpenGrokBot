@@ -189,12 +189,12 @@ fn agents_slug_conflict_and_nonempty_folder_leave_no_partial_files() {
         ErrorCode::Conflict
     );
     assert_eq!(f.store.agents().unwrap().len(), 1);
-    let occupied = f.root.join("occupied");
+    // Without a chosen folder, an occupied default folder is still refused.
+    let occupied = f.root.join("other");
     fs::create_dir(&occupied).unwrap();
     fs::write(occupied.join("keep"), "existing").unwrap();
     let mut params = create_params();
     params["name"] = json!("Other");
-    params["folder"] = json!(occupied);
     assert_eq!(
         f.call("agent_create", params).unwrap_err().code,
         ErrorCode::Conflict
@@ -202,6 +202,167 @@ fn agents_slug_conflict_and_nonempty_folder_leave_no_partial_files() {
     assert_eq!(fs::read_dir(&occupied).unwrap().count(), 1);
     assert_eq!(fs::read_dir(&f.root).unwrap().count(), 2);
     assert_eq!(f.store.agent(a.id).unwrap().unwrap(), a);
+}
+
+/// Every file under `root`, with its bytes; folders as `None`.
+fn snapshot(root: &std::path::Path) -> Vec<(PathBuf, Option<Vec<u8>>)> {
+    let mut out = vec![];
+    let mut stack = vec![root.to_path_buf()];
+    while let Some(dir) = stack.pop() {
+        for entry in fs::read_dir(&dir).unwrap() {
+            let path = entry.unwrap().path();
+            let relative = path.strip_prefix(root).unwrap().to_path_buf();
+            if path.is_dir() {
+                out.push((relative, None));
+                stack.push(path);
+            } else {
+                out.push((relative, Some(fs::read(&path).unwrap())));
+            }
+        }
+    }
+    out.sort();
+    out
+}
+
+fn create_in(f: &Fixture, name: &str, folder: &std::path::Path) -> Result<Value> {
+    let mut params = create_params();
+    params["name"] = json!(name);
+    params["folder"] = json!(folder);
+    f.call("agent_create", params)
+}
+
+#[test]
+fn agents_adopt_a_chosen_nonempty_folder_and_keep_its_files() {
+    let f = Fixture::new();
+    let project = f.root.join("project");
+    fs::create_dir_all(project.join("src")).unwrap();
+    fs::create_dir_all(project.join(".claude")).unwrap();
+    fs::write(project.join("src/main.rs"), "fn main() {}\n").unwrap();
+    fs::write(project.join(".claude/settings.json"), "{\"a\":1}").unwrap();
+    fs::write(project.join("AGENTS.md"), "# Project rules\r\nkeep\n").unwrap();
+    fs::write(project.join("CLAUDE.md"), "My own Claude notes\n").unwrap();
+    let before = snapshot(&project);
+
+    let a: Agent = serde_json::from_value(create_in(&f, "Project", &project).unwrap()).unwrap();
+    assert_eq!(a.folder_path, project.canonicalize().unwrap());
+    assert_eq!(f.store.agent(a.id).unwrap(), Some(a.clone()));
+    // What was there is byte-identical; only formation.toml and .claude/skills/ are new.
+    let after = snapshot(&project);
+    for entry in &before {
+        assert!(after.contains(entry), "{:?} changed", entry.0);
+    }
+    let mut added: Vec<_> = after
+        .iter()
+        .filter(|e| !before.contains(e))
+        .map(|e| e.0.clone())
+        .collect();
+    added.sort();
+    assert_eq!(
+        added,
+        vec![
+            PathBuf::from(".claude/skills"),
+            PathBuf::from("formation.toml")
+        ]
+    );
+    let config: toml::Value =
+        toml::from_str(&fs::read_to_string(project.join("formation.toml")).unwrap()).unwrap();
+    assert_eq!(config["name"].as_str(), Some("Project"));
+    let files = f.read(&a);
+    let agents_md = files
+        .files
+        .iter()
+        .find(|file| file.path == std::path::Path::new("AGENTS.md"))
+        .unwrap();
+    assert_eq!(agents_md.content, "# Project rules\r\nkeep\n");
+}
+
+#[test]
+fn agents_adopt_adds_only_the_missing_instruction_files() {
+    let f = Fixture::new();
+    let project = f.root.join("notes");
+    fs::create_dir(&project).unwrap();
+    fs::write(project.join("README.md"), "notes").unwrap();
+    let a: Agent = serde_json::from_value(create_in(&f, "Notes", &project).unwrap()).unwrap();
+    assert_eq!(
+        fs::read_to_string(project.join("AGENTS.md")).unwrap(),
+        "# Help customers\n"
+    );
+    assert_eq!(
+        fs::read_to_string(project.join("CLAUDE.md")).unwrap(),
+        "@AGENTS.md\n"
+    );
+    assert!(project.join(".claude/skills").is_dir());
+    assert_eq!(
+        fs::read_to_string(project.join("README.md")).unwrap(),
+        "notes"
+    );
+    assert_eq!(a.folder_path, project.canonicalize().unwrap());
+}
+
+#[test]
+fn agents_adopt_refuses_another_agents_formation_toml_and_changes_nothing() {
+    let f = Fixture::new();
+    let project = f.root.join("taken");
+    fs::create_dir(&project).unwrap();
+    fs::write(project.join("formation.toml"), "name = \"Someone\"\n").unwrap();
+    fs::write(project.join("notes.txt"), "mine").unwrap();
+    let before = snapshot(&project);
+    assert_eq!(
+        create_in(&f, "Taken", &project).unwrap_err().code,
+        ErrorCode::Conflict
+    );
+    assert_eq!(snapshot(&project), before);
+    assert!(f.store.agents().unwrap().is_empty());
+}
+
+#[test]
+fn agents_adopt_refuses_a_folder_that_is_another_agents_in_the_store() {
+    let f = Fixture::new();
+    let a = f.create();
+    // Even without its formation.toml, the folder is still the agent's.
+    fs::remove_file(a.folder_path.join("formation.toml")).unwrap();
+    let before = snapshot(&a.folder_path);
+    assert_eq!(
+        create_in(&f, "Second", &a.folder_path).unwrap_err().code,
+        ErrorCode::Conflict
+    );
+    assert_eq!(snapshot(&a.folder_path), before);
+    assert_eq!(f.store.agents().unwrap(), vec![a]);
+}
+
+#[test]
+fn agents_store_repositories_as_absolute_paths() {
+    let f = Fixture::new();
+    let mut params = create_params();
+    params["repositories"] = json!(["/code/api", "../shared"]);
+    let a: Agent = serde_json::from_value(f.call("agent_create", params).unwrap()).unwrap();
+    assert_eq!(
+        a.repositories,
+        vec![PathBuf::from("/code/api"), a.folder_path.join("../shared")]
+    );
+    let updated: Agent = serde_json::from_value(
+        f.call(
+            "agent_update",
+            json!({"agent_id": a.id, "name": null, "role": null, "avatar": null,
+                "repositories": ["web", "/code/web"]}),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(
+        updated.repositories,
+        vec![a.folder_path.join("web"), PathBuf::from("/code/web")]
+    );
+    let config: toml::Value =
+        toml::from_str(&fs::read_to_string(a.folder_path.join("formation.toml")).unwrap()).unwrap();
+    assert_eq!(
+        config["repositories"],
+        toml::Value::Array(vec![
+            a.folder_path.join("web").display().to_string().into(),
+            "/code/web".into(),
+        ])
+    );
+    assert_eq!(f.store.agent(a.id).unwrap(), Some(updated));
 }
 
 #[test]
