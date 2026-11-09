@@ -460,6 +460,7 @@
     "folderExistingNote": "Files already in it, including AGENTS.md and CLAUDE.md, are kept.",
     "folderNew": "A new folder named after the agent",
     "folderTaken": "This folder is already another agent's folder.",
+    "folderTakenBy": "This folder is already {{name}}'s folder.",
     "folderUseNew": "Use a new folder",
     "harness": {
       "label": "Harness",

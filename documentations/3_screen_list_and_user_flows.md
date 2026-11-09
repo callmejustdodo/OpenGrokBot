@@ -94,7 +94,7 @@ Interfaces without screens:
 
 ### SC-004 New agent (sheet)
 - **Inputs:** name (required, unique on this Mac); role (required, free text, any role); avatar, a character shape and color suggested from the role and changeable (D-042); harness, picked from a list showing each harness and whether it is ready (Claude Code or Codex in the first version; more can be added later, D-039); starting instructions (optional); agent folder, a new folder by default or an existing folder chosen with "Use an existing folder" (the macOS folder picker), whose files, including `AGENTS.md` and `CLAUDE.md`, are kept (FR-001); repositories (optional, typical for coding), added with "Add folder" (the macOS folder picker, several at once) and each removable.
-- **States:** harness not ready (the agent can still be created; a note says it cannot start yet); name taken; folder taken (the chosen folder is already another agent's); created (opens its conversation, SC-005).
+- **States:** harness not ready (the agent can still be created; a note says it cannot start yet); name taken; folder taken (the chosen folder is already another agent's; the message names that agent); created (opens its conversation, SC-005).
 
 ### SC-005 Conversation with my agent
 - **Top pill:** agent avatar and name; state beside it.
