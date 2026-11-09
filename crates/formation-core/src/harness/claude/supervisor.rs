@@ -34,6 +34,11 @@ use crate::{
     },
 };
 
+/// Names the run of a Claude Code process for the permission tool and hook.
+pub const RUN_ID_ENV: &str = "FORMATION_RUN_ID";
+/// Names the agent of a Claude Code process for the permission tool and hook.
+pub const AGENT_ID_ENV: &str = "FORMATION_AGENT_ID";
+
 /// Gate transport configuration is supplied by formationd; this adapter only installs flags.
 #[derive(Clone, Debug)]
 pub struct ClaudeConfig {
@@ -78,6 +83,9 @@ struct Running {
     session: SessionInfo,
     seq: u64,
     run: Option<RunInfo>,
+    /// `FORMATION_RUN_ID` of the long-lived process: the permission tool and hook
+    /// name it, and [`Harness::run`] answers with the turn running at that moment.
+    process_run: RunId,
     finished: bool,
 }
 struct Pending {
@@ -291,11 +299,14 @@ impl Harness for ClaudeSupervisor {
                 permission_mode: None,
             },
         );
+        let process_run = RunId::generate();
         let mut child = Command::new(&config.binary)
             .args(args)
             .current_dir(&agent.folder_path)
             .envs(&config.env)
             .env("CLAUDE_CONFIG_DIR", &config.config_dir)
+            .env(RUN_ID_ENV, process_run.to_string())
+            .env(AGENT_ID_ENV, agent.id.to_string())
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
@@ -315,6 +326,7 @@ impl Harness for ClaudeSupervisor {
                 session: session.clone(),
                 seq,
                 run: None,
+                process_run,
                 finished: false,
             },
         );
@@ -418,12 +430,12 @@ impl Harness for ClaudeSupervisor {
         if let Some(run) = self.inner.forks.lock().unwrap().get(&id).cloned() {
             return Some(run);
         }
-        self.inner
-            .agents
-            .lock()
-            .unwrap()
-            .values()
-            .find_map(|r| r.run.as_ref().filter(|run| run.run_id == id).cloned())
+        self.inner.agents.lock().unwrap().values().find_map(|r| {
+            r.run
+                .as_ref()
+                .filter(|run| run.run_id == id || r.process_run == id)
+                .cloned()
+        })
     }
     async fn conversation(
         &self,
