@@ -2,7 +2,7 @@
    .history-filters lays out the filter and search, which the mockup leaves out.
    .page, .empty and the list reset come from team/team.css. */
 .row .when { color: var(--text3); font-size: 12px; flex: none; width: 44px; }
-.ticon { position: relative; width: 32px; height: 32px; border-radius: 10px; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text2); flex: none; }
-.ticon:hover { background: var(--hover); color: var(--text); }
+.ticon { position: relative; width: 32px; height: 32px; border-radius: 50%; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text2); flex: none; }
+.ticon:hover { background: var(--hover); color: var(--primary); }
 .history-filters { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
-.history-filters .input { flex: 1; max-width: 260px; }
+.history-filters .input { flex: 1; max-width: 260px; border-radius: 999px; }
