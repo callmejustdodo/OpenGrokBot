@@ -9,6 +9,7 @@ pub mod peer;
 pub mod policy;
 pub mod ports;
 pub mod requests;
+pub mod schedules;
 pub mod service;
 pub mod store;
 pub mod team;
