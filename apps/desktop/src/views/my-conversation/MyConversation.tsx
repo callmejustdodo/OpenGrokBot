@@ -1,3 +1,4 @@
+import "./my-conversation.css";
 // SC-005 conversation with my agent. States: working, idle, queued, permission,
 // approval (cards owned by TASK-026), stalled, error, stopped, detected
 // (read-only, banner owned by TASK-033), stop-confirm.

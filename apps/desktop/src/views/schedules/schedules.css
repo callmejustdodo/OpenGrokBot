@@ -1,0 +1,14 @@
+/* SC-007 Schedules: screen rules copied from documentations/mockups/index.html. */
+.seg { display: inline-flex; background: var(--sec); border-radius: 999px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: transparent; padding: 4px 12px; border-radius: 999px; cursor: pointer; font-size: 12.5px; }
+/* Radix ToggleGroup marks the chosen item with data-state="on" where the mockup uses aria-pressed. */
+.seg button[aria-pressed="true"], .seg button[data-state="on"] { background: var(--card); box-shadow: var(--soft); font-weight: 600; }
+/* Panel card rows: the mockup's p-card body (bold task, rule and time, last run coloured by result). */
+.sched { list-style: none; display: flex; flex-direction: column; }
+.sched-open { border: 0; background: transparent; padding: 0; text-align: left; cursor: pointer; }
+.sched-open b { color: var(--text); font-weight: 600; }
+.sched small { display: block; color: var(--text2); }
+.sched .run[data-run="failed"] { color: var(--red); }
+.sched .run[data-run="missed"] { color: var(--orange); }
+.sched .hint { margin-top: 8px; }
+.input[type="time"] { width: 140px; }
