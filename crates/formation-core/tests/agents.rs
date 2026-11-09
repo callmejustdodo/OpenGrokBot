@@ -12,8 +12,11 @@ use formation_core::{
     testkit::{MemoryStore, RecordingEventSink},
 };
 use formation_proto::{
-    agent::{Agent, AgentFiles, AgentState, HarnessKind, HarnessStatus},
-    common::ErrorCode,
+    agent::{
+        Agent, AgentFiles, AgentState, Capability, DetectedCapabilities, DetectedHarness,
+        DetectedSource, HarnessKind, HarnessStatus,
+    },
+    common::{AgentId, ErrorCode},
     events::Event,
     policy::Caller,
 };
@@ -322,12 +325,45 @@ fn agents_adopt_refuses_a_folder_that_is_another_agents_in_the_store() {
     // Even without its formation.toml, the folder is still the agent's.
     fs::remove_file(a.folder_path.join("formation.toml")).unwrap();
     let before = snapshot(&a.folder_path);
-    assert_eq!(
-        create_in(&f, "Second", &a.folder_path).unwrap_err().code,
-        ErrorCode::Conflict
-    );
+    let error = create_in(&f, "Second", &a.folder_path).unwrap_err();
+    assert_eq!(error.code, ErrorCode::Conflict);
+    assert_eq!(error.message, "the folder is already Marketing's folder");
     assert_eq!(snapshot(&a.folder_path), before);
     assert_eq!(f.store.agents().unwrap(), vec![a]);
+}
+
+#[test]
+fn agents_adopt_a_folder_a_detected_agent_works_in() {
+    let f = Fixture::new();
+    let project = f.root.join("comp");
+    fs::create_dir(&project).unwrap();
+    // A connected external session stores its working folder as its folder_path.
+    let mut session = f.create();
+    session.id = AgentId::generate();
+    session.slug = format!("detected-{}", session.id);
+    session.name = "Claude session".into();
+    session.harness = HarnessKind::Detected;
+    session.folder_path = project.clone();
+    let supported = Capability {
+        supported: true,
+        reason: None,
+    };
+    session.detected = Some(DetectedSource {
+        harness: DetectedHarness::ClaudeCode,
+        path: f.root.join("session.jsonl"),
+        capabilities: DetectedCapabilities {
+            state: supported.clone(),
+            read_conversation: supported.clone(),
+            answer_teammates: supported.clone(),
+            receive_requests: supported,
+        },
+    });
+    f.store.insert_agent(&session).unwrap();
+
+    let a: Agent = serde_json::from_value(create_in(&f, "Comp", &project).unwrap()).unwrap();
+    assert_eq!(a.folder_path, project.canonicalize().unwrap());
+    assert!(project.join("formation.toml").is_file());
+    assert_eq!(f.store.agent(a.id).unwrap(), Some(a));
 }
 
 #[test]

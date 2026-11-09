@@ -181,20 +181,32 @@ describe("SC-004 folders", () => {
     expect(screen.getByText("A new folder named after the agent")).toBeInTheDocument();
   });
 
-  it("says when the chosen folder is already another agent's", async () => {
-    call.mockRejectedValue({
-      code: "rpc",
-      message: "conflict",
-      rpc_code: -32000,
-      data: { code: "conflict", message: "the folder is already another agent's folder" },
-    });
+  async function createInExistingFolder(message: string) {
+    call.mockRejectedValue({ code: "rpc", message: "conflict", rpc_code: -32000, data: { code: "conflict", message } });
     render(<NewAgentSheet />);
     fill("API", "Backend API development");
     openDialog.mockResolvedValueOnce("/Users/dohyeon/Formation/Agents/backend");
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Use an existing folder" })));
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Create" })));
+  }
+
+  it("names the agent whose folder the chosen folder already is", async () => {
+    await createInExistingFolder("the folder is already Backend's folder");
+    expect(screen.getByRole("alert")).toHaveTextContent("This folder is already Backend's folder.");
+    expect(screen.getByRole("textbox", { name: "Name" })).toHaveAttribute("aria-invalid", "false");
+  });
+
+  it("says when the chosen folder holds another agent's formation.toml", async () => {
+    await createInExistingFolder("the folder already holds another agent's formation.toml");
     expect(screen.getByRole("alert")).toHaveTextContent("This folder is already another agent's folder.");
     expect(screen.getByRole("textbox", { name: "Name" })).toHaveAttribute("aria-invalid", "false");
+  });
+
+  it("marks the name, not the folder, when the name is taken with an existing folder", async () => {
+    await createInExistingFolder("agent name or slug is taken");
+    expect(screen.getByRole("alert")).toHaveTextContent("An agent with this name already exists.");
+    expect(screen.queryByText(/This folder is already/)).not.toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Name" })).toHaveAttribute("aria-invalid", "true");
   });
 
   it("shows an error when the picker fails", async () => {

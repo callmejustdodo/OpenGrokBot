@@ -12,7 +12,6 @@ Add one entry per copied file or file group: the path in this repository, the up
   - `apps/desktop/index.html`, `apps/desktop/vite.config.ts`, `apps/desktop/tsconfig.json`, `apps/desktop/tsconfig.node.json`, `apps/desktop/.gitignore`
   - `apps/desktop/src/main.tsx`, `apps/desktop/src/App.tsx`, `apps/desktop/src/vite-env.d.ts`
   - `apps/desktop/src-tauri/Cargo.toml`, `apps/desktop/src-tauri/build.rs`, `apps/desktop/src-tauri/src/main.rs`, `apps/desktop/src-tauri/src/lib.rs`, `apps/desktop/src-tauri/tauri.conf.json`, `apps/desktop/src-tauri/capabilities/default.json`, `apps/desktop/src-tauri/.gitignore`
-  - `apps/desktop/src-tauri/icons/*` (Tauri's placeholder icons, unchanged; to be replaced with OpenGrokBot's icon)
 - **Changes:** removed the sample `greet` command, the opener plugin, and the demo page and assets; renamed the app to OpenGrokBot; set the window size and the macOS 13 minimum; added Vitest settings to `vite.config.ts`.
 
 ## open-bot-avatar (avatar body shapes)

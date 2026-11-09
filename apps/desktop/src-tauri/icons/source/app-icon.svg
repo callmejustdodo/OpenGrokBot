@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- OpenGrokBot app icon: the v2 "Sky Glass" blue gradient on the macOS icon
+       grid (824 px rounded square), a white chat bubble with an agent's two
+       eyes, and a frosted bubble behind it for the teammate on the other side. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5b9bff"/>
+      <stop offset="1" stop-color="#2f6bf5"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".28"/>
+      <stop offset=".55" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="eye" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2f6bf5"/>
+      <stop offset="1" stop-color="#2a62e0"/>
+    </linearGradient>
+  </defs>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)"/>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#sheen)"/>
+  <!-- Teammate's bubble, behind: frosted white, tail to the upper right. -->
+  <path d="M470 236h232c66 0 120 54 120 120v104c0 49-30 91-72 109l14 64c3 12-11 21-21 13l-84-65H470c-66 0-120-54-120-120V356c0-66 54-120 120-120z" fill="#ffffff" fill-opacity=".38"/>
+  <!-- Agent's bubble, in front: white, tail to the lower left. -->
+  <path d="M332 370h300c79 0 144 65 144 144v128c0 79-65 144-144 144H418l-112 84c-12 9-29-1-26-16l17-86c-58-19-99-73-99-137V514c0-79 64-144 134-144z" fill="#ffffff"/>
+  <rect x="384" y="500" width="56" height="156" rx="28" fill="url(#eye)"/>
+  <rect x="534" y="500" width="56" height="156" rx="28" fill="url(#eye)"/>
+</svg>

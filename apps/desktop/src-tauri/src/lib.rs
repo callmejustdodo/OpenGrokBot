@@ -142,7 +142,7 @@ pub fn run() {
 
             shell::create_app_menu(app.handle())?;
             shell::create_tray(app.handle())?;
-            app.manage(shell::TrayIcons::new(app.handle()));
+            app.manage(shell::TrayIcons::new());
             notifications::on_click(app.handle());
             if !hidden {
                 shell::show_main_window(app.handle());
