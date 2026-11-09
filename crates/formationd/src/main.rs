@@ -65,6 +65,9 @@ fn wiring(directory: &Path, fake_list: &str, detect_paths: DetectPaths) -> Resul
         &[MIGRATIONS],
     )?);
     let bus = Arc::new(EventBus::new(256));
+    let requests = fakes
+        .contains(&"requests")
+        .then(|| Arc::new(FakeRequestQueue::new()) as Arc<dyn RequestQueue>);
     let (harness, commands, readiness): (
         Arc<dyn Harness>,
         Arc<dyn CommandHandler>,
@@ -95,7 +98,14 @@ fn wiring(directory: &Path, fake_list: &str, detect_paths: DetectPaths) -> Resul
         if let Some(binary) = std::env::var_os("FORMATION_CLAUDE_BIN") {
             config.binary = binary.into();
         }
-        let supervisor = Arc::new(ClaudeSupervisor::new(config, store.clone(), bus.clone()));
+        // Without the `requests` fake this stays `None` until the real queue has its
+        // SQLite collaboration repositories.
+        let supervisor = Arc::new(ClaudeSupervisor::with_request_queue(
+            config,
+            store.clone(),
+            bus.clone(),
+            requests.clone(),
+        ));
         (supervisor.clone(), supervisor, Arc::new(readiness))
     };
     let agents = Arc::new(Agents::new(
@@ -158,9 +168,7 @@ fn wiring(directory: &Path, fake_list: &str, detect_paths: DetectPaths) -> Resul
         _gate: fakes
             .contains(&"gate")
             .then(|| Arc::new(FakePermissionGate::new()) as Arc<dyn PermissionGate>),
-        _requests: fakes
-            .contains(&"requests")
-            .then(|| Arc::new(FakeRequestQueue::new()) as Arc<dyn RequestQueue>),
+        _requests: requests,
     })
 }
 
@@ -189,8 +197,9 @@ async fn main() -> Result<(), Error> {
     });
     let schedules = service.schedules.clone();
     let schedule_task = tokio::spawn(async move {
-        if let Err(error) = schedules.run().await {
-            eprintln!("scheduler stopped: {error}");
+        while let Err(error) = schedules.run().await {
+            eprintln!("scheduler restarting: {error}");
+            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
         }
     });
     let server = SocketServer::bind(
