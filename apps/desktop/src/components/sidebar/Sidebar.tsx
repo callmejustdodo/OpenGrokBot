@@ -7,6 +7,7 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
+import i18n from "../../i18n";
 import type { ChatListItem } from "../../store/selectors";
 import { selectChatList, selectNeedsYouCount } from "../../store/selectors";
 import { useAppStore } from "../../store/store";
@@ -32,7 +33,7 @@ function isSelected(view: View, item: ChatListItem): boolean {
 
 function timeText(at: string | null): string {
   if (!at) return "";
-  return new Date(at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return new Date(at).toLocaleTimeString(i18n.language, { hour: "numeric", minute: "2-digit" });
 }
 
 interface RowView {
