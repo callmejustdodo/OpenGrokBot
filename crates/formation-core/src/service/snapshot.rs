@@ -7,6 +7,7 @@ use formation_proto::snapshot::Snapshot;
 use formation_proto::team::Team;
 use tokio::sync::broadcast;
 
+use crate::harness::dispatch::HarnessDispatcher;
 use crate::ports::{CollabStore, Harness, Peers, Result, Store};
 
 use super::EventBus;
@@ -17,6 +18,8 @@ pub struct SnapshotBuilder {
     collab: Arc<dyn CollabStore>,
     harness: Arc<dyn Harness>,
     peers: Arc<dyn Peers>,
+    /// When set, the snapshot lists every registered harness instead of `harness`.
+    dispatcher: Option<Arc<HarnessDispatcher>>,
 }
 
 impl SnapshotBuilder {
@@ -31,7 +34,14 @@ impl SnapshotBuilder {
             collab,
             harness,
             peers,
+            dispatcher: None,
         }
+    }
+
+    /// Lists every harness of `dispatcher` in the snapshot, in registration order.
+    pub fn with_harnesses(mut self, dispatcher: Arc<HarnessDispatcher>) -> Self {
+        self.dispatcher = Some(dispatcher);
+        self
     }
 
     /// Subscribe to the bus first, then read the last Seq as snapshot.seq, then
@@ -73,7 +83,10 @@ impl SnapshotBuilder {
                 }
             }
         }
-        snapshot.harnesses.push(self.harness.status().await);
+        match &self.dispatcher {
+            Some(dispatcher) => snapshot.harnesses.extend(dispatcher.statuses().await),
+            None => snapshot.harnesses.push(self.harness.status().await),
+        }
         Ok((snapshot, receiver))
     }
 

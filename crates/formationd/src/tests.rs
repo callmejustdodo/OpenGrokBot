@@ -1,6 +1,6 @@
 use super::*;
 use formation_core::service::connection;
-use formation_proto::common::{AgentId, ApprovalId, RunId};
+use formation_proto::common::{AgentId, ApprovalId, RequestId, RunId};
 use formation_proto::policy::{
     ApprovalChoice, ApprovalDecide, PermissionDecide, PermissionPrompt, PermissionSource, ToolCall,
 };
@@ -11,6 +11,8 @@ use tokio::time::{Duration, timeout};
 
 #[tokio::test]
 async fn fake_daemon_serves_snapshot_and_agents() {
+    check_wiring("", false).await;
+    check_wiring("collab", false).await;
     check_wiring("harness", false).await;
     check_wiring("harness,peers", true).await;
     check_wiring("harness,requests", false).await;
@@ -78,7 +80,12 @@ async fn check_wiring(fakes: &str, fake_peers: bool) {
             ] {
                 assert_eq!(snapshot[field], json!([]), "{field}");
             }
-            assert_eq!(snapshot["harnesses"][0]["version"], "fake");
+            assert_eq!(snapshot["harnesses"][0]["harness"], "claude_code");
+            assert_eq!(snapshot["harnesses"][1]["harness"], "codex");
+            assert_eq!(snapshot["harnesses"].as_array().unwrap().len(), 2);
+            if fakes.contains("harness") {
+                assert_eq!(snapshot["harnesses"][0]["version"], "fake");
+            }
         } else {
             assert_eq!(response["result"], json!([]));
         }
@@ -102,6 +109,12 @@ async fn check_wiring(fakes: &str, fake_peers: bool) {
     for (id, method, params) in [
         (5, "permission_decide", json!(PermissionDecide { prompt })),
         (6, "approval_decide", json!(decide)),
+        (7, "team_invite", json!({})),
+        (
+            8,
+            "request_get",
+            json!({"request_id": RequestId::generate()}),
+        ),
     ] {
         let mut request = serde_json::to_vec(
             &json!({"jsonrpc": "2.0", "id": id, "method": method, "params": params}),
@@ -117,6 +130,10 @@ async fn check_wiring(fakes: &str, fake_peers: bool) {
         let response: Value = serde_json::from_str(&line).unwrap();
         assert_eq!(response["id"], id);
         assert_ne!(response["error"]["code"], -32601, "{method}: {response}");
+        if method == "team_invite" {
+            // No team is stored: the team service refuses before asking Tailscale.
+            assert!(response["error"]["message"].is_string(), "{response}");
+        }
         if method == "permission_decide" {
             // An unknown run is denied, not left to Claude Code.
             assert_eq!(response["result"]["behavior"], "deny", "{response}");
