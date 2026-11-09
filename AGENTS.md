@@ -1,22 +1,28 @@
 # Agent guidance
 
-Formation is a proposed open-source macOS app and CLI for collaborating through local Claude Code and Codex sessions; the repository holds the product documentation and an early Rust workspace scaffold. Keep changes small, reviewable and aligned with the agreed requirements.
+Formation is a proposed open-source macOS app and CLI for collaborating through local Claude Code and Codex sessions; the repository holds the product documentation and an early scaffold of the Rust workspace and the desktop app. Keep changes small, reviewable and aligned with the agreed requirements.
 
 ## Repository layout
 
 - `documentations/`: product planning documents (one-pager, product requirements, user stories, screens and flows, tech spec, frontend and backend architecture, implementation plan, product plan, competitive landscape) and HTML mockups.
 - `.claude/skills/`: project-scoped Claude Code skills for macOS, SwiftUI and Swift development.
 - `crates/`: the Rust workspace (`formation-proto`, `formation-core`, `formationd`, `formation-cli`), described in the [tech spec](documentations/4_techspec.md#code-layout).
+- `apps/desktop/`: the Tauri 2 app, with the React and TypeScript UI in `src/` and the Rust side in `src-tauri/` (a member of the Cargo workspace), described in the [frontend architecture](documentations/5_frontend_architecture.md#code-layout).
+- `THIRD_PARTY_NOTICES.md`: every file copied or generated from another project, with its source and license.
 - `scripts/`: repository tooling, currently the documentation link checker.
 
 ## Checks
 
-The documentation check needs Node.js 18 or later and no packages. The Rust checks need a stable Rust toolchain with Clippy. CI runs them as the `documentation` and `rust` checks.
+The documentation check needs Node.js 18 or later and no packages. The Rust checks need a stable Rust toolchain with Clippy. The desktop checks need pnpm (the version is pinned in `apps/desktop/package.json`); run `pnpm -C apps/desktop install` first. CI runs them as the `documentation`, `rust` and `desktop` checks.
 
 ```sh
 node scripts/check-documentation.mjs    # local Markdown links and heading anchors resolve
-cargo test --workspace                  # Rust unit and integration tests
+cargo test --workspace                  # Rust unit and integration tests, including the app's Rust side
 cargo clippy --workspace -- -D warnings # Rust lint
+pnpm -C apps/desktop lint               # ESLint
+pnpm -C apps/desktop typecheck          # TypeScript
+pnpm -C apps/desktop test               # Vitest
+pnpm -C apps/desktop tauri dev          # run the app in development
 ```
 
 ## Working agreements

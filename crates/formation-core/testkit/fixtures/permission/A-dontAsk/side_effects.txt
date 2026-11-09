@@ -1,0 +1,6 @@
+dir=/var/folders/XX/RANDOM/T/tmp.XGdQMVIgh3 mode=dontAsk tool_decision=deny hook_decision=none
+note.txt: present: original note 
+edit.txt: present: color=blue 
+write.txt: absent
+bash.txt: absent
+curl.html: absent

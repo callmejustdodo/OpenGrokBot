@@ -74,7 +74,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 ### Phase 0 · Scaffold and contract
 
 ### TASK-001: Repository scaffold builds and runs an empty app
-- Status: in progress
+- Status: complete
 - References: [tech spec · starter](4_techspec.md#starter), [code layout](4_techspec.md#code-layout)
 - Prerequisites: none
 - Change locations: proposed `Cargo.toml` (workspace), `crates/{formation-proto,formation-core,formationd,formation-cli}/`, `apps/desktop/` (from `pnpm create tauri-app`, TypeScript, React, TypeScript), `justfile` or `package.json` scripts, `.github/workflows/` (add Rust and frontend checks beside `documentation.yml`)
@@ -118,7 +118,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: A
 
 ### TASK-005: Permission routing covers every tool call
-- Status: pending
+- Status: complete
 - References: NFR-004, FR-015, FR-022, [tech spec assumptions](4_techspec.md#assumptions-to-verify-early)
 - Prerequisites: TASK-001
 - Change locations: `crates/formation-core/src/harness/permission/` (spike), `crates/formation-cli/` (`formation mcp --permission` stub)
