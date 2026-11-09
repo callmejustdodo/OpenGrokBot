@@ -81,7 +81,8 @@ impl Requests {
     }
 
     /// Every change to a request on this Mac, for the peer server to send to its
-    /// requester as `PeerEvent::RequestUpdate`. Receivers may lag and miss updates;
+    /// requester as `PeerEvent::RequestUpdate`, already masked for the requester
+    /// ([`super::outgoing::for_requester`]). Receivers may lag and miss updates;
     /// the requester can always read the current request with `GET /v1/requests/{id}`.
     pub fn subscribe(&self) -> broadcast::Receiver<WorkRequest> {
         self.updates.subscribe()
@@ -386,7 +387,7 @@ impl Requests {
                 request: request.clone(),
             }));
         // No receiver is fine: no teammate is connected right now.
-        let _ = self.updates.send(request.clone());
+        let _ = self.updates.send(super::outgoing::for_requester(request));
     }
 
     fn publish_queue(&self, agent_id: AgentId, queue: &AgentQueue) {

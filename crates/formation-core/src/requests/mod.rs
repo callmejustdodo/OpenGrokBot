@@ -18,6 +18,7 @@
 
 mod client;
 pub mod endpoints;
+pub mod outgoing;
 mod queue;
 pub mod status;
 
