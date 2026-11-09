@@ -1,0 +1,44 @@
+/* SC-003 v2 (Sky Glass) sidebar additions: New agent button, search field, group label. */
+:root {
+  --i-search: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.5' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='4.5'/%3E%3Cpath d='M10.5 10.5 14 14'/%3E%3C/svg%3E");
+}
+
+.side .new-agent {
+  margin: 0 12px 10px; display: flex; align-items: center; justify-content: center; gap: 8px;
+  height: 40px; border: 0; border-radius: 14px; cursor: pointer;
+  background: var(--brand-grad); color: var(--primary-fg); box-shadow: var(--bub-glow);
+  font-weight: 600; font-size: 14px;
+}
+.side .new-agent::before {
+  content: ""; width: 14px; height: 14px; background: currentColor;
+  -webkit-mask: var(--i-plus) center / contain no-repeat; mask: var(--i-plus) center / contain no-repeat;
+}
+.side .new-agent:focus-visible { outline: 2px solid #2f6bf5; outline-offset: 2px; }
+
+.side-search {
+  margin: 0 12px 10px; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 8px 0 12px;
+  border-radius: 12px; background: var(--glass-card); box-shadow: 0 0 0 1px var(--glass-line); color: var(--text2);
+}
+.side-search::before {
+  content: ""; flex: none; width: 14px; height: 14px; background: currentColor;
+  -webkit-mask: var(--i-search) center / contain no-repeat; mask: var(--i-search) center / contain no-repeat;
+}
+.side-search:focus-within { box-shadow: 0 0 0 2px #5b9bff; }
+.side-search input {
+  flex: 1; min-width: 0; border: 0; background: transparent; outline: none; font: inherit; font-size: 13px; color: inherit;
+}
+.side-search input::-webkit-search-cancel-button { display: none; }
+.side-search kbd {
+  flex: none; font-size: 11px; font-weight: 600; line-height: 1; padding: 3px 6px; border-radius: 6px;
+  background: rgba(91,155,255,.14); color: #2f6bf5;
+}
+
+.side .side-group { margin: 10px 8px 4px; font-size: 11.5px; font-weight: 500; color: var(--text2); }
+.side .side-nomatch { margin: 12px 8px; font-size: 12.5px; color: var(--text2); }
+
+/* Profile footer: the frame's plug icon on Connect agents. */
+.side-bottom .btn { display: inline-flex; align-items: center; gap: 6px; flex: none; padding-inline: 10px; }
+.side-bottom .btn::before {
+  content: ""; width: 14px; height: 14px; background: currentColor;
+  -webkit-mask: var(--i-plug) center / contain no-repeat; mask: var(--i-plug) center / contain no-repeat;
+}
