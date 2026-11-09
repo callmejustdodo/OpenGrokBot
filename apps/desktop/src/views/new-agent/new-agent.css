@@ -1,7 +1,7 @@
 /* SC-004 New agent: screen rules from documentations/mockups/index.html, restyled to Renewal v2 Sky Glass
    (selected choices take the brand blue instead of the text colour).
    The shared layer (src/styles/) owns .pop, .field, .input, .textarea and .err. */
-.harness { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; border: 1.5px solid var(--sep); background: var(--card); cursor: pointer; width: 100%; text-align: left; margin-bottom: 6px; }
+.harness { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; border: 1.5px solid var(--glass-line); background: var(--card); cursor: pointer; width: 100%; text-align: left; margin-bottom: 6px; }
 .harness[aria-checked="true"] { border-color: var(--brand, var(--focus)); background: color-mix(in srgb, var(--brand, var(--focus)) 6%, var(--card)); }
 .harness .hn { flex: 1; }
 .harness .hn small { display: block; color: var(--text2); font-size: 12px; }
