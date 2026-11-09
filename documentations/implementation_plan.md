@@ -253,7 +253,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: C
 
 ### TASK-015: Sidebar and conversation with my agent
-- Status: pending
+- Status: in progress
 - References: SC-003, SC-004, SC-005, SC-020; M3 states for those screens; US-001, US-002, US-024
 - Prerequisites: TASK-014
 - Change locations: `apps/desktop/src/views/{my-conversation,new-agent}/`, `apps/desktop/src/components/{sidebar,info-panel}/`
