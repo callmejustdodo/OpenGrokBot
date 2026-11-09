@@ -2,7 +2,6 @@ mod fake_commands;
 mod identity;
 mod login_path;
 mod no_team;
-mod owner_only;
 
 use std::io;
 use std::path::Path;
@@ -16,6 +15,7 @@ use formation_core::harness::detect::{Detect, DetectPaths};
 use formation_core::harness::dispatch::HarnessDispatcher;
 use formation_core::notify::{AttentionNotifier, monitor, reconcile};
 use formation_core::permission::{Gate, PermissionCommands};
+use formation_core::policy::TeamPolicy;
 use formation_core::policy::approvals::{ApprovalStore, Approvals, SystemClock};
 use formation_core::ports::{
     CollabStore, CommandHandler, Harness, Notifier, Peers, PermissionGate, Policy, RequestQueue,
@@ -39,7 +39,6 @@ use tokio::signal::unix::{SignalKind, signal};
 use fake_commands::FakeCommands;
 use identity::TailnetIdentity;
 use no_team::NoTeam;
-use owner_only::OwnerOnly;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 
@@ -51,6 +50,7 @@ struct Service {
     store: Arc<dyn Store>,
     notifier: Arc<dyn Notifier>,
     schedules: Arc<Schedules>,
+    approvals: Arc<Approvals>,
 }
 
 fn wiring(directory: &Path, fake_list: &str, detect_paths: DetectPaths) -> Result<Service, Error> {
@@ -88,9 +88,13 @@ fn wiring(directory: &Path, fake_list: &str, detect_paths: DetectPaths) -> Resul
     let policy: Arc<dyn Policy> = if fakes.contains(&"policy") {
         Arc::new(FakePolicy::new())
     } else {
-        Arc::new(OwnerOnly)
+        Arc::new(TeamPolicy::new(collab.clone(), store.clone()))
     };
     let owner_requests = Arc::new(Requests::new(collab.clone(), policy.clone(), bus.clone()));
+    // Before any agent takes a request: re-queues `queued` requests and fails the
+    // ones a restart interrupted (backend architecture, "Recovery"). A no-op until
+    // this Mac is in a team.
+    owner_requests.recover()?;
     let requests: Arc<dyn RequestQueue> = if fakes.contains(&"requests") {
         Arc::new(FakeRequestQueue::new())
     } else {
@@ -229,7 +233,7 @@ fn wiring(directory: &Path, fake_list: &str, detect_paths: DetectPaths) -> Resul
         bus.clone(),
         notifier.clone(),
     ));
-    let permissions = Arc::new(PermissionCommands::new(gate, approvals));
+    let permissions = Arc::new(PermissionCommands::new(gate, approvals.clone()));
     let detect = Arc::new(Detect::new(detect_paths, store.clone(), bus.clone()));
     let snapshots = Arc::new(
         SnapshotBuilder::new(store.clone(), collab, harness.clone(), peers)
@@ -255,7 +259,40 @@ fn wiring(directory: &Path, fake_list: &str, detect_paths: DetectPaths) -> Resul
         store,
         notifier,
         schedules,
+        approvals,
     })
+}
+
+/// Expires approvals nobody answered within 24 hours: once at start (backend
+/// architecture, "Recovery"), then whenever the next one is due. Approvals raised
+/// later are only seen at the next check, so it looks again at least every minute.
+async fn expire_approvals(approvals: Arc<Approvals>) {
+    const RECHECK: std::time::Duration = std::time::Duration::from_secs(60);
+    // A due approval whose expiry keeps failing must not spin the loop.
+    const FLOOR: std::time::Duration = std::time::Duration::from_secs(1);
+    loop {
+        let failed = approvals.expire_due().await.is_err_and(|error| {
+            eprintln!("approval expiry failed: {error}");
+            true
+        });
+        let wait = match approvals.next_expiry() {
+            Ok(Some(at)) => (at - chrono::Utc::now())
+                .to_std()
+                .unwrap_or_default()
+                .min(RECHECK),
+            Ok(None) => RECHECK,
+            Err(error) => {
+                eprintln!("approval expiry failed: {error}");
+                RECHECK
+            }
+        };
+        let wait = if failed {
+            wait.max(FLOOR * 5)
+        } else {
+            wait.max(FLOOR)
+        };
+        tokio::time::sleep(wait).await;
+    }
 }
 
 fn main() -> Result<(), Error> {
@@ -293,6 +330,16 @@ async fn serve(path_source: login_path::Source) -> Result<(), Error> {
         }
     });
     let schedules = service.schedules.clone();
+    // The previous process's runs are gone; their pending approvals can never be
+    // answered, so close them before anything new is raised.
+    match service.approvals.close_interrupted().await {
+        Ok(closed) if !closed.is_empty() => {
+            eprintln!("closed {} approvals left by the previous run", closed.len())
+        }
+        Ok(_) => {}
+        Err(error) => eprintln!("closing interrupted approvals failed: {error}"),
+    }
+    let expiry_task = tokio::spawn(expire_approvals(service.approvals.clone()));
     let schedule_task = tokio::spawn(async move {
         while let Err(error) = schedules.run().await {
             eprintln!("scheduler restarting: {error}");
@@ -320,6 +367,7 @@ async fn serve(path_source: login_path::Source) -> Result<(), Error> {
         _ = interrupt.recv() => Ok(()),
     };
     schedule_task.abort();
+    expiry_task.abort();
     for agent in service.store.agents()? {
         if service
             .harness

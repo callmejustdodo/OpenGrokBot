@@ -395,6 +395,35 @@ impl Approvals {
         Ok(expired)
     }
 
+    /// At formationd start, before any run asks: denies every approval still
+    /// pending from the previous process. Its run died with that process, so no
+    /// call waits for the answer and an allow would run nothing; left alone, the
+    /// card would wait up to 24 hours for nothing. Their requests were already
+    /// ended by `Requests::recover`. Returns the approvals closed.
+    pub async fn close_interrupted(&self) -> Result<Vec<Approval>> {
+        let mut closed = Vec::new();
+        self.change(|state, changes| {
+            let now = self.clock.now();
+            for id in self
+                .store
+                .approvals(Some(ApprovalStatus::Pending))?
+                .iter()
+                .map(|a| a.id)
+            {
+                let approval = self.load(id)?;
+                if approval.status != ApprovalStatus::Pending || state.runs.contains_key(&id) {
+                    continue;
+                }
+                let index = changes.len();
+                self.finish(state, approval, ApprovalStatus::Denied, None, now, changes)?;
+                closed.push(changes[index].approval.clone());
+            }
+            Ok(())
+        })
+        .await?;
+        Ok(closed)
+    }
+
     /// When the next pending approval expires.
     pub fn next_expiry(&self) -> Result<Option<Timestamp>> {
         Ok(self
