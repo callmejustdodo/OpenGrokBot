@@ -206,9 +206,10 @@ mod tests {
             Path::new("/Users/me/Library/Logs/Formation/formationd.log"),
         );
         assert!(plist.contains("<key>Label</key>\n\t<string>com.example.app.formationd</string>"));
-        assert!(plist.contains(
-            "<string>/Applications/Formation.app/Contents/MacOS/formationd</string>"
-        ));
+        assert!(
+            plist
+                .contains("<string>/Applications/Formation.app/Contents/MacOS/formationd</string>")
+        );
         assert!(plist.contains("<key>KeepAlive</key>\n\t<true/>"));
         assert!(plist.contains("<key>RunAtLoad</key>\n\t<true/>"));
         assert_eq!(
