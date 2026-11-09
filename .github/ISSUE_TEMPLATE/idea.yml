@@ -1,0 +1,38 @@
+name: Feature idea
+description: Record an idea before deciding whether to build it.
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        An idea needs no repository change; describe it freely here. When it is decided to build it, this issue becomes its tracking issue: pull requests that implement part of it say `Part of #N`, and the one that finishes it says `Closes #N`.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Who has the problem, and what happens today.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Idea
+      description: A rough description of what could change.
+    validations:
+      required: true
+  - type: dropdown
+    id: beneficiaries
+    attributes:
+      label: Who benefits
+      multiple: true
+      options:
+        - Session owners
+        - Collaborators
+        - Maintainers (development workflow)
+    validations:
+      required: true
+  - type: input
+    id: related
+    attributes:
+      label: Related documents or issues
+      description: A document section, specification or issue this builds on, if any.

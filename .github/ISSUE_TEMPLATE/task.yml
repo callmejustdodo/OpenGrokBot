@@ -1,0 +1,48 @@
+name: Task
+description: A bounded piece of planned work, such as a feature step, setup or maintenance.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A task is either a piece of work for one branch and pull request, or the tracking issue of a larger change that spans several pull requests. Open one tracking issue for such a change, not one per step. Pull requests that implement part of it say `Part of #N`; the one that finishes it says `Closes #N`.
+  - type: dropdown
+    id: type
+    attributes:
+      label: Type
+      description: The commit type the branch and pull request will use.
+      options:
+        - feat
+        - fix
+        - docs
+        - refactor
+        - test
+        - build
+        - ci
+        - chore
+        - perf
+    validations:
+      required: true
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: The outcome when this is done, in one or two sentences.
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Source
+      description: The plan, parent issue or pull request this comes from, if any.
+  - type: textarea
+    id: done
+    attributes:
+      label: Done when
+      description: Observable completion criteria, such as behavior someone can check or checks that pass.
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Dependencies, constraints and open questions.

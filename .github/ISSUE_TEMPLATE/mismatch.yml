@@ -1,0 +1,50 @@
+name: Document mismatch
+description: Two documents, or a document and the code, disagree about the same behavior or decision.
+labels: [documentation]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        AGENTS.md asks for a disagreement to be resolved explicitly before the affected behavior is implemented: the owning document is updated and the others link to it, instead of one interpretation being chosen silently.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of mismatch
+      options:
+        - Two documents disagree
+        - Document vs current implementation, unclear which is right
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: locations
+    attributes:
+      label: Where they disagree
+      description: Each document and section, as a path with a heading, or a code location.
+      placeholder: |
+        - docs/<file>.md, "<heading>"
+        - src/<file>, <function>
+    validations:
+      required: true
+  - type: textarea
+    id: statements
+    attributes:
+      label: What each says
+      description: Quote or summarize each statement, so the conflict is visible without opening the files.
+    validations:
+      required: true
+  - type: input
+    id: owner
+    attributes:
+      label: Owning document
+      description: Which document should hold the answer, if you know.
+  - type: textarea
+    id: resolution
+    attributes:
+      label: Proposed resolution
+      description: Which side should change, and how.
+  - type: input
+    id: blocked
+    attributes:
+      label: Blocked work
+      description: The issue or pull request waiting on this, if any.
