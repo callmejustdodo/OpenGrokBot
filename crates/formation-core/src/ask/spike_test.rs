@@ -20,8 +20,8 @@
 //! `FORMATION_ASK_SPIKE_DIR` the folder for the throwaway agent folders
 //! (default: the system temporary folder). Together they make six short model
 //! calls, and they remove every transcript they created, also when they
-//! fail. The checks on the answer's "Messages used:" list have ordinary unit
-//! tests at the end.
+//! fail. The checks on the answer's "Messages used:" list (in [`super::excerpts`])
+//! have ordinary unit tests at the end.
 
 use std::env;
 use std::fs;
@@ -30,6 +30,7 @@ use std::path::{Path, PathBuf};
 use std::process;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use super::excerpts::{cited_from, messages_used};
 use super::fork::{
     DEFAULT_EXIT_GRACE, DEFAULT_TIMEOUT, ForkAnswer, ForkRequest, ISOLATION_ARGS, PrintLimits,
     PrintRun, STREAM_ARGS, claude_command, run_print,
@@ -542,144 +543,6 @@ fn assert_cites_only(answer: &str, conversation: &[&str]) {
             "{item:?} is not from the conversation: {answer}"
         );
     }
-}
-
-/// The items listed after the answer's "Messages used:" line: list items up
-/// to the next blank line, plus any text after the heading's colon.
-fn messages_used(answer: &str) -> Vec<String> {
-    let mut lines = answer.lines();
-    let Some(heading) = lines
-        .by_ref()
-        .find(|line| words(line).starts_with("messages used"))
-    else {
-        return Vec::new();
-    };
-    let mut items = Vec::new();
-    if let Some((_, rest)) = heading.split_once(':') {
-        let rest = rest.trim().trim_matches(['*', '_']).trim();
-        if !rest.is_empty() {
-            items.push(rest.to_owned());
-        }
-    }
-    for line in lines {
-        let line = line.trim();
-        if line.is_empty() {
-            if items.is_empty() {
-                continue;
-            }
-            break;
-        }
-        items.push(strip_bullet(line).to_owned());
-    }
-    items
-}
-
-/// `- x`, `* x`, `• x`, `1. x` and `1) x` become `x`.
-fn strip_bullet(line: &str) -> &str {
-    for bullet in ["- ", "* ", "• "] {
-        if let Some(rest) = line.strip_prefix(bullet) {
-            return rest.trim();
-        }
-    }
-    let digits = line.chars().take_while(char::is_ascii_digit).count();
-    if digits > 0 {
-        let rest = &line[digits..];
-        if let Some(rest) = rest.strip_prefix(". ").or_else(|| rest.strip_prefix(") ")) {
-            return rest.trim();
-        }
-    }
-    line
-}
-
-/// Whether a "Messages used" item quotes the conversation. The quoted parts
-/// of the item (or, without quotes, the item after any short `label:`) are
-/// split at `…` or `...`; each piece must appear in one message, ignoring
-/// case and punctuation. A piece of four or more words may also join runs of
-/// at least four words from one message; a shorter one may leave out words
-/// between its own.
-fn cited_from(item: &str, conversation: &[&str]) -> bool {
-    let messages: Vec<String> = conversation.iter().map(|m| words(m)).collect();
-    let quoted = quoted_parts(item);
-    let parts = if quoted.is_empty() {
-        vec![strip_label(item)]
-    } else {
-        quoted
-    };
-    let mut pieces = 0;
-    for part in parts {
-        for piece in part.split('…').flat_map(|p| p.split("...")) {
-            let piece = words(piece);
-            if piece.is_empty() {
-                continue;
-            }
-            pieces += 1;
-            if !messages.iter().any(|message| quotes(&piece, message)) {
-                return false;
-            }
-        }
-    }
-    pieces > 0
-}
-
-/// Whether `piece` quotes `message`; both are normalized with [`words`].
-fn quotes(piece: &str, message: &str) -> bool {
-    if format!(" {message} ").contains(&format!(" {piece} ")) {
-        return true;
-    }
-    let piece: Vec<&str> = piece.split(' ').collect();
-    let message: Vec<&str> = message.split(' ').collect();
-    const RUN: usize = 4;
-    if piece.len() >= RUN {
-        let mut covered = vec![false; piece.len()];
-        for start in 0..=piece.len() - RUN {
-            let run = &piece[start..start + RUN];
-            if message.windows(RUN).any(|w| w == run) {
-                covered[start..start + RUN].fill(true);
-            }
-        }
-        return covered.iter().all(|&c| c);
-    }
-    // Every word in order, within twice the piece's length.
-    (0..message.len()).any(|start| {
-        let window = &message[start..message.len().min(start + 2 * piece.len())];
-        let mut rest = window.iter();
-        piece.iter().all(|word| rest.any(|w| w == word))
-    })
-}
-
-/// The text between double quotes (`"` or `“ ”`).
-fn quoted_parts(item: &str) -> Vec<String> {
-    let mut parts = Vec::new();
-    let mut current: Option<String> = None;
-    for c in item.chars() {
-        match (c, current.as_mut()) {
-            ('"' | '“' | '”', Some(_)) => parts.push(current.take().unwrap_or_default()),
-            ('"' | '“', None) => current = Some(String::new()),
-            (c, Some(text)) => text.push(c),
-            _ => {}
-        }
-    }
-    parts
-}
-
-/// Drops a leading label of up to four words followed by `:`, such as
-/// `User:` or `Agent's reply:`.
-fn strip_label(item: &str) -> String {
-    match item.split_once(':') {
-        Some((label, rest)) if label.split_whitespace().count() <= 4 && !rest.trim().is_empty() => {
-            rest.trim().to_owned()
-        }
-        _ => item.to_owned(),
-    }
-}
-
-/// Lowercase words separated by single spaces; everything else is dropped.
-fn words(text: &str) -> String {
-    text.to_lowercase()
-        .split(|c: char| !c.is_alphanumeric())
-        .filter(|w| !w.is_empty())
-        .collect::<Vec<_>>()
-        .join(" ")
 }
 
 #[cfg(test)]
