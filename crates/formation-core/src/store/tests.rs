@@ -137,9 +137,9 @@ fn fresh_schema_and_file_reopen() {
 #[test]
 fn migrations_merge_roles_validate_first_and_rollback_failed_step() {
     const A: &[Migration] = &[Migration {
-        version: 1003,
+        version: 1998,
         name: "a",
-        sql: "CREATE TABLE ordering (n INTEGER); INSERT INTO ordering VALUES (1003);",
+        sql: "CREATE TABLE ordering (n INTEGER); INSERT INTO ordering VALUES (1998);",
     }];
     const B: &[Migration] = &[
         Migration {
@@ -165,7 +165,7 @@ fn migrations_merge_roles_validate_first_and_rollback_failed_step() {
                 .unwrap()
                 .map(|r| r.unwrap())
                 .collect();
-            assert_eq!(rows, [1003, 2001, 2002]);
+            assert_eq!(rows, [1998, 2001, 2002]);
             Ok(())
         })
         .unwrap();
@@ -211,7 +211,7 @@ fn migrations_merge_roles_validate_first_and_rollback_failed_step() {
             .unwrap();
     }
     let failed = Migration {
-        version: 1004,
+        version: 1999,
         name: "bad sql",
         sql: "CREATE TABLE rolled_back (id TEXT); INSERT INTO missing VALUES (1);",
     };
@@ -358,6 +358,7 @@ fn schedules_roundtrip_filter_runs_page_and_delete() {
             started_at: Some(at(second)),
             finished_at: Some(at(second + 1)),
             result: Some(ScheduleRunResult::MissedRan),
+            error: Some("harness exited".into()),
         };
         store.put_schedule_run(&run).unwrap();
         assert!(store.schedule_runs(s.id, None, 10).unwrap().contains(&run));

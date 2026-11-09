@@ -96,6 +96,7 @@ impl Schedules {
                         started_at: Some(now),
                         finished_at: None,
                         result: None,
+                        error: None,
                     };
                     schedule.last_run = Some(run.clone());
                     store.put_schedule_run(&run)?;
@@ -138,7 +139,15 @@ impl Schedules {
                 self.harness.run_turn(agent.id, run_id, item).await
             }
             .await;
-            let failed = !matches!(result, Ok(ref turn) if turn.outcome == TurnOutcome::Completed);
+            run.error = match result {
+                Ok(turn) if turn.outcome == TurnOutcome::Completed => None,
+                Ok(turn) => Some(
+                    turn.result
+                        .unwrap_or_else(|| "turn did not complete".into()),
+                ),
+                Err(error) => Some(error.message),
+            };
+            let failed = run.error.is_some();
             // One polling period of lateness distinguishes a missed slot from
             // ordinary polling jitter.
             run.result = Some(if failed {
@@ -151,6 +160,11 @@ impl Schedules {
             let finished = now + Duration::from_std(started.elapsed()).expect("turn duration");
             run.finished_at = Some(finished);
             now = finished;
+            let alert = match run.result {
+                Some(ScheduleRunResult::Failed) => Some(AttentionKind::ScheduleFailed),
+                Some(ScheduleRunResult::MissedRan) => Some(AttentionKind::ScheduleMissed),
+                _ => None,
+            };
             let schedule_id = schedule.id;
             self.stored(move |store, events| {
                 if let Some(mut current) = store.schedule(schedule_id)? {
@@ -165,10 +179,10 @@ impl Schedules {
                 Ok(())
             })
             .await?;
-            if failed {
+            if let Some(kind) = alert {
                 self.notifier
                     .raise(
-                        AttentionKind::ScheduleFailed,
+                        kind,
                         AttentionTarget::Schedule {
                             schedule_id: schedule.id,
                         },

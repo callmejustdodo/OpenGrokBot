@@ -12,4 +12,9 @@ pub const MIGRATIONS: &[Migration] = &[
         name: "owner queues",
         sql: "CREATE TABLE owner_queues (agent_id TEXT PRIMARY KEY NOT NULL, items TEXT NOT NULL);",
     },
+    Migration {
+        version: 1003,
+        name: "schedule run error",
+        sql: "ALTER TABLE schedule_runs ADD COLUMN error TEXT;",
+    },
 ];
