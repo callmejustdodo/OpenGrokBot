@@ -17,7 +17,7 @@ Rev 1 · 2026-11-09 · Implements the [tech spec](4_techspec.md) (Rev 3) for the
 
 | Module | Responsibility | Requirements |
 | --- | --- | --- |
-| `service` | Lifecycle, launchd registration helper, local socket server (newline-delimited JSON-RPC 2.0), snapshot builder, event bus with sequence numbers | D-048, NFR-007 |
+| `service` | Lifecycle (the app registers formationd with launchd; see the [tech spec](4_techspec.md#technology-choices)), local socket server (newline-delimited JSON-RPC 2.0), snapshot builder, event bus with sequence numbers | D-048, NFR-007 |
 | `harness::claude` | One supervisor task per running agent: spawn `claude -p` in stream-json mode in the agent folder, parse stdout events, write user messages to stdin, track queue and turn state, stop and resume, stalled detection | FR-003, FR-022, FR-007 |
 | `harness::permission` | Bridge for `formation mcp --permission`: receives Claude Code permission prompts, asks `policy`, returns allow or deny; serves the `PreToolUse` hook endpoint | FR-015, FR-022, NFR-004 |
 | `harness::codex` | `codex app-server` JSON-RPC adapter (after Claude Code) | D-002 |
