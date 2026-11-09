@@ -27,6 +27,7 @@
     "@radix-ui/react-toggle-group": "^1.2.1",
     "@radix-ui/react-tooltip": "^1.4.1",
     "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-dialog": "2.8.4",
     "i18next": "^27.0.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

@@ -11,7 +11,7 @@ mod readiness;
 
 pub use readiness::{ClaudeReadiness, HarnessReadiness};
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, mpsc};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, SystemTime};
@@ -231,11 +231,33 @@ impl Inner {
         validate_name_role(&args.name, &args.role)?;
         let slug = slug(&args.name)?;
         self.check_name(&args.name, None)?;
+        let chosen = args.folder.is_some();
         let folder_path = match args.folder {
             Some(path) if path.is_absolute() => path,
             Some(path) => self.parent.join(path),
             None => self.parent.join(&slug),
         };
+        // A folder the owner chose that already exists is adopted (FR-001).
+        let adopted = if chosen {
+            files::existing_folder(&folder_path)?
+        } else {
+            None
+        };
+        if let Some(existing) = &adopted {
+            let taken = self.store.agents()?.iter().any(|agent| {
+                &agent.folder_path == existing
+                    || agent.folder_path.canonicalize().ok().as_ref() == Some(existing)
+            });
+            if taken {
+                return Err(ApiError::new(
+                    ErrorCode::Conflict,
+                    "the folder is already another agent's folder",
+                ));
+            }
+        }
+        let adopt = adopted.is_some();
+        let folder_path = adopted.unwrap_or(folder_path);
+        let repositories = absolute(&folder_path, args.repositories);
         let mut agent = Agent {
             id: AgentId::generate(),
             slug,
@@ -243,7 +265,7 @@ impl Inner {
             role: args.role,
             harness: args.harness,
             folder_path,
-            repositories: args.repositories,
+            repositories,
             avatar: args.avatar,
             state: AgentState::Stopped,
             files_revision: String::new(),
@@ -255,7 +277,11 @@ impl Inner {
         let instructions = args
             .instructions
             .unwrap_or_else(|| format!("# {}\n\nYour role: {}\n", agent.name, agent.role));
-        let folder = files::create(&mut agent, &instructions)?;
+        let folder = if adopt {
+            files::adopt(&mut agent, &instructions)?
+        } else {
+            files::create(&mut agent, &instructions)?
+        };
         if let Err(error) = self.store.insert_agent(&agent) {
             folder.rollback()?;
             return Err(error);
@@ -278,7 +304,7 @@ impl Inner {
             agent.avatar = avatar;
         }
         if let Some(repositories) = args.repositories {
-            agent.repositories = repositories;
+            agent.repositories = absolute(&agent.folder_path, repositories);
         }
         let path = files::editable_metadata(&agent.folder_path)?;
         let old = std::fs::read(&path).map_err(files::io_error)?;
@@ -340,6 +366,15 @@ impl Inner {
             }
         }
     }
+}
+
+/// Repository paths as stored: a relative one is taken from the agent folder,
+/// as the read policy reads it.
+fn absolute(folder: &Path, repositories: Vec<PathBuf>) -> Vec<PathBuf> {
+    repositories
+        .into_iter()
+        .map(|repository| folder.join(repository))
+        .collect()
 }
 
 fn validate_name_role(name: &str, role: &str) -> Result<()> {

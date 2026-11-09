@@ -271,6 +271,11 @@
     "title": "읽기 전용 · 탐지된 에이전트",
     "works": "{{capability}}: 돼요"
   },
+  "folders": {
+    "add": "폴더 추가",
+    "remove": "{{folder}} 제거",
+    "removeShort": "제거"
+  },
   "harness": {
     "agent": "에이전트",
     "claudeCode": "Claude Code",
@@ -444,6 +449,12 @@
     "color": "색상",
     "create": "만들기",
     "error": "에이전트를 만들지 못했어요. 다시 시도하세요.",
+    "folder": "에이전트 폴더",
+    "folderExisting": "기존 폴더 사용",
+    "folderExistingNote": "AGENTS.md와 CLAUDE.md를 포함해 이미 있는 파일은 그대로 둬요.",
+    "folderNew": "에이전트 이름으로 새 폴더",
+    "folderTaken": "이 폴더는 이미 다른 에이전트의 폴더예요.",
+    "folderUseNew": "새 폴더 사용",
     "harness": {
       "label": "하네스",
       "notInstalled": "설치되지 않음",
@@ -456,6 +467,8 @@
     "name": "이름",
     "nameTaken": "같은 이름의 에이전트가 이미 있어요.",
     "optional": "선택",
+    "pickFailed": "폴더 선택 창을 열지 못했어요. 다시 시도해 주세요.",
+    "repositories": "레포",
     "role": "역할",
     "roleHint": "코딩만이 아니라 어떤 역할이든",
     "shape": "모양",
@@ -480,11 +493,14 @@
     "harness": "하네스",
     "instructions": "지시문·스킬",
     "lastActivity": "마지막 활동",
+    "noRepositories": "레포 없음",
     "noSharedAgents": "공유 에이전트 없음",
     "notShared": "{{owner}}이(가) 더 이상 이 에이전트를 공유하지 않아요.",
     "ownersAgent": "{{owner}}의 에이전트",
     "person": "팀원 정보",
     "personNote": "사람에게 물으면 OpenGrokBot이 공유된 에이전트 중 답할 에이전트를 골라요.",
+    "repositories": "레포",
+    "repositoriesFailed": "레포를 바꾸지 못했어요",
     "requestWork": "작업 요청…",
     "requestsAccepted": "받아요. 실행은 {{owner}}의 승인 규칙을 따라요.",
     "requestsNotAccepted": "받지 않아요",

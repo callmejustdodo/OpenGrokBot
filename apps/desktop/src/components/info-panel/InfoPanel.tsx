@@ -8,11 +8,15 @@ import i18n from "../../i18n";
 import "./info-panel.css";
 import type { AgentId } from "../../ipc/generated/AgentId";
 import type { MemberId } from "../../ipc/generated/MemberId";
+import { tauriTransport } from "../../ipc/transport";
 import { useAppStore } from "../../store/store";
+import { act } from "../../store/sync";
 import { uiStore, useUi } from "../../store/ui";
 import { harnessLabel as detectedHarnessLabel } from "../../views/connect/capabilities";
 import { dayAndTime, selectAgentSchedules, setSheetFocus } from "../../views/schedules/format";
 import SharingSection from "../../views/sharing/SharingSection";
+import FolderList from "../folders/FolderList";
+import { addFolders, pickFolders } from "../folders/folders";
 import AgentAvatar, { PersonAvatar } from "../sidebar/AgentAvatar";
 import { harnessLabel, stateLabel } from "../sidebar/labels";
 
@@ -131,6 +135,56 @@ function SharingCard({ agentId }: { agentId: AgentId }) {
   );
 }
 
+/** The agent's repositories; adding or removing one sends the whole new list (`agent_update`). */
+function RepositoriesCard({ agentId, repositories }: { agentId: AgentId; repositories: string[] }) {
+  const { t } = useTranslation();
+  const key = `repositories:${agentId}`;
+  const pending = useAppStore((s) => key in s.pending);
+  const [failed, setFailed] = useState(false);
+  const save = (next: string[]) => {
+    setFailed(false);
+    act(tauriTransport, key, "agent_update", {
+      agent_id: agentId,
+      name: null,
+      role: null,
+      avatar: null,
+      repositories: next,
+    }).catch(() => setFailed(true));
+  };
+  const add = () => {
+    pickFolders(true).then(
+      (added) => {
+        const next = addFolders(repositories, added);
+        if (next.length !== repositories.length) save(next);
+      },
+      () => setFailed(true),
+    );
+  };
+  return (
+    <section className="p-card" aria-label={t("panel.repositories", "Repositories")}>
+      <span className="pr">
+        <b>{t("panel.repositories", "Repositories")}</b>
+      </span>
+      {repositories.length === 0 ? <small>{t("panel.noRepositories", "No repositories")}</small> : null}
+      <FolderList
+        folders={repositories}
+        disabled={pending}
+        onRemove={(folder) => save(repositories.filter((r) => r !== folder))}
+      />
+      <button type="button" className="btn" disabled={pending} onClick={add}>
+        {t("folders.add", "Add folder")}
+      </button>
+      {failed ? (
+        <div className="banner warn" role="alert">
+          <div className="bt">
+            <b>{t("panel.repositoriesFailed", "Couldn't change the repositories")}</b>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
 function MyAgentPanel({ agentId }: { agentId: AgentId }) {
   const { t } = useTranslation();
   const agent = useAppStore((s) => s.mirror?.agents[agentId]);
@@ -186,6 +240,7 @@ function MyAgentPanel({ agentId }: { agentId: AgentId }) {
             summary="AGENTS.md"
             onClick={() => uiStore.getState().openSheet({ kind: "instructions", agentId })}
           />
+          <RepositoriesCard agentId={agentId} repositories={agent.repositories} />
           <SchedulesCard agentId={agentId} />
           <SharingCard agentId={agentId} />
           {teammateQuestions.length > 0 ? (

@@ -275,6 +275,11 @@
     "title": "Read-only · detected agent",
     "works": "{{capability}}: works"
   },
+  "folders": {
+    "add": "Add folder",
+    "remove": "Remove {{folder}}",
+    "removeShort": "Remove"
+  },
   "harness": {
     "agent": "The agent",
     "claudeCode": "Claude Code",
@@ -450,6 +455,12 @@
     "color": "Color",
     "create": "Create",
     "error": "Couldn't create the agent. Try again.",
+    "folder": "Agent folder",
+    "folderExisting": "Use an existing folder",
+    "folderExistingNote": "Files already in it, including AGENTS.md and CLAUDE.md, are kept.",
+    "folderNew": "A new folder named after the agent",
+    "folderTaken": "This folder is already another agent's folder.",
+    "folderUseNew": "Use a new folder",
     "harness": {
       "label": "Harness",
       "notInstalled": "Not installed",
@@ -462,6 +473,8 @@
     "name": "Name",
     "nameTaken": "An agent with this name already exists.",
     "optional": "Optional",
+    "pickFailed": "Couldn't open the folder picker. Try again.",
+    "repositories": "Repositories",
     "role": "Role",
     "roleHint": "Any role, not only coding",
     "shape": "Shape",
@@ -486,11 +499,14 @@
     "harness": "Harness",
     "instructions": "Instructions & skills",
     "lastActivity": "Last activity",
+    "noRepositories": "No repositories",
     "noSharedAgents": "No shared agents",
     "notShared": "{{owner}} no longer shares this agent.",
     "ownersAgent": "{{owner}}'s agent",
     "person": "Teammate information",
     "personNote": "When you ask a person, OpenGrokBot picks which shared agent answers.",
+    "repositories": "Repositories",
+    "repositoriesFailed": "Couldn't change the repositories",
     "requestWork": "Request work…",
     "requestsAccepted": "Accepted. Actions follow {{owner}}'s approval rules.",
     "requestsNotAccepted": "Not accepted",

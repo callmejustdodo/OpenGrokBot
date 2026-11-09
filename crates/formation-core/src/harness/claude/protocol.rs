@@ -4,6 +4,8 @@
 //! required when every recorded line has it. A line that breaks these types, or has a type they
 //! do not name, decodes to [`Event::Unknown`] so a newer Claude Code cannot stop the reader.
 
+use std::path::PathBuf;
+
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -289,6 +291,9 @@ pub struct LaunchOptions<'a> {
     pub mcp_config: Option<&'a str>,
     pub settings: Option<&'a str>,
     pub permission_mode: Option<&'a str>,
+    /// The agent's repositories, each passed with `--add-dir` so Claude Code's
+    /// tools can work there as well as in the agent folder (FR-001, FR-015).
+    pub add_dirs: &'a [PathBuf],
 }
 
 /// The arguments for `claude`, not including the program name.
@@ -319,6 +324,9 @@ pub fn launch_args(launch: Launch<'_>, options: LaunchOptions<'_>) -> Vec<String
         if let Some(value) = value {
             args.extend([flag.to_string(), value.to_string()]);
         }
+    }
+    for dir in options.add_dirs {
+        args.extend(["--add-dir".to_string(), dir.display().to_string()]);
     }
     args
 }

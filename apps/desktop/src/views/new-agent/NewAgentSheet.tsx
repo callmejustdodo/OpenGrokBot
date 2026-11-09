@@ -1,10 +1,14 @@
 import "./new-agent.css";
 // SC-004 new agent sheet (the "+" menu is in the sidebar). States: default,
 // harness-not-ready (the agent can still be created, US-002), name-taken
-// (`agent_create` answers `conflict`). Created: opens its conversation.
+// (`agent_create` answers `conflict`), folder-taken. Created: opens its conversation.
+// The agent folder is new by default or an existing folder the owner picks;
+// repositories are folders picked with the folder picker.
 import * as RadioGroup from "@radix-ui/react-radio-group";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import FolderList, { ShortPath } from "../../components/folders/FolderList";
+import { addFolders, pickFolders } from "../../components/folders/folders";
 import AgentAvatar from "../../components/sidebar/AgentAvatar";
 import type { CallError } from "../../ipc/client";
 import type { HarnessKind } from "../../ipc/generated/HarnessKind";
@@ -32,6 +36,8 @@ export default function NewAgentSheet() {
   const [shape, setShape] = useState(AVATAR_SHAPES[0]);
   const [color, setColor] = useState(AVATAR_COLORS[0]);
   const [instructions, setInstructions] = useState("");
+  const [folder, setFolder] = useState<string | null>(null);
+  const [repositories, setRepositories] = useState<string[]>([]);
   const [nameTaken, setNameTaken] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,6 +53,11 @@ export default function NewAgentSheet() {
   const canCreate = name.trim() !== "" && role.trim() !== "" && !nameTaken && !creating;
 
   const close = () => uiStore.getState().closeSheet();
+  const pick = (multiple: boolean, chosen: (folders: string[]) => void) => {
+    pickFolders(multiple).then(chosen, () =>
+      setError(t("newAgent.pickFailed", "Couldn't open the folder picker. Try again.")),
+    );
+  };
   const create = () => {
     if (!canCreate) return;
     setError(null);
@@ -55,8 +66,8 @@ export default function NewAgentSheet() {
       role: role.trim(),
       harness,
       avatar: { shape, color },
-      folder: null,
-      repositories: [],
+      folder,
+      repositories,
       instructions: instructions.trim() === "" ? null : instructions,
     }).then(
       (agent) => {
@@ -64,7 +75,12 @@ export default function NewAgentSheet() {
         close();
       },
       (e: unknown) => {
-        if ((e as Partial<CallError> | null)?.data?.code === "conflict") setNameTaken(true);
+        const data = (e as Partial<CallError> | null)?.data;
+        // Both a taken name and a taken folder answer `conflict`; the name is checked
+        // first, and only its message names it.
+        if (data?.code === "conflict" && folder !== null && !data.message.includes("name"))
+          setError(t("newAgent.folderTaken", "This folder is already another agent's folder."));
+        else if (data?.code === "conflict") setNameTaken(true);
         else setError(t("newAgent.error", "Couldn't create the agent. Try again."));
       },
     );
@@ -186,6 +202,52 @@ export default function NewAgentSheet() {
                 onClick={() => setColor(c)}
               />
             ))}
+          </div>
+        </div>
+        <div className="field">
+          <span>{t("newAgent.folder", "Agent folder")}</span>
+          {folder === null ? (
+            <small className="muted">{t("newAgent.folderNew", "A new folder named after the agent")}</small>
+          ) : (
+            <>
+              <ShortPath path={folder} />
+              <small className="muted">
+                {t("newAgent.folderExistingNote", "Files already in it, including AGENTS.md and CLAUDE.md, are kept.")}
+              </small>
+            </>
+          )}
+          <div>
+            {folder === null ? (
+              <button type="button" className="btn" onClick={() =>
+                  pick(false, ([chosen]) => {
+                    if (chosen) setFolder(chosen);
+                  })
+                }>
+                {t("newAgent.folderExisting", "Use an existing folder")}
+              </button>
+            ) : (
+              <button type="button" className="btn" onClick={() => setFolder(null)}>
+                {t("newAgent.folderUseNew", "Use a new folder")}
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="field">
+          <span>
+            {t("newAgent.repositories", "Repositories")} <small>{t("newAgent.optional", "Optional")}</small>
+          </span>
+          <FolderList
+            folders={repositories}
+            onRemove={(r) => setRepositories((list) => list.filter((x) => x !== r))}
+          />
+          <div>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => pick(true, (added) => setRepositories((list) => addFolders(list, added)))}
+            >
+              {t("folders.add", "Add folder")}
+            </button>
           </div>
         </div>
         <label className="field">

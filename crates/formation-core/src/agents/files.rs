@@ -98,17 +98,133 @@ pub(super) fn metadata(agent: &Agent) -> Result<String> {
     .map_err(|e| ApiError::new(ErrorCode::InvalidParams, e.to_string()))
 }
 
-pub(super) struct CreatedFolder {
-    path: PathBuf,
-    existed: bool,
+pub(super) enum CreatedFolder {
+    New {
+        path: PathBuf,
+        existed: bool,
+    },
+    /// An existing folder: only what Formation added, in the order it was added.
+    Adopted {
+        added: Vec<PathBuf>,
+    },
 }
 impl CreatedFolder {
     pub fn rollback(self) -> Result<()> {
-        fs::remove_dir_all(&self.path).map_err(io_error)?;
-        if self.existed {
-            fs::create_dir(&self.path).map_err(io_error)?;
+        match self {
+            Self::New { path, existed } => {
+                fs::remove_dir_all(&path).map_err(io_error)?;
+                if existed {
+                    fs::create_dir(&path).map_err(io_error)?;
+                }
+            }
+            Self::Adopted { added } => {
+                for path in added.iter().rev() {
+                    if path.is_dir() {
+                        fs::remove_dir(path).map_err(io_error)?;
+                    } else {
+                        fs::remove_file(path).map_err(io_error)?;
+                    }
+                }
+            }
         }
         Ok(())
+    }
+}
+
+/// The canonical path of `path` when it is an existing folder, `None` when nothing
+/// is there. A symlink or a file there is refused.
+pub(super) fn existing_folder(path: &Path) -> Result<Option<PathBuf>> {
+    match fs::symlink_metadata(path) {
+        Ok(meta) if meta.is_dir() => Ok(Some(path.canonicalize().map_err(io_error)?)),
+        Ok(_) => Err(ApiError::new(
+            ErrorCode::Conflict,
+            "agent folder is not a folder",
+        )),
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+        Err(e) => Err(io_error(e)),
+    }
+}
+
+/// Makes an existing folder (canonical `agent.folder_path`) an agent folder by adding
+/// only what is missing: `.claude/skills/`, `AGENTS.md`, `CLAUDE.md` and
+/// `formation.toml`. Files already there, `AGENTS.md` and `CLAUDE.md` included, are
+/// never changed. A folder that already has a `formation.toml` belongs to another
+/// agent and is refused.
+pub(super) fn adopt(agent: &mut Agent, instructions: &str) -> Result<CreatedFolder> {
+    let root = agent.folder_path.clone();
+    safe_path(&root, Path::new(""))?;
+    match fs::symlink_metadata(root.join("formation.toml")) {
+        Ok(_) => {
+            return Err(ApiError::new(
+                ErrorCode::Conflict,
+                "the folder already holds another agent's formation.toml",
+            ));
+        }
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+        Err(e) => return Err(io_error(e)),
+    }
+    let mut added = Vec::new();
+    let result = (|| {
+        for dir in [".claude", ".claude/skills"] {
+            safe_path(&root, Path::new(dir))?;
+            let path = root.join(dir);
+            match fs::create_dir(&path) {
+                Ok(()) => added.push(path),
+                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists && path.is_dir() => {}
+                Err(e) => return Err(io_error(e)),
+            }
+        }
+        let metadata = metadata(agent)?;
+        for (name, content) in [
+            ("AGENTS.md", instructions),
+            ("CLAUDE.md", "@AGENTS.md\n"),
+            ("formation.toml", metadata.as_str()),
+        ] {
+            safe_path(&root, Path::new(name))?;
+            let path = root.join(name);
+            let mut file = match fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&path)
+            {
+                Ok(file) => file,
+                Err(e)
+                    if e.kind() == std::io::ErrorKind::AlreadyExists
+                        && name != "formation.toml" =>
+                {
+                    continue;
+                }
+                Err(e) => return Err(io_error(e)),
+            };
+            added.push(path);
+            std::io::Write::write_all(&mut file, content.as_bytes()).map_err(io_error)?;
+        }
+        Ok(())
+    })();
+    let folder = CreatedFolder::Adopted { added };
+    if let Err(error) = result {
+        folder.rollback()?;
+        return Err(error);
+    }
+    // Only noted: the owner's own CLAUDE.md is theirs to change.
+    if let Ok(claude) = fs::read(root.join("CLAUDE.md"))
+        && !claude.windows(10).any(|w| w == b"@AGENTS.md")
+    {
+        eprintln!(
+            "agent {}: {} has a CLAUDE.md without @AGENTS.md; it was left unchanged",
+            agent.slug,
+            root.display()
+        );
+    }
+    match revision(&root) {
+        Ok(revision) => {
+            agent.files_revision = revision;
+            Ok(folder)
+        }
+        Err(error) => {
+            folder.rollback()?;
+            Err(error)
+        }
     }
 }
 
@@ -156,7 +272,7 @@ pub(super) fn create(agent: &mut Agent, instructions: &str) -> Result<CreatedFol
         return Err(error);
     }
     agent.folder_path = target.clone();
-    let folder = CreatedFolder {
+    let folder = CreatedFolder::New {
         path: target,
         existed,
     };

@@ -1,0 +1,4 @@
+/* Picked folders: one row per folder, its path and a Remove button. */
+.folder-list { list-style: none; margin: 6px 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.folder-list li { display: flex; align-items: center; gap: 8px; }
+.folder-list .mono { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
