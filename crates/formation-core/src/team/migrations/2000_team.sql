@@ -2,8 +2,11 @@
 -- Written for A's migration runner (TASK-011): it applies each version once, in
 -- order, inside its own transaction, so this file has no transaction or PRAGMA
 -- statements. IDs are UUIDv7 strings; times are UTC RFC 3339 strings.
+-- No foreign keys: the repositories accept rows in any order (a member's Mac stores
+-- a roster whose invitations' creators it may not hold), as `MemoryCollabStore` does.
 
--- A team member. `online` is presence, kept in memory, not here.
+-- A team member. Live presence is the peer module's; `online` is the last value the
+-- team service wrote, kept so a stored member reads back as written.
 CREATE TABLE member (
     id TEXT PRIMARY KEY NOT NULL,
     github_login TEXT NOT NULL,
@@ -13,6 +16,7 @@ CREATE TABLE member (
     tailscale_node TEXT NOT NULL,
     role TEXT NOT NULL CHECK (role IN ('creator', 'member')),
     joined_at TEXT NOT NULL,
+    online INTEGER NOT NULL DEFAULT 0 CHECK (online IN (0, 1)),
     last_seen_at TEXT,
     -- Set once; a removed member keeps the row for names in history.
     removed_at TEXT
@@ -29,9 +33,9 @@ CREATE TABLE invitation (
     id TEXT PRIMARY KEY NOT NULL,
     code TEXT NOT NULL UNIQUE,
     link TEXT NOT NULL,
-    created_by TEXT NOT NULL REFERENCES member (id),
+    created_by TEXT NOT NULL,
     expires_at TEXT NOT NULL,
-    used_by TEXT REFERENCES member (id),
+    used_by TEXT,
     used_at TEXT,
     CHECK ((used_by IS NULL) = (used_at IS NULL))
 ) STRICT;
@@ -46,12 +50,12 @@ CREATE TABLE team (
     creator_port INTEGER NOT NULL CHECK (creator_port BETWEEN 1 AND 65535),
     -- Only the creator's Mac increases it; members hold the last applied version.
     roster_version INTEGER NOT NULL DEFAULT 0 CHECK (roster_version >= 0),
-    open_invitation_code TEXT REFERENCES invitation (code)
+    open_invitation_code TEXT
 ) STRICT;
 
 -- This Mac's own member (`TeamRepo::me`). Written before the team row, which
 -- marks the team as created or joined.
 CREATE TABLE team_me (
     singleton INTEGER PRIMARY KEY NOT NULL CHECK (singleton = 1),
-    member_id TEXT NOT NULL REFERENCES member (id)
+    member_id TEXT NOT NULL
 ) STRICT;

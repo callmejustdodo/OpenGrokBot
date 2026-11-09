@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Formation",
+  "productName": "OpenGrokBot",
   "version": "0.1.0",
   "identifier": "io.github.callmejustdodo.formation",
   "build": {
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Formation",
+        "title": "OpenGrokBot",
         "url": "index.html",
         "width": 1180,
         "height": 740,
@@ -32,7 +32,7 @@
       },
       {
         "label": "menubar",
-        "title": "Formation",
+        "title": "OpenGrokBot",
         "url": "menubar.html",
         "width": 340,
         "height": 440,

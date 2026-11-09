@@ -1,36 +1,37 @@
-/* SC-015 asking conversation. Copied from documentations/mockups/index.html
-   (center column, messages, answers, choice card, composer). */
+/* SC-015 asking conversation. Layout from documentations/mockups/index.html (center column,
+   messages, answers, choice card, composer), restyled to Figma "Renewal v2 · Sky Glass":
+   gradient user bubbles, frosted composer, round gradient send button. */
 .conversation { display: flex; flex-direction: column; min-width: 0; min-height: 0; height: 100%; position: relative; }
 .c-head { height: 64px; flex: none; display: flex; align-items: center; justify-content: center; position: relative; padding: 0 16px; }
 .c-head .right { position: absolute; right: 14px; top: 16px; display: flex; gap: 4px; align-items: center; }
-.msgs { flex: 1; overflow: auto; padding: 4px 28px 18px; display: flex; flex-direction: column; gap: 10px; }
+.msgs { flex: 1; overflow: auto; padding: 4px 28px 18px; display: flex; flex-direction: column; gap: 14px; }
 .msgs .q { display: flex; flex-direction: column; gap: 10px; }
 .sep-t { align-self: center; color: var(--text2); font-size: 12.5px; margin: 6px 0; }
-.ag, .me { max-width: 78%; padding: 10px 15px; border-radius: 20px; line-height: 1.55; font-size: 15px; }
-.ag { align-self: flex-start; background: var(--bub); }
-.me { align-self: flex-end; background: var(--me); color: var(--me-fg); }
+.ag, .me { max-width: 78%; padding: 11px 16px; border-radius: 22px; line-height: 1.55; font-size: 15px; }
+.ag { align-self: flex-start; background: var(--card); box-shadow: var(--soft); border-radius: 18px; padding: 12px 16px; }
+.me { align-self: flex-end; background: var(--me-grad, var(--me)); color: var(--me-fg); box-shadow: 0 6px 18px rgba(47,107,245,.28); }
 .ag .src { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--sep); color: var(--text2); font-size: 12.5px; }
 .stale { color: var(--orange); display: inline-flex; align-items: center; gap: 4px; }
 details.ex { margin-top: 6px; font-size: 13px; }
 details.ex summary { cursor: pointer; color: var(--text2); }
 details.ex blockquote { margin: 5px 0 0; padding: 4px 10px; border-left: 3px solid var(--sep); color: var(--text2); }
-.acts { display: flex; flex-wrap: wrap; gap: 2px; margin-top: -4px; }
+.acts { display: flex; flex-wrap: wrap; gap: 2px; margin-top: -6px; padding-left: 4px; }
 .working { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; color: var(--text2); font-size: 13px; padding: 4px 6px; }
 .dots { display: inline-flex; gap: 3px; }
 .dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--text3); animation: blink 1.2s infinite; }
 .dots i:nth-child(2) { animation-delay: .2s; }
 .dots i:nth-child(3) { animation-delay: .4s; }
 @keyframes blink { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
-.choice .opt { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 11px; border: 1px solid var(--sep); background: var(--field); border-radius: 12px; margin-top: 6px; cursor: pointer; }
-.choice .opt:hover { border-color: var(--text3); }
-.choice .opt.best { border-color: var(--text); }
+.choice .opt { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 11px; border: 1px solid var(--sep); background: var(--field); border-radius: 14px; margin-top: 6px; cursor: pointer; transition: border-color .15s, background .15s; }
+.choice .opt:hover { border-color: var(--primary); background: var(--hover); }
+.choice .opt.best { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary) inset; }
 .choice .opt small { color: var(--text2); display: block; font-size: 12.5px; }
-.tagpill { margin-left: auto; font-size: 11px; font-weight: 600; background: var(--sec); border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
-.composer { margin: 0 20px 18px; display: flex; align-items: flex-end; gap: 8px; padding: 8px; border-radius: 26px; background: var(--card); box-shadow: var(--soft); }
+.tagpill { margin-left: auto; font-size: 11px; font-weight: 600; background: var(--sel); color: var(--primary); border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+.composer { margin: 0 20px 18px; display: flex; align-items: flex-end; gap: 8px; padding: 7px 7px 7px 14px; border-radius: 26px; background: var(--card); border: 0; box-shadow: var(--shadow); -webkit-backdrop-filter: blur(20px) saturate(1.4); backdrop-filter: blur(20px) saturate(1.4); }
 .composer textarea { flex: 1; border: 0; outline: none; resize: none; background: transparent; min-height: 36px; max-height: 120px; padding: 8px 4px; line-height: 1.4; font-size: 15px; }
 .composer.off { opacity: .55; }
 .cbtn { width: 36px; height: 36px; border-radius: 50%; border: 0; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none; }
-.cbtn.add { background: var(--sec); color: var(--text2); }
-.cbtn.go { background: var(--primary); color: var(--primary-fg); }
+.cbtn.add { background: var(--sec); color: var(--primary); }
+.cbtn.go { background: var(--primary-grad, var(--primary)); color: var(--primary-fg); box-shadow: 0 4px 12px rgba(47,107,245,.3); }
 .cbtn[disabled] { opacity: .35; cursor: not-allowed; }
 .c-note { text-align: center; color: var(--text3); font-size: 11.5px; margin: -10px 0 12px; }

@@ -129,6 +129,46 @@ describe("SC-003 detecting", () => {
   });
 });
 
+describe("SC-003 v2 New agent and search", () => {
+  beforeEach(() => play(approvalRaised));
+  const names = () => screen.queryAllByText(/./, { selector: ".nm" }).map((n) => n.textContent);
+
+  it("the New agent button opens the new-agent sheet", () => {
+    render(<Sidebar />);
+    fireEvent.click(screen.getByRole("button", { name: "New agent" }));
+    expect(uiStore.getState().sheet).toEqual({ kind: "new-agent" });
+  });
+
+  it("filters the chat list by name and preview", () => {
+    render(<Sidebar />);
+    expect(screen.getByRole("heading", { name: "My agents" })).toBeInTheDocument();
+    const search = screen.getByRole("searchbox", { name: "Search agents and chats" });
+    fireEvent.change(search, { target: { value: "BACK" } });
+    expect(names()).toEqual(["Backend"]);
+    fireEvent.change(search, { target: { value: "content ideas" } });
+    expect(names()).toEqual(["Marketing"]);
+  });
+
+  it("shows No matches when nothing matches", () => {
+    render(<Sidebar />);
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "zzzz-nothing" } });
+    expect(names()).toHaveLength(0);
+    expect(screen.getByRole("status")).toHaveTextContent("No matches");
+  });
+
+  it("⌘K focuses the search and Esc clears it", () => {
+    render(<Sidebar />);
+    const search = screen.getByRole("searchbox");
+    fireEvent.keyDown(window, { key: "k", metaKey: true });
+    expect(search).toHaveFocus();
+    fireEvent.change(search, { target: { value: "back" } });
+    expect(names()).toHaveLength(1);
+    fireEvent.keyDown(search, { key: "Escape" });
+    expect(search).toHaveValue("");
+    expect(names().length).toBeGreaterThan(1);
+  });
+});
+
 it("keeps Research's stalled state readable without color", () => {
   render(<Sidebar />);
   expect(within(row("Research")).getByText("Stalled")).toBeInTheDocument();

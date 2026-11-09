@@ -16,8 +16,10 @@
 //!   from `gh api user` (MVP).
 //! - Every other peer call maps WhoIs to a member by recorded login and node
 //!   ([`identity::authenticate`]); tagged and unknown nodes are refused.
-//! - State lives behind the `TeamRepo` part of the `CollabStore` port; the SQL for
-//!   B's SQLite store is [`MIGRATIONS`].
+//! - State lives behind the `TeamRepo` part of the `CollabStore` port; the SQL is
+//!   [`MIGRATIONS`], applied as part of
+//!   [`COLLAB_MIGRATIONS`](crate::collab_store::COLLAB_MIGRATIONS) by B's SQLite
+//!   store ([`SqliteCollabStore`](crate::collab_store::SqliteCollabStore)).
 
 pub mod code;
 mod commands;

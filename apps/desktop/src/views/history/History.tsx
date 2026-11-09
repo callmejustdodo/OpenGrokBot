@@ -202,7 +202,7 @@ export default function History() {
         <div className="bt">
           <b>{t("history.error.title", "Couldn't load history")}</b>
           {load.reason === "disconnected"
-            ? t("history.error.disconnected", "Formation isn't reachable right now. Try again in a moment.")
+            ? t("history.error.disconnected", "OpenGrokBot isn't reachable right now. Try again in a moment.")
             : t("history.error.other", "Something went wrong while loading. Try again.")}
         </div>
         <button
@@ -268,7 +268,7 @@ export default function History() {
 
 
   return (
-    <section className="page" aria-label={t("history.title", "History")} data-state={load.status}>
+    <section className="page history" aria-label={t("history.title", "History")} data-state={load.status}>
       <div className="h1row">
         <h1>{t("history.title", "History")}</h1>
         <span className="spacer" />

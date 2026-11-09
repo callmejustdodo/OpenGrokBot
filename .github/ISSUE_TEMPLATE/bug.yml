@@ -1,5 +1,5 @@
 name: Bug report
-description: "Formation behaves differently from what its documentation or specification says."
+description: "OpenGrokBot behaves differently from what its documentation or specification says."
 labels: [bug]
 body:
   - type: markdown

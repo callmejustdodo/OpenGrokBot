@@ -1,4 +1,4 @@
-# Formation — Frontend architecture
+# OpenGrokBot — Frontend architecture
 
 Rev 1 · 2026-11-09 · Implements the approved [mockup M3](mockups/index.html) and [screens and flows](3_screen_list_and_user_flows.md) (Rev 3) on the stack in the [tech spec](4_techspec.md) (Rev 3). Decision IDs refer to the [planning progress](0_one_pager.md#planning-progress) record.
 
@@ -85,8 +85,8 @@ flowchart LR
 ## Design system in code
 
 - **Tokens:** `styles/tokens.css` defines the doc 3 tokens as CSS variables (backgrounds, sidebar, selection, bubbles, primary, text levels, separators, state colors, radii, spacing), with dark values under `prefers-color-scheme: dark`. Components use only variables, never raw colors. The mockup's CSS is the starting point.
-- **Primitives:** Radix provides behavior and accessibility for Dialog (sheets, alerts), DropdownMenu (+ menu), Popover, Switch, Tabs, ToggleGroup (segmented), RadioGroup (harness and avatar pickers), and Tooltip. `ui/` wraps each with Formation's styles.
-- **Avatars:** `components/AgentAvatar` uses `open-bot-avatar`: `renderAvatarSvg` for list stills (cheap at 40 pt) and `mountAvatar` for the pill and panel, with the thinking motion while the agent works and none under Reduce Motion. Badges (state dot, owner initial) are Formation's own overlay (D-042).
+- **Primitives:** Radix provides behavior and accessibility for Dialog (sheets, alerts), DropdownMenu (+ menu), Popover, Switch, Tabs, ToggleGroup (segmented), RadioGroup (harness and avatar pickers), and Tooltip. `ui/` wraps each with OpenGrokBot's styles.
+- **Avatars:** `components/AgentAvatar` uses `open-bot-avatar`: `renderAvatarSvg` for list stills (cheap at 40 pt) and `mountAvatar` for the pill and panel, with the thinking motion while the agent works and none under Reduce Motion. Badges (state dot, owner initial) are OpenGrokBot's own overlay (D-042).
 - **Typography:** system fonts (SF Pro, Apple SD Gothic Neo) and SF Mono, sizes from doc 3.
 - **Native feel:** window vibrancy for the sidebar where supported, native traffic lights, macOS-style focus rings in the system accent color.
 
@@ -112,7 +112,7 @@ Before building a component from scratch, inspect these permissively licensed pr
 | [Happy](https://github.com/slopus/happy) | MIT, Swift and TypeScript | Session list and conversation UI patterns for Claude Code and Codex |
 | [Paperclip](https://github.com/paperclipai/paperclip) | MIT, TypeScript | Approval and governance screens |
 
-AGPL-3.0 projects (HAPI, Claude Squad) and Flowpad (no license) are for reading only; their code is not copied into Formation, which is MIT-licensed.
+AGPL-3.0 projects (HAPI, Claude Squad) and Flowpad (no license) are for reading only; their code is not copied into OpenGrokBot, which is MIT-licensed.
 
 ## Accessibility (NFR-009)
 

@@ -1,4 +1,4 @@
-# Formation — User stories
+# OpenGrokBot — User stories
 
 Rev 2 · 2026-11-09 · Based on the [product requirements](1_product_requirements_documentation.md) (Rev 2). Rev 2 adds US-024 for chatting with one's own agent. Roles and terms follow that document. All stories are **Must** for the first version (D-023).
 
@@ -8,10 +8,10 @@ Examples use Dohyeon as an owner and Minsu as a teammate. Every team member play
 
 ### US-001 Check that my agents are running well
 **FR:** FR-002, FR-005, FR-007
-As an owner, I want to see at a glance whether my agents are running well when I open Formation, so that I can fix problems before they hold anyone up.
+As an owner, I want to see at a glance whether my agents are running well when I open OpenGrokBot, so that I can fix problems before they hold anyone up.
 
-- **Precondition:** Formation is installed and has at least one agent.
-- **Given** Dohyeon opens Formation in the morning, **when** the overview loads, **then** every agent shows its state, last activity time, and pending teammate requests, and anything that needs Dohyeon (approval waiting, error, stalled, failed or missed scheduled run) is listed first.
+- **Precondition:** OpenGrokBot is installed and has at least one agent.
+- **Given** Dohyeon opens OpenGrokBot in the morning, **when** the overview loads, **then** every agent shows its state, last activity time, and pending teammate requests, and anything that needs Dohyeon (approval waiting, error, stalled, failed or missed scheduled run) is listed first.
 - **Given** a scheduled run happened overnight, **when** Dohyeon opens that agent, **then** the run's time and result are shown.
 - **Given** nothing needs attention, **then** the overview says so, with no alerts.
 - **Failure:** if a detected agent's state cannot be read, it shows as unknown with the reason, not as working or idle.
@@ -30,7 +30,7 @@ As an owner, I want to create an agent for a role I define, such as marketing or
 As an owner, I want to start, stop, and restart my agents from one place, so that I don't juggle terminal windows.
 
 - **Given** an agent is stopped, **when** Dohyeon starts it, **then** its runtime runs in the agent's folder and its state becomes working or idle.
-- **Given** an agent is in the middle of a task, **when** Dohyeon stops it, **then** Formation asks whether to stop now or after the current turn, and does what was chosen.
+- **Given** an agent is in the middle of a task, **when** Dohyeon stops it, **then** OpenGrokBot asks whether to stop now or after the current turn, and does what was chosen.
 - **Given** Dohyeon restarts an agent, **then** it continues the latest session where the runtime supports it, or the app says a new session started.
 - **Failure:** if the runtime exits with an error, the agent shows the error state and Dohyeon is alerted (US-007).
 - **Detected agents:** controls a harness does not support are hidden, with an explanation.
@@ -43,7 +43,7 @@ As an owner, I want to chat with my agent to give it work and follow what it doe
 - **Given** Backend is working, **when** Dohyeon sends another message, **then** it shows as queued and is delivered when the current turn ends; until then Dohyeon can edit or withdraw it.
 - **When** Dohyeon chooses "Steer now" on the queued message, **then** it is delivered into the running turn at the next point the runtime allows; **when** Dohyeon chooses "Stop," the turn ends.
 - **Given** the runtime asks permission for an action in Dohyeon's own work, **then** the request appears in the conversation for Dohyeon to answer.
-- **Given** a detected agent that does not accept input from Formation, **then** its activity is visible but the message box is disabled with the reason.
+- **Given** a detected agent that does not accept input from OpenGrokBot, **then** its activity is visible but the message box is disabled with the reason.
 - **Then** teammates never see this conversation.
 
 ### US-004 Edit an agent's instructions and skills
@@ -65,12 +65,12 @@ As an owner, I want an agent to do a task on a schedule, so that routine work ha
 
 ### US-006 Connect agents I already run elsewhere
 **FR:** FR-006
-As an owner, I want Formation to find the Claude Code and Codex sessions I started elsewhere and my Hermes or OpenClaw instances, so that all my agents are in one place.
+As an owner, I want OpenGrokBot to find the Claude Code and Codex sessions I started elsewhere and my Hermes or OpenClaw instances, so that all my agents are in one place.
 
-- **Given** a Claude Code session is running in Terminal, **when** Formation detects it, **then** it appears in the overview labeled as detected.
+- **Given** a Claude Code session is running in Terminal, **when** OpenGrokBot detects it, **then** it appears in the overview labeled as detected.
 - **When** Dohyeon connects a detected agent, **then** it can be shared like other agents, and the app lists which operations work for it and which do not, with reasons.
-- Formation reads detected sessions and works only in forks, never resuming or writing to the original (FR-006).
-- Formation does not change a detected agent's own configuration without Dohyeon's consent, and does not create new agents on Hermes or OpenClaw.
+- OpenGrokBot reads detected sessions and works only in forks, never resuming or writing to the original (FR-006).
+- OpenGrokBot does not change a detected agent's own configuration without Dohyeon's consent, and does not create new agents on Hermes or OpenClaw.
 
 ### US-007 Be alerted only when I'm needed
 **FR:** FR-007
@@ -98,7 +98,7 @@ As an owner, I want to choose which agents my teammates can ask and what they se
 
 ### US-010 Answer a question sent to me
 **FR:** FR-010
-As an owner, I want questions that Formation could not route to reach me, so that I can answer or hand them to the right agent.
+As an owner, I want questions that OpenGrokBot could not route to reach me, so that I can answer or hand them to the right agent.
 
 - **Given** Minsu chose "ask the owner," **then** Dohyeon receives the question with Minsu's name and context.
 - **When** Dohyeon answers, **then** Minsu receives the answer in the same conversation.
@@ -127,15 +127,15 @@ As an owner, I want to see and change the rules I saved and the questions and re
 As a teammate, I want to ask a colleague's agents about their work in plain words, so that I get the answer without waiting for the colleague.
 
 - **Precondition:** Minsu and Dohyeon are in the same team, and Dohyeon has at least one shared agent.
-- **Given** Minsu asks Dohyeon "how far is the login work?", **when** Formation is confident which agent can answer, **then** within 5 seconds Minsu sees that the question was received, and the answer names the agent, states the time of the latest conversation content it used, includes excerpts if the agent's visibility allows, and says plainly what the conversation does not establish.
+- **Given** Minsu asks Dohyeon "how far is the login work?", **when** OpenGrokBot is confident which agent can answer, **then** within 5 seconds Minsu sees that the question was received, and the answer names the agent, states the time of the latest conversation content it used, includes excerpts if the agent's visibility allows, and says plainly what the conversation does not establish.
 - **Given** the agent's latest activity is older than 1 hour, **then** the answer is marked as possibly out of date.
 - **Then** Dohyeon's agent keeps working: nothing is added to its main session or queue.
 
-### US-014 Choose when Formation is unsure
+### US-014 Choose when OpenGrokBot is unsure
 **FR:** FR-010
-As a teammate, I want to decide what happens when Formation is not sure which agent should answer, so that I don't get a confident answer from the wrong agent.
+As a teammate, I want to decide what happens when OpenGrokBot is not sure which agent should answer, so that I don't get a confident answer from the wrong agent.
 
-- **Given** Formation is not confident, **then** Minsu sees one prompt with the best-guess agent first, the other candidate agents, and "ask Dohyeon."
+- **Given** OpenGrokBot is not confident, **then** Minsu sees one prompt with the best-guess agent first, the other candidate agents, and "ask Dohyeon."
 - **When** Minsu picks an agent, **then** that agent answers as in US-013.
 - **When** Minsu picks "ask Dohyeon," **then** the question goes to Dohyeon (US-010).
 
@@ -165,7 +165,7 @@ As a teammate, I want to ask again easily when an answer doesn't help, so that I
 As a teammate, I want to leave a question when a colleague's Mac is offline, so that I don't have to remember to come back.
 
 - **Given** Dohyeon's Mac is offline, **then** Minsu sees that before sending.
-- **When** Minsu sends anyway, **then** the question waits; when Dohyeon's Mac returns, Formation checks again that sharing and permissions still allow it, answers, and notifies Minsu.
+- **When** Minsu sends anyway, **then** the question waits; when Dohyeon's Mac returns, OpenGrokBot checks again that sharing and permissions still allow it, answers, and notifies Minsu.
 - **Given** the agent was unshared in the meantime, **then** Minsu is told the question can no longer be answered.
 
 ### US-019 Request work and follow it
@@ -181,7 +181,7 @@ As a teammate, I want to ask a colleague's agent to do something and see what ha
 **FR:** FR-008
 As a teammate, I want to join my team from an invitation, so that I can start asking.
 
-- **Given** Minsu has a valid invitation link, **when** Minsu installs Formation and accepts, **then** Minsu sees the members and their shared agents.
+- **Given** Minsu has a valid invitation link, **when** Minsu installs OpenGrokBot and accepts, **then** Minsu sees the members and their shared agents.
 
 ### US-021 Delete my own questions
 **FR:** FR-013
@@ -203,7 +203,7 @@ As a teammate's agent, I want to query a colleague's agents and send work reques
 
 ### US-023 Ask and request through MCP
 **FR:** FR-018, FR-019
-As a teammate's agent, I want the same operations as MCP tools, so that MCP clients can use Formation without the CLI.
+As a teammate's agent, I want the same operations as MCP tools, so that MCP clients can use OpenGrokBot without the CLI.
 
 - **Then** the MCP tools behave exactly like US-022, with the same permissions and request IDs.
 

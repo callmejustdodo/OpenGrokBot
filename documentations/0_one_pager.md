@@ -1,8 +1,8 @@
-# Formation
+# OpenGrokBot
 
 **Don’t ask your teammate. Ask their agent.**
 
-Formation is an open-source Mac app that runs and manages a person's role-based agents, for coding and any other role the person defines, and lets teammates ask those agents directly, so the person stops being the bottleneck.
+OpenGrokBot is an open-source Mac app that runs and manages a person's role-based agents, for coding and any other role the person defines, and lets teammates ask those agents directly, so the person stops being the bottleneck.
 
 **Status:** planning stage; no app or CLI has been implemented.
 
@@ -22,13 +22,13 @@ The user's own team of four developers, each running several role-based agents o
 
 ## Product
 
-**An agent is a folder.** Each role agent lives in its own folder that holds its instructions, skills, memory, and schedules, in the spirit of [Vercel eve](https://github.com/vercel/eve). The owner defines the role: coding is one role among many, alongside roles such as research, planning, marketing, or customer support. Formation runs these agents on Codex or Claude Code rather than on third-party harnesses.
+**An agent is a folder.** Each role agent lives in its own folder that holds its instructions, skills, memory, and schedules, in the spirit of [Vercel eve](https://github.com/vercel/eve). The owner defines the role: coding is one role among many, alongside roles such as research, planning, marketing, or customer support. OpenGrokBot runs these agents on Codex or Claude Code rather than on third-party harnesses.
 
 **For the owner,** the Mac app is the place to run, watch, and shape their agents, to give them work by chatting with them as in a messaging app, and to decide which agents teammates may ask and what those teammates may do.
 
 **For teammates,** the Mac app is where they ask:
 
-- **Ask a person:** "Dohyeon's agent, how far is the login work?" Formation picks the role agent that can answer, and that agent answers from its session conversation.
+- **Ask a person:** "Dohyeon's agent, how far is the login work?" OpenGrokBot picks the role agent that can answer, and that agent answers from its session conversation.
 - **Ask a specific agent** chosen from the owner's list.
 - Answers come from a separate side conversation, so the owner's running task is not interrupted. Work requests follow [FR-014](1_product_requirements_documentation.md#work-requests-and-approvals) under the owner's approval rules.
 
@@ -39,7 +39,7 @@ Teammates' agents can ask the same way through a CLI or an MCP server, both retu
 ## Success
 
 - **Goal:** a teammate gets a progress answer within about 5 minutes that today takes about 2 hours of waiting. The 2-hour figure is illustrative; measure the real baseline with the four-person team before relying on it.
-- **Proposed signals:** time from question to answer; number of "how is it going?" messages sent to owners; how often an answer was wrong or out of date; whether the team keeps using Formation after the first week.
+- **Proposed signals:** time from question to answer; number of "how is it going?" messages sent to owners; how often an answer was wrong or out of date; whether the team keeps using OpenGrokBot after the first week.
 
 None of these has been measured yet.
 
@@ -80,16 +80,16 @@ A macOS desktop app, used by both owners and teammates; all four team members in
 ## Risks
 
 - **Scope versus schedule:** the included scope (agent management, routing, side conversations, approvals, cross-machine connection) is far larger than a single day of work. The implementation plan must deliver a thin usable slice first and order the rest.
-- **Integration:** reading session conversations and controlling agents depends on what Claude Code and Codex expose. Attaching to a session that Formation did not start may not be possible. This needs an early integration proof.
-- **Overlap:** [Reason Network](https://github.com/reason-machines/reason-network) already connects a team's agents across machines, detects many harnesses, and shows session state; Happier also overlaps. Whether to build Formation or extend an existing product is open.
+- **Integration:** reading session conversations and controlling agents depends on what Claude Code and Codex expose. Attaching to a session that OpenGrokBot did not start may not be possible. This needs an early integration proof.
+- **Overlap:** [Reason Network](https://github.com/reason-machines/reason-network) already connects a team's agents across machines, detects many harnesses, and shows session state; Happier also overlaps. Whether to build OpenGrokBot or extend an existing product is open.
 - **Availability:** an owner's Mac that is asleep or offline cannot answer.
 - **Privacy:** session conversations can contain secrets or unrelated work, so owners need to see what a shared agent can expose.
 
 ## Open decisions
 
 - Which provider is supported first, Claude Code or Codex.
-- Build Formation or extend an existing product, informed by the Reason Network trial.
-- How Formation decides which agent answers a person-level question.
+- Build OpenGrokBot or extend an existing product, informed by the Reason Network trial.
+- How OpenGrokBot decides which agent answers a person-level question.
 - How a role agent points at the repositories it works on.
 - Default sharing scope, execution defaults, and how the Macs connect.
 
@@ -167,6 +167,7 @@ Rev 1 of the one-pager was drafted on 2026-11-09 from the interview and replaces
 - D-053 (confirmed, user answers 2026-11-09): The four-role split is accepted and must be sharper and easy to integrate later ("좋은데? 더 명확하게 나눠주고, 또 나중에 이어붙이기 좋게 설계해줘" ("Good. Split it more clearly, and design it so the pieces join easily later")); validation by the team's two-Mac checklist plus the designer's comparison with M3 ("응 좋아" ("Yes, good")). Applied in implementation_plan.md as path ownership per role, a contract-first `formation-proto` and port traits, fakes for each side, per-role migration ranges, one branch per task, and integration checkpoints IC-1 to IC-5. Affects implementation_plan.md.
 - D-054 (confirmed, user request 2026-11-09): Remove waits between roles in the implementation plan. User: "이거 근데 ABC가 서로 블락하는거 아냐?" ("But won't A, B, and C block each other?"), then "Rev 2로 고쳐줘" ("Revise it as Rev 2"). Rev 2: the contract is co-written by A, B, and C at kickoff in per-role files; each role builds the fakes others use (TASK-003, TASK-042, TASK-043); prerequisites name interfaces and fakes, not other roles' implementations; the permission gate moves to B (TASK-005, TASK-044), LaunchAgent registration to C (TASK-009), storage to A (TASK-011); a lanes table shows each role's path to IC-3. Affects implementation_plan.md.
 - D-056 (confirmed, user decision 2026-11-09, issue #14): Only the owner writes to an agent's main session; the owner's chat stays there (FR-022). Teammates' work requests run in separate forks of the agent's session, with requester and request ID bound when each fork process starts. Detected sessions are read and forked, never resumed or written to by Formation, preventing two processes from writing to one original session. Supersedes the main-session work-request path in FR-014, US-019, the backend architecture, and TASK-023/TASK-024 and IC-3. File isolation for request forks and how their results reach the owner and main session remain [open](4_techspec.md#open-decisions). Affects 1_product_requirements_documentation.md, 2_user_stories.md, 4_techspec.md, 6_backend_architecture.md, implementation_plan.md.
+- D-057 (confirmed, user decision 2026-11-09, issue #11): The product is renamed from Formation to OpenGrokBot. User: "이거 이름 변경 진행해주는데, 근데 유저한테 안보이는 부분들(인터페이스나 코드)는 그냥 둬. 유저한테 보이는 부분만 바꾸면 돼. 레포 이름이나 제품 타이틀." ("Go ahead with the rename, but leave the parts users don't see (interfaces and code) as they are. Change only what users see: the repository name and the product title."). Changed: the documents, the mockup, the GitHub repository name, and what the app shows (app and window titles, menu bar items, UI copy). Unchanged: crate and binary names (`formation-proto`, `formation-core`, `formationd`, the `formation` CLI), the app identifier, environment variables such as `FORMATION_SOCKET`, on-disk paths such as `~/Library/Application Support/Formation/` and `~/Formation/Agents/`, and code comments. Entries above keep the names they were written with (D-040). Name checks on 2026-11-09: `opengrokbot` was free on npm, crates.io, and Homebrew; opengrokbot.com was already registered; no trademark review was recorded (issue #11). The edits are name-only, so the confirmations in the table above stand.
 
 **Discovery notes**
 - Problem episode (user answer 2026-11-09): "내가 동료의 에이전트한테 진행상황을 물어보곤 했어. 동료한테 슬랙으로 물어봤지. 그냥 동료가 병목이라는 생각이 들었어." ("I used to ask my colleague's agent about progress. I asked the colleague on Slack. I just felt the colleague was the bottleneck."). The need is work progress/status, not only decision rationale as in the pre-workflow draft. Workaround: Slack message to the colleague. Pain: the colleague becomes the bottleneck. Answers must come from the session conversation (D-017); the target is D-018.

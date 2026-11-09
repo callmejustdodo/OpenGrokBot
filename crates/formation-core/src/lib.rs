@@ -3,6 +3,7 @@
 
 pub mod agents;
 pub mod ask;
+pub mod collab_store;
 pub mod harness;
 pub mod notify;
 pub mod peer;

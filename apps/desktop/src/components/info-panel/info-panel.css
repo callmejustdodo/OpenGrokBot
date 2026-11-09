@@ -1,0 +1,4 @@
+/* SC-020 compact cards: title, one-line summary, and a › chevron. */
+.p-link small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.p-link .chev::before { content: "›"; color: var(--text2); font-size: 18px; line-height: 1; display: inline-block; transition: transform .15s; }
+.p-link[data-expanded="true"] .chev::before { transform: rotate(90deg); }

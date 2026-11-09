@@ -51,14 +51,14 @@ export default function Rules() {
         return;
       case "invalid_params":
         setFailure({
-          message: t("rules.error.invalid", "Formation couldn't accept these limits."),
+          message: t("rules.error.invalid", "OpenGrokBot couldn't accept these limits."),
           action: "dismiss",
           retry,
         });
         return;
       case "disconnected":
         setFailure({
-          message: t("rules.error.disconnected", "Formation isn't reachable. Try again in a moment."),
+          message: t("rules.error.disconnected", "OpenGrokBot isn't reachable. Try again in a moment."),
           action: "retry",
           retry,
         });

@@ -18,11 +18,11 @@ export default function DetectedBanner({ agentId }: { agentId: AgentId }) {
         <p>
           {t(
             "detected.body",
-            "This {{harness}} session in {{path}} was started outside Formation, so Formation can't send it messages. You can still see its activity.",
+            "This {{harness}} session in {{path}} was started outside OpenGrokBot, so OpenGrokBot can't send it messages. You can still see its activity.",
             { harness: harnessLabel(detected.harness, t), path: detected.path },
           )}
         </p>
-        <ul aria-label={t("detected.capabilities", "What Formation can do")}>
+        <ul aria-label={t("detected.capabilities", "What OpenGrokBot can do")}>
           {rows.map((c) => (
             <li key={c.key} data-supported={c.supported}>
               {c.supported
