@@ -74,7 +74,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 ### Phase 0 · Scaffold and contract
 
 ### TASK-001: Repository scaffold builds and runs an empty app
-- Status: in progress
+- Status: complete
 - References: [tech spec · starter](4_techspec.md#starter), [code layout](4_techspec.md#code-layout)
 - Prerequisites: none
 - Change locations: proposed `Cargo.toml` (workspace), `crates/{formation-proto,formation-core,formationd,formation-cli}/`, `apps/desktop/` (from `pnpm create tauri-app`, TypeScript, React, TypeScript), `justfile` or `package.json` scripts, `.github/workflows/` (add Rust and frontend checks beside `documentation.yml`)
