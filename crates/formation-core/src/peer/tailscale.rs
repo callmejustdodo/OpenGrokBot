@@ -26,6 +26,7 @@
 //! is refused with 403. The port and token change whenever the Tailscale
 //! extension restarts, so a failed request rediscovers them once.
 
+use std::collections::HashMap;
 use std::fmt;
 use std::io::{self, Read, Write};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpStream};
@@ -202,6 +203,20 @@ impl LocalApi {
         parse_status_self(&response.body)
             .ok_or_else(|| WhoIsError::BadResponse("status has no Tailscale IPv4".into()))
     }
+
+    /// Every node's IPv4 by stable ID, from `/localapi/v0/status` with the peer
+    /// list (see [`parse_status_nodes`]).
+    pub fn node_addresses(&self) -> Result<NodeAddresses, WhoIsError> {
+        let response = self.get("/localapi/v0/status")?;
+        if response.status != 200 {
+            return Err(failed(format!(
+                "LocalAPI status returned {}: {}",
+                response.status,
+                response.body_text()
+            )));
+        }
+        parse_status_nodes(&response.body)
+    }
 }
 
 fn failed(detail: String) -> WhoIsError {
@@ -240,6 +255,63 @@ pub fn parse_status_self(json: &[u8]) -> Option<SelfNode> {
         .map(|name| name.trim_end_matches('.').to_owned())
         .filter(|name| !name.is_empty());
     Some(SelfNode { ipv4, dns_name })
+}
+
+/// Tailnet IPv4 addresses by node `StableID`.
+pub type NodeAddresses = HashMap<String, Ipv4Addr>;
+
+/// Reads `Self` and every `Peer[*]` of an `ipnstate.Status`: each node's `ID`
+/// (its `StableID`, the same value WhoIs reports as `Node.StableID` and a
+/// member's `tailscale_node` records) and its first tailnet IPv4 in
+/// `TailscaleIPs`.
+///
+/// Tagged nodes are left out: a tagged node has no user, so it is never a
+/// member's Mac, and a member's node that has since been tagged must not be
+/// sent a member's questions. Nodes without a tailnet IPv4 are left out too,
+/// since the peer server binds IPv4 only.
+pub fn parse_status_nodes(json: &[u8]) -> Result<NodeAddresses, WhoIsError> {
+    let status: RawStatus = serde_json::from_slice(json)
+        .map_err(|error| WhoIsError::BadResponse(format!("not status JSON: {error}")))?;
+    Ok(status
+        .self_node
+        .into_iter()
+        .chain(status.peers.unwrap_or_default().into_values())
+        .filter_map(RawPeerStatus::into_address)
+        .collect())
+}
+
+#[derive(serde::Deserialize)]
+struct RawStatus {
+    #[serde(rename = "Self")]
+    self_node: Option<RawPeerStatus>,
+    /// Keyed by node key; `null` on a tailnet with no other nodes.
+    #[serde(rename = "Peer")]
+    peers: Option<HashMap<String, RawPeerStatus>>,
+}
+
+#[derive(serde::Deserialize)]
+struct RawPeerStatus {
+    #[serde(rename = "ID")]
+    id: Option<String>,
+    #[serde(rename = "TailscaleIPs")]
+    ips: Option<Vec<String>>,
+    #[serde(rename = "Tags")]
+    tags: Option<Vec<String>>,
+}
+
+impl RawPeerStatus {
+    fn into_address(self) -> Option<(String, Ipv4Addr)> {
+        if self.tags.is_some_and(|tags| !tags.is_empty()) {
+            return None;
+        }
+        let id = self.id.filter(|id| !id.is_empty())?;
+        let ipv4 = self
+            .ips?
+            .iter()
+            .filter_map(|ip| ip.parse::<Ipv4Addr>().ok())
+            .find(|ip| is_tailscale_ipv4(*ip))?;
+        Some((id, ipv4))
+    }
 }
 
 /// The first executable `tailscale` CLI.
@@ -354,6 +426,23 @@ pub fn cli_whois(cli: &Path, addr: &str) -> Result<PeerIdentity, WhoIsError> {
     }
 }
 
+/// Every node's IPv4 by stable ID through `tailscale status --json` at `cli`,
+/// which prints the same `ipnstate.Status` as the LocalAPI.
+pub fn cli_node_addresses(cli: &Path) -> Result<NodeAddresses, WhoIsError> {
+    let output = process::run(cli, &["status", "--json"], &CLI_ENV, CLI_TIMEOUT)
+        .map_err(|error| failed(format!("tailscale CLI: {error}")))?;
+    parse_status_nodes(&output.stdout).map_err(|parse_error| {
+        // The GUI binary prints an error and exits 0 instead of running the
+        // command (see the module docs); name what it printed.
+        let line = output.first_line();
+        if line.is_empty() {
+            parse_error
+        } else {
+            failed(format!("tailscale status ({}): {line}", output.status))
+        }
+    })
+}
+
 /// This Mac's Tailscale IPv4 from `tailscale ip -4`.
 pub fn cli_self_ipv4(cli: &Path) -> Option<Ipv4Addr> {
     let output = process::run(cli, &["ip", "-4"], &CLI_ENV, CLI_TIMEOUT).ok()?;
@@ -459,14 +548,50 @@ impl Tailscale {
     /// WhoIs through the LocalAPI only, rediscovering the endpoint once when
     /// it is missing or a request fails.
     pub fn query_localapi(&self, addr: &str) -> Result<PeerIdentity, WhoIsError> {
+        self.with_localapi(|api| api.whois(addr))
+    }
+
+    /// Every node's tailnet IPv4 by stable ID (this Mac's and its peers'),
+    /// through the interface `via` names: the LocalAPI's status with peers, or
+    /// `tailscale status --json`. Blocking, like [`Tailscale::query`].
+    pub fn node_addresses(&self) -> Result<NodeAddresses, WhoIsError> {
+        let localapi = || self.with_localapi(LocalApi::node_addresses);
+        let cli = || {
+            let cli = self.cli.as_deref().ok_or_else(|| {
+                WhoIsError::Unavailable(format!(
+                    "no tailscale CLI at {}",
+                    CLI_CANDIDATES.join(", ")
+                ))
+            })?;
+            cli_node_addresses(cli)
+        };
+        match self.via {
+            Via::LocalApi => localapi(),
+            Via::Cli => cli(),
+            Via::Auto => match localapi() {
+                Ok(nodes) => Ok(nodes),
+                Err(api_error) if self.cli.is_some() => {
+                    cli().map_err(|cli_error| combine(api_error, cli_error))
+                }
+                Err(api_error) => Err(api_error),
+            },
+        }
+    }
+
+    /// `request` on the LocalAPI, rediscovering the endpoint once when it is
+    /// missing or the request fails.
+    fn with_localapi<T>(
+        &self,
+        request: impl Fn(&LocalApi) -> Result<T, WhoIsError>,
+    ) -> Result<T, WhoIsError> {
         let Some(current) = self.localapi().or_else(|| self.rediscover(None)) else {
             return Err(WhoIsError::Unavailable(
                 "no Tailscale LocalAPI found".into(),
             ));
         };
-        match current.whois(addr) {
+        match request(&current) {
             Err(WhoIsError::Failed(detail)) => match self.rediscover(Some(&current)) {
-                Some(fresh) => fresh.whois(addr),
+                Some(fresh) => request(&fresh),
                 None => Err(WhoIsError::Failed(detail)),
             },
             other => other,
@@ -1013,5 +1138,101 @@ mod tests {
             tailscale.query("100.64.0.1:7413"),
             Err(WhoIsError::NotFound(_))
         ));
+    }
+
+    const STATUS_PEERS: &str = include_str!("testdata/status-peers.json");
+
+    #[test]
+    fn reads_every_users_node_ipv4_from_status() {
+        let nodes = parse_status_nodes(STATUS_PEERS.as_bytes()).unwrap();
+        assert_eq!(
+            nodes,
+            NodeAddresses::from([
+                // This Mac.
+                (
+                    "nEXAMPLE0001CNTRL".to_owned(),
+                    Ipv4Addr::new(100, 101, 102, 103)
+                ),
+                // IPv6 listed first; the IPv4 is still found.
+                (
+                    "nEXAMPLE0002CNTRL".to_owned(),
+                    Ipv4Addr::new(100, 88, 77, 66)
+                ),
+                // The tagged server and the IPv6-only node are left out.
+            ])
+        );
+    }
+
+    #[test]
+    fn status_without_peers_or_usable_nodes() {
+        let cases: [(&[u8], usize); 5] = [
+            (
+                br#"{"Self":{"ID":"nA","TailscaleIPs":["100.64.0.1"]},"Peer":null}"#,
+                1,
+            ),
+            (br#"{"BackendState":"Stopped","Self":null}"#, 0),
+            (
+                br#"{"Peer":{"nodekey:1":{"ID":"","TailscaleIPs":["100.64.0.2"]}}}"#,
+                0,
+            ),
+            (
+                br#"{"Peer":{"nodekey:1":{"ID":"nB","TailscaleIPs":["192.168.0.2"]}}}"#,
+                0,
+            ),
+            (
+                br#"{"Peer":{"nodekey:1":{"ID":"nB","TailscaleIPs":["100.64.0.2"],"Tags":[]}}}"#,
+                1,
+            ),
+        ];
+        for (json, expected) in cases {
+            let nodes = parse_status_nodes(json).unwrap();
+            assert_eq!(nodes.len(), expected, "{}", String::from_utf8_lossy(json));
+        }
+        for json in [&b"not json"[..], b"", b"[1]"] {
+            assert!(matches!(
+                parse_status_nodes(json),
+                Err(WhoIsError::BadResponse(_))
+            ));
+        }
+    }
+
+    #[test]
+    fn node_addresses_come_from_the_localapi_status_with_peers() {
+        let api = FakeLocalApi::start(200, STATUS_PEERS);
+        let (discover, _) = counting(None);
+        let tailscale =
+            Tailscale::with_discovery(Via::LocalApi, None, Some(api.endpoint()), discover);
+        let nodes = tailscale.node_addresses().unwrap();
+        assert_eq!(
+            nodes.get("nEXAMPLE0002CNTRL"),
+            Some(&Ipv4Addr::new(100, 88, 77, 66))
+        );
+        let requests = api.requests();
+        assert!(
+            requests[0].starts_with("GET /localapi/v0/status HTTP/1.1\r\n"),
+            "{}",
+            requests[0]
+        );
+    }
+
+    #[test]
+    fn node_addresses_fall_back_to_the_cli() {
+        let api = FakeLocalApi::start(403, "bad password");
+        let cli = FakeCli::printing("status", STATUS_PEERS);
+        let (discover, _) = counting(Some(api.endpoint()));
+        let tailscale =
+            Tailscale::with_discovery(Via::Auto, Some(cli.path()), Some(api.endpoint()), discover);
+        let nodes = tailscale.node_addresses().unwrap();
+        assert_eq!(nodes.len(), 2);
+
+        // A CLI that prints text instead of JSON (the GUI binary's error, say) is
+        // named in the error, not reported as bad JSON. /bin/echo stands in.
+        let tailscale = Tailscale::new(Via::Cli, Some(PathBuf::from("/bin/echo")), None);
+        match tailscale.node_addresses() {
+            Err(WhoIsError::Failed(detail)) => {
+                assert!(detail.contains("status --json"), "{detail}")
+            }
+            other => panic!("{other:?}"),
+        }
     }
 }
