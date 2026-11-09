@@ -118,6 +118,7 @@ mod tests {
             }),
             Event::AgentStream(AgentStreamEvent {
                 agent_id: id,
+                session_id: crate::common::SessionId("session".into()),
                 stream_seq: 1,
                 delta: StreamDelta::TurnStarted {
                     message_id: crate::common::MessageId::generate(),

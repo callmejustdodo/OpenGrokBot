@@ -39,6 +39,8 @@ macro_rules! uuid_ids {
 uuid_ids! {
     /// A Formation agent, unique on its owner's Mac.
     AgentId,
+    /// One main-session turn or fork run.
+    RunId,
     /// A team member.
     MemberId,
     InvitationId,
