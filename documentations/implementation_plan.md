@@ -341,7 +341,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 ### Phase 4 · Work requests and approvals (IC-3, today's milestone)
 
 ### TASK-023: Work request lifecycle
-- Status: pending
+- Status: complete
 - References: FR-014, US-019, SC-016
 - Prerequisites: TASK-018
 - Change locations: `crates/formation-core/src/requests/`, peer endpoints `POST /v1/requests`, `GET /v1/requests/{id}`, `POST /v1/requests/{id}/cancel`
