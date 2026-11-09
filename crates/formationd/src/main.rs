@@ -1,5 +1,6 @@
 mod fake_commands;
 mod identity;
+mod login_path;
 mod no_team;
 mod owner_only;
 
@@ -257,8 +258,15 @@ fn wiring(directory: &Path, fake_list: &str, detect_paths: DetectPaths) -> Resul
     })
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
+fn main() -> Result<(), Error> {
+    // Children and binary lookups inherit this PATH, so it is set before any thread starts.
+    let (path, path_source) = login_path::resolve();
+    // SAFETY: no other thread exists yet; the runtime is built after this call.
+    unsafe { std::env::set_var("PATH", path) };
+    tokio::runtime::Runtime::new()?.block_on(serve(path_source))
+}
+
+async fn serve(path_source: login_path::Source) -> Result<(), Error> {
     let home = std::env::var_os("HOME")
         .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "HOME is not set"))?;
     let directory = std::path::PathBuf::from(home).join("Library/Application Support/Formation");
@@ -299,11 +307,12 @@ async fn main() -> Result<(), Error> {
     )
     .await?;
     eprintln!(
-        "formationd {} socket={} database={} fakes={}",
+        "formationd {} socket={} database={} fakes={} path_source={}",
         env!("CARGO_PKG_VERSION"),
         socket.display(),
         database.display(),
-        fake_list
+        fake_list,
+        path_source
     );
     let result = tokio::select! {
         result = server.run() => result,
