@@ -71,12 +71,12 @@ export default function MenubarPanel() {
   return (
     <main
       className="mb-panel"
-      aria-label={t("menubar.label", "Formation menu bar panel")}
+      aria-label={t("menubar.label", "OpenGrokBot menu bar panel")}
       data-state={state}
       data-offline={offline ?? undefined}
     >
       <div className="head">
-        <b>Formation</b>
+        <b>OpenGrokBot</b>
         <p className="muted small">{summary}</p>
       </div>
 
@@ -119,7 +119,7 @@ export default function MenubarPanel() {
 
       <div className="sec actions">
         <button type="button" className="btn primary" onClick={() => void showMainWindow()}>
-          {t("menubar.open", "Open Formation")}
+          {t("menubar.open", "Open OpenGrokBot")}
         </button>
         {mirror && connected ? (
           <button
@@ -136,7 +136,7 @@ export default function MenubarPanel() {
           {t("menubar.settings", "Settings…")}
         </button>
         <button type="button" className="btn" onClick={() => void invoke("quit_app")}>
-          {t("menubar.quit", "Quit Formation")}
+          {t("menubar.quit", "Quit OpenGrokBot")}
         </button>
         {failed ? (
           <p className="err" role="alert">

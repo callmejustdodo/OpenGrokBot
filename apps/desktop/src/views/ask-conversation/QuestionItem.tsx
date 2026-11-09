@@ -87,7 +87,7 @@ export default function QuestionItem(props: QuestionItemProps) {
           <p>
             {t(
               "ask.offlineBody",
-              "When {{owner}} is back, Formation re-checks sharing and permissions, answers, and notifies you.",
+              "When {{owner}} is back, OpenGrokBot re-checks sharing and permissions, answers, and notifies you.",
               { owner: ownerName },
             )}
           </p>

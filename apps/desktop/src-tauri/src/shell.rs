@@ -101,11 +101,11 @@ pub fn create_app_menu(app: &AppHandle) -> tauri::Result<()> {
 /// short menu to open the main window or quit. Quitting leaves formationd and
 /// every agent running (D-048).
 pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
-    let open = MenuItem::with_id(app, "open", "Open Formation", true, None::<&str>)?;
-    let quit = MenuItem::with_id(app, "quit", "Quit Formation", true, Some("Cmd+Q"))?;
+    let open = MenuItem::with_id(app, "open", "Open OpenGrokBot", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit OpenGrokBot", true, Some("Cmd+Q"))?;
     let menu = Menu::with_items(app, &[&open, &quit])?;
     let mut builder = TrayIconBuilder::with_id(TRAY)
-        .tooltip("Formation")
+        .tooltip("OpenGrokBot")
         .icon_as_template(true)
         .menu(&menu)
         .show_menu_on_left_click(false)
