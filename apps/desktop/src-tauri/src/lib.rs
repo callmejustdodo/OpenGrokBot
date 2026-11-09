@@ -85,6 +85,12 @@ fn show_notification(
     notifications::show(&app, title, body, target)
 }
 
+/// Shows the tray icon's dot while something needs the owner (SC-002).
+#[tauri::command]
+fn set_tray_attention(app: AppHandle, attention: bool) -> Result<(), String> {
+    shell::set_tray_attention(&app, attention).map_err(|e| e.to_string())
+}
+
 /// Quits the app; formationd and every agent keep running (D-048).
 #[tauri::command]
 fn quit_app(app: AppHandle) {
@@ -107,6 +113,7 @@ pub fn run() {
             focus_item,
             show_settings_window,
             show_notification,
+            set_tray_attention,
             quit_app
         ])
         .setup(move |app| {
@@ -134,6 +141,7 @@ pub fn run() {
 
             shell::create_app_menu(app.handle())?;
             shell::create_tray(app.handle())?;
+            app.manage(shell::TrayIcons::new(app.handle()));
             notifications::on_click(app.handle());
             if !hidden {
                 shell::show_main_window(app.handle());
@@ -144,14 +152,11 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|_app, _event| {
-            // Clicking the Dock icon of an app started hidden opens its window.
+            // Clicking the Dock icon opens the main window when it is hidden:
+            // the app started hidden, or the window was closed.
             #[cfg(target_os = "macos")]
-            if let tauri::RunEvent::Reopen {
-                has_visible_windows: false,
-                ..
-            } = _event
-            {
-                shell::show_main_window(_app);
+            if let tauri::RunEvent::Reopen { .. } = _event {
+                shell::on_reopen(_app);
             }
         });
 }
