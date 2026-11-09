@@ -1,6 +1,6 @@
 # App icons
 
-OpenGrokBot's own mark, drawn for the v2 "Sky Glass" design (the blue `--brand-grad` gradient in `src/styles/tokens.css`, the agent avatars' two pill eyes): a white chat bubble with an agent's eyes, in front of a frosted bubble for the teammate on the other side.
+OpenGrokBot's mark, taken from the Figma file "Formation — Mockup M3" (v2 "Sky Glass"): the main agent's glossy blue orb (node 60:146) carrying the menu bar mark, three connected nodes (node 29:22), on the Sky Glass backdrop. The menu bar glyph is that mark alone.
 
 - `source/app-icon.svg`: the app icon, on the macOS icon grid (an 824 px rounded square in a 1024 px canvas). Every other image here except `tray-icon.png` is generated from it.
 - `source/tray-icon.svg`: the menu bar glyph, black on clear, drawn as a template image. `src/shell.rs` embeds `tray-icon.png` and adds the attention dot to it.
