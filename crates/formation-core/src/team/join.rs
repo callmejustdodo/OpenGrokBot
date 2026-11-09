@@ -8,7 +8,7 @@ use formation_proto::team::{Invitation, Member, MemberRole, Team, TeamJoin, WhoI
 use super::code;
 use super::identity;
 use super::link::InvitationLink;
-use super::roster;
+use super::roster::{self, RosterChange};
 use super::service::{TeamService, conflict};
 use crate::ports::{Result, TeamRecord, TeamRepo};
 
@@ -166,6 +166,17 @@ impl<S: TeamRepo + Send + Sync + ?Sized> TeamService<S> {
             open_invitation: None,
         };
         self.store.put_team(Some(&record))?;
-        self.changed(&record)
+        let team = self.changed(&record)?;
+        // The joined roster is a roster change on this Mac like an applied one: it
+        // is what tells `forward_roster`'s callback (the peer client) to open
+        // links to the new teammates. Nothing else would, since the creator's
+        // push travels over a link this Mac does not have yet. No receiver (no
+        // peer server running) is fine.
+        let _ = self.roster_tx.send(RosterChange {
+            version: record.roster_version,
+            members: self.store.members()?,
+            removed: vec![],
+        });
+        Ok(team)
     }
 }

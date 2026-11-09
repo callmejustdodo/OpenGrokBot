@@ -113,7 +113,7 @@ Not yet proven: file-edit approvals (`item/fileChange/requestApproval`), `accept
 
 ## Data model
 
-Stored in SQLite on each member's Mac. Times are UTC in storage and shown in local time. IDs are UUIDv7 strings. The member, invitation, team, sharing, question, request, queue, approval and rule tables are B's migrations 2000–2999 (`crates/formation-core/src/collab_store/`); nested values that are never queried are JSON text.
+Stored in SQLite on each member's Mac. Times are UTC in storage and shown in local time. IDs are UUIDv7 strings. The member, invitation, team, sharing, question, request, queue, approval, rule and outbox tables are B's migrations 2000–2999 (`crates/formation-core/src/collab_store/`); nested values that are never queried are JSON text.
 
 | Entity | Key fields | Rules |
 | --- | --- | --- |
@@ -131,6 +131,7 @@ Stored in SQLite on each member's Mac. Times are UTC in storage and shown in loc
 | `queue_item` | id, agent_id, source (JSON: owner, request, or schedule), text, queued_at | Each agent's queue in arrival order, kept so a restart re-queues it. |
 | `approval` | id, agent_id, request_id (nullable for the owner's own work), requester, requester_agent, purpose, call (JSON: tool and input), summary, proposed_rule (JSON), status, choice, created_at, decided_at, expires_at | Expires after 24 hours (FR-015). |
 | `rule` | id, requester, agent_id, scope (JSON: all, or program, arg_pattern, folder), expires_at, max_uses, uses, created_at, revoked_at | Never matches command chaining or another folder (FR-015). |
+| `outbox_entry` | key_kind (`question` or `request`), key_id (the asker-chosen `question_id` or `request_id`), member, entry (JSON: the peer call, queued_at, attempts, last_error) | The asker's calls waiting for an unreachable teammate, kept so a restart retries them in the order they were queued (FR-016). |
 | `activity` | id, kind, actor, agent_id, ref_id, at, summary | Local record (FR-020). |
 
 **Invariants:** a private agent never appears in any peer response; approval decisions are made only by the owner's core; a request with a repeated idempotency key returns the original; each agent's main session accepts one turn at a time, in arrival order.
@@ -174,6 +175,7 @@ Decided 2026-11-09 (TASK-017); identity checks are in the backend architecture's
 - **Joining:** the invitee's formationd sends the code, the GitHub login, and a display name to the host in the link. The new member's Tailscale login and node come from WhoIs on that connection, never from the body. Unknown, used, or expired codes return `not_found` and count as bad attempts, which are rate-limited per Tailscale login and for all callers together (assumed 5 and 20 per 10 minutes).
 
 - **Binding and callers:** the server refuses to bind anything but a Tailscale address (100.64.0.0/10, fd7a:115c:a1e0::/48) or loopback (tests and development), never `0.0.0.0`. The caller comes from the TCP peer address only, never a header. Calls whose WhoIs maps to this Mac's own member are refused too, since WhoIs names a machine and another process or OS user on the Mac would otherwise pass as a teammate.
+- **Teammate addresses:** members carry no address. A Mac reaches a teammate at the tailnet IPv4 of the member's recorded node (`tailscale_node`, its `StableID`) in its own Tailscale's status (`/localapi/v0/status`, else `tailscale status --json`), on the peer port; tagged nodes are never used. The status is cached and read again when a node is missing or the copy is older than a minute, at most every 10 seconds. The creator falls back to the host and port in the team record, from the invitation link.
 - **Statuses:** `POST /v1/ask` answers `202`; other successes `200`. Errors carry the code in the body; the status follows it: `403` for `not_member`, `agent_not_shared`, `requests_not_accepted`, and `denied`; `400` `invalid_params` (also for a body that does not decode); `404` `not_found`; `409` `conflict`; `410` `approval_expired`; `422` `harness_unsupported`; `429` `rate_limited`; `503` `peer_offline` and `harness_unavailable`; `500` `internal`. Clients act on the code.
 - **Events connection:** `WS /v1/events` starts with a `presence` message from the owner's Mac (online, with the caller's view of its shared agents), sent again when its shared agents change, then re-sends the caller's questions and requests that are not final or changed while the caller was away. The server pings every 15 seconds. The asker's Mac counts the teammate online while the connection is open and reconnects with the outbox's backoff. A Mac speaks only for itself: the asker drops presence about another member, updates for another owner's questions or requests, and roster messages from anyone but the creator.
 

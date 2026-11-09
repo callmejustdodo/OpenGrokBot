@@ -75,8 +75,9 @@ impl OutboxEntry {
 }
 
 /// Where entries survive a restart, so formationd retries them when it starts
-/// again (backend architecture, "Recovery"). [`MemoryOutboxStore`] keeps them in
-/// memory until B's SQLite table lands with the migration runner (TASK-011).
+/// again (backend architecture, "Recovery"). formationd uses
+/// [`SqliteCollabStore`](crate::collab_store::SqliteCollabStore) (migration
+/// 2002); [`MemoryOutboxStore`] keeps them in memory, for tests.
 pub trait OutboxStore: Send + Sync {
     /// Every waiting entry, oldest first.
     fn load(&self) -> Result<Vec<OutboxEntry>>;

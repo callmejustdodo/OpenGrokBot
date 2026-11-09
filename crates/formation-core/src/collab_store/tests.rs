@@ -476,3 +476,197 @@ fn approvals_filter_by_status_and_rules_count_uses() {
     let missing = store.record_rule_use(RuleId::generate()).unwrap_err();
     assert_eq!(missing.code, ErrorCode::NotFound);
 }
+
+mod outbox {
+    //! The same behaviors as `MemoryOutboxStore`, against SQLite.
+
+    use formation_proto::peer::{PeerAsk, PeerRequestCreate};
+
+    use super::*;
+    use crate::peer::outbox::{OutboxEntry, OutboxKey, OutboxPayload, OutboxStore};
+
+    fn outbox_store() -> SqliteCollabStore {
+        let sqlite = SqliteStore::in_memory(&[MIGRATIONS, COLLAB_MIGRATIONS]).unwrap();
+        SqliteCollabStore::new(Arc::new(sqlite))
+    }
+
+    fn remove_db(path: &std::path::Path) {
+        for suffix in ["", "-wal", "-shm"] {
+            let _ = std::fs::remove_file(format!("{}{suffix}", path.display()));
+        }
+    }
+
+    fn chain() -> Chain {
+        Chain {
+            id: ChainId::generate(),
+            depth: 0,
+        }
+    }
+
+    fn ask_entry(owner: MemberId, text: &str) -> OutboxEntry {
+        OutboxEntry {
+            member: owner,
+            payload: OutboxPayload::Ask {
+                ask: PeerAsk {
+                    question_id: QuestionId::generate(),
+                    thread_id: None,
+                    target: AskTarget::Agent {
+                        member_id: owner,
+                        agent_id: AgentId::generate(),
+                    },
+                    text: text.into(),
+                    via_agent: None,
+                    chain: chain(),
+                },
+            },
+            queued_at: now(),
+            attempts: 0,
+            last_error: None,
+        }
+    }
+
+    fn request_entry(owner: MemberId, prompt: &str) -> OutboxEntry {
+        OutboxEntry {
+            member: owner,
+            payload: OutboxPayload::Request {
+                request: PeerRequestCreate {
+                    request_id: RequestId::generate(),
+                    agent_id: AgentId::generate(),
+                    prompt: prompt.into(),
+                    idempotency_key: format!("retry-{}", RequestId::generate()),
+                    via_agent: Some("backend".into()),
+                    chain: chain(),
+                },
+            },
+            queued_at: now(),
+            attempts: 0,
+            last_error: None,
+        }
+    }
+
+    /// The entry as the outbox writes it back after a failed attempt.
+    fn failed(entry: &OutboxEntry) -> OutboxEntry {
+        OutboxEntry {
+            attempts: entry.attempts + 1,
+            last_error: Some(ApiError::new(ErrorCode::PeerOffline, "unreachable")),
+            ..entry.clone()
+        }
+    }
+
+    #[test]
+    fn put_load_and_remove_follow_the_memory_store() {
+        let store = outbox_store();
+        assert!(store.load().unwrap().is_empty());
+        let (dohyeon, minji) = (MemberId::generate(), MemberId::generate());
+        let first = ask_entry(dohyeon, "Is the login API done?");
+        let second = request_entry(minji, "Add a dark mode toggle");
+        let third = ask_entry(dohyeon, "Which branch has the fix?");
+        for entry in [&first, &second, &third] {
+            store.put(entry).unwrap();
+        }
+        assert_eq!(
+            store.load().unwrap(),
+            vec![first.clone(), second.clone(), third.clone()]
+        );
+
+        store.remove(second.key()).unwrap();
+        assert_eq!(store.load().unwrap(), vec![first.clone(), third.clone()]);
+        // Removing what is not there, again or never queued, is not an error.
+        store.remove(second.key()).unwrap();
+        store
+            .remove(OutboxKey::Question(QuestionId::generate()))
+            .unwrap();
+        assert_eq!(store.load().unwrap(), vec![first.clone(), third.clone()]);
+        // A question and a request never share a key, even with the same UUID.
+        let OutboxKey::Question(id) = first.key() else {
+            panic!("an ask is keyed by its question");
+        };
+        let same_uuid: RequestId = parse("id", &id.to_string()).unwrap();
+        store.remove(OutboxKey::Request(same_uuid)).unwrap();
+        assert_eq!(store.load().unwrap(), vec![first, third]);
+    }
+
+    #[test]
+    fn replacing_an_entry_keeps_its_place() {
+        let store = outbox_store();
+        let owner = MemberId::generate();
+        let first = ask_entry(owner, "Is the login API done?");
+        let second = request_entry(owner, "Add a dark mode toggle");
+        let third = ask_entry(owner, "Which branch has the fix?");
+        for entry in [&first, &second, &third] {
+            store.put(entry).unwrap();
+        }
+        let retried = failed(&first);
+        store.put(&retried).unwrap();
+        let retried_twice = failed(&failed(&second));
+        store.put(&retried_twice).unwrap();
+        assert_eq!(
+            store.load().unwrap(),
+            vec![retried.clone(), retried_twice.clone(), third.clone()]
+        );
+        // Removing the newest entry and queuing another keeps the order too.
+        store.remove(third.key()).unwrap();
+        let fourth = request_entry(owner, "Bump the version");
+        store.put(&fourth).unwrap();
+        store.put(&failed(&retried)).unwrap();
+        assert_eq!(
+            store.load().unwrap(),
+            vec![failed(&retried), retried_twice, fourth]
+        );
+    }
+
+    #[test]
+    fn entries_survive_a_reopen() {
+        let path =
+            std::env::temp_dir().join(format!("formation-outbox-{}.db", AgentId::generate()));
+        let open = || {
+            let sqlite = SqliteStore::open(&path, &[MIGRATIONS, COLLAB_MIGRATIONS]).unwrap();
+            SqliteCollabStore::new(Arc::new(sqlite))
+        };
+        let owner = MemberId::generate();
+        let first = failed(&request_entry(owner, "Add a dark mode toggle"));
+        let second = ask_entry(owner, "Is the login API done?");
+        {
+            let store = open();
+            store.put(&first).unwrap();
+            store.put(&second).unwrap();
+        }
+        {
+            let store = open();
+            assert_eq!(store.load().unwrap(), vec![first.clone(), second.clone()]);
+            store.remove(first.key()).unwrap();
+        }
+        assert_eq!(open().load().unwrap(), vec![second]);
+        remove_db(&path);
+    }
+
+    #[test]
+    fn a_database_from_before_the_outbox_upgrades_in_place() {
+        let path =
+            std::env::temp_dir().join(format!("formation-upgrade-{}.db", AgentId::generate()));
+        let before: Vec<Migration> = COLLAB_MIGRATIONS
+            .iter()
+            .copied()
+            .filter(|m| m.version < 2002)
+            .collect();
+        let creator = member("dohyeon", MemberRole::Creator);
+        {
+            let sqlite = SqliteStore::open(&path, &[MIGRATIONS, &before]).unwrap();
+            let store = SqliteCollabStore::new(Arc::new(sqlite));
+            store.put_member(&creator).unwrap();
+            assert!(store.load().is_err(), "no outbox table before 2002");
+        }
+        {
+            let sqlite = Arc::new(SqliteStore::open(&path, &[MIGRATIONS, &before]).unwrap());
+            assert_eq!(sqlite.migrate(&[MIGRATIONS, COLLAB_MIGRATIONS]).unwrap(), 1);
+            let store = SqliteCollabStore::new(sqlite.clone());
+            assert_eq!(store.members().unwrap(), vec![creator]);
+            assert!(store.load().unwrap().is_empty());
+            let entry = ask_entry(MemberId::generate(), "Is the login API done?");
+            store.put(&entry).unwrap();
+            assert_eq!(store.load().unwrap(), vec![entry]);
+            assert_eq!(sqlite.migrate(&[MIGRATIONS, COLLAB_MIGRATIONS]).unwrap(), 0);
+        }
+        remove_db(&path);
+    }
+}
