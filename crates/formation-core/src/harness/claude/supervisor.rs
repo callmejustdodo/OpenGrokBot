@@ -27,6 +27,7 @@ use tokio::{
 
 use super::protocol::{self, Launch, LaunchOptions, Priority};
 use crate::{
+    agents::{ClaudeReadiness, HarnessReadiness},
     ask::transcript,
     ports::{
         CommandCall, CommandHandler, EventSink, ForkResult, ForkRun, ForkTools, Harness,
@@ -40,6 +41,8 @@ pub struct ClaudeConfig {
     pub binary: PathBuf,
     pub config_dir: PathBuf,
     pub stalled_after: Duration,
+    /// After "stop now", how long a turn or request fork may run before it is killed.
+    pub stop_timeout: Duration,
     pub mcp_config: String,
     pub pre_tool_use_command: String,
     /// Child-only environment, including fake-claude fixture selection in tests.
@@ -52,6 +55,7 @@ impl Default for ClaudeConfig {
             binary: "claude".into(),
             config_dir: transcript::claude_config_dir().unwrap_or_else(|| PathBuf::from(".claude")),
             stalled_after: Duration::from_secs(600),
+            stop_timeout: Duration::from_secs(10),
             mcp_config: json!({"mcpServers":{"formation":{"command":"formation","args":["mcp","--permission"]}}}).to_string(),
             pre_tool_use_command: "formation hook pre-tool-use".into(),
             env: HashMap::new(),
@@ -79,6 +83,9 @@ struct Running {
     state: AgentState,
     session: SessionInfo,
     seq: u64,
+    /// The last `seq` whose items Claude has written to the transcript: every turn
+    /// up to the last one that ended with a result.
+    transcript_seq: u64,
     run: Option<RunInfo>,
     finished: bool,
 }
@@ -204,11 +211,21 @@ impl ClaudeSupervisor {
         self.inner.sink.publish(Event::AgentStream(event.clone()));
         let _ = self.inner.streams.send(event);
     }
-    fn queue(&self, id: AgentId, queue: &VecDeque<Pending>) {
+    fn publish_queue(&self, id: AgentId, queue: &VecDeque<Pending>) {
         self.inner.sink.publish(Event::AgentQueue(AgentQueueEvent {
             agent_id: id,
             items: queue.iter().map(|p| p.item.clone()).collect(),
         }));
+    }
+    /// Publishes the queue and stores the owner's waiting messages for a restart.
+    fn queue(&self, id: AgentId, queue: &VecDeque<Pending>) -> Result<()> {
+        self.publish_queue(id, queue);
+        let owner: Vec<_> = queue
+            .iter()
+            .filter(|p| p.item.source == QueueSource::Owner)
+            .map(|p| p.item.clone())
+            .collect();
+        self.inner.store.put_owner_queue(id, &owner)
     }
     fn agent(&self, id: AgentId) -> Result<Agent> {
         let mut agent = self
@@ -308,24 +325,19 @@ impl Harness for ClaudeSupervisor {
         HarnessKind::ClaudeCode
     }
     async fn status(&self) -> HarnessStatus {
-        let output = Command::new(&self.inner.config.binary)
-            .arg("--version")
-            .kill_on_drop(true)
-            .output();
-        let output = tokio::time::timeout(Duration::from_secs(5), output).await;
-        let version = match output {
-            Ok(Ok(o)) if o.status.success() => {
-                Some(String::from_utf8_lossy(&o.stdout).trim().to_owned())
-            }
-            _ => None,
-        };
-        HarnessStatus {
-            harness: self.kind(),
-            installed: version.is_some(),
-            signed_in: None,
-            version,
-            path: Some(self.inner.config.binary.clone()),
-            problem: None,
+        // `claude auth status --json` reports sign-in without starting a model turn.
+        let readiness = ClaudeReadiness::new(self.inner.config.binary.clone());
+        let check = tokio::task::spawn_blocking(move || readiness.check());
+        match tokio::time::timeout(Duration::from_secs(10), check).await {
+            Ok(Ok(Ok(mut statuses))) if !statuses.is_empty() => statuses.remove(0),
+            _ => HarnessStatus {
+                harness: self.kind(),
+                installed: false,
+                signed_in: None,
+                version: None,
+                path: Some(self.inner.config.binary.clone()),
+                problem: Some("Could not check Claude Code".into()),
+            },
         }
     }
     async fn start(&self, agent: &Agent, resume: Option<SessionId>) -> Result<SessionInfo> {
@@ -341,6 +353,7 @@ impl Harness for ClaudeSupervisor {
             return Ok(r.session.clone());
         }
         let stored = self.inner.store.main_session(agent.id)?;
+        let restored = self.inner.store.owner_queue(agent.id)?;
         let resume = resume.or_else(|| stored.as_ref().map(|s| s.session_id.clone()));
         let sid = resume
             .clone()
@@ -389,7 +402,19 @@ impl Harness for ClaudeSupervisor {
         let stdin = child.stdin.take().expect("piped stdin");
         let stdout = child.stdout.take().expect("piped stdout");
         let (tx, rx) = mpsc::unbounded_channel();
-        let seq = agents.get(&agent.id).map_or(0, |r| r.seq);
+        // Messages the owner queued before a restart run first, in their order.
+        for item in restored {
+            let (done, _) = oneshot::channel();
+            tx.send(Control::Turn(Pending {
+                run_id: RunId::generate(),
+                item,
+                done,
+            }))
+            .map_err(internal)?;
+        }
+        let (seq, transcript_seq) = agents
+            .get(&agent.id)
+            .map_or((0, 0), |r| (r.seq, r.transcript_seq));
         agents.insert(
             agent.id,
             Running {
@@ -397,6 +422,7 @@ impl Harness for ClaudeSupervisor {
                 state: AgentState::Idle,
                 session: session.clone(),
                 seq,
+                transcript_seq,
                 run: None,
                 finished: false,
             },
@@ -528,6 +554,15 @@ impl Harness for ClaudeSupervisor {
                 "only the main transcript is supported",
             ));
         }
+        // Read the watermark before the transcript, so it never claims items the
+        // page has not read.
+        let stream_seq = self
+            .inner
+            .agents
+            .lock()
+            .unwrap()
+            .get(&id)
+            .map_or(0, |r| r.transcript_seq);
         let path = transcript::find_transcript(
             &self.inner.config.config_dir,
             &session.cwd,
@@ -551,12 +586,10 @@ impl Harness for ClaudeSupervisor {
         let start = end.saturating_sub(limit as usize);
         items.truncate(end);
         let items = items.drain(start..).collect();
-        // Disk transcripts are not atomically synchronized with stream output. Zero
-        // deliberately makes clients replay buffered deltas rather than lose them.
         Ok(ConversationPageResult {
             items,
             has_more: start > 0,
-            stream_seq: 0,
+            stream_seq,
         })
     }
     fn subscribe(&self) -> broadcast::Receiver<AgentStreamEvent> {
@@ -616,7 +649,9 @@ impl ClaudeSupervisor {
         let mut exit_code = None;
         let requests = self.inner.requests.clone();
         let mut request_run = None;
+        let mut request_message = None;
         let mut request_blocks_main = false;
+        let mut kill_at: Option<Instant> = None;
         let failure = loop {
             if active.is_none() && (!request_blocks_main || request_run.is_none()) {
                 if stopping && request_run.is_none() {
@@ -624,7 +659,9 @@ impl ClaudeSupervisor {
                 }
                 if let Some(p) = queue.pop_front() {
                     started.insert(p.item.id);
-                    self.queue(id, &queue);
+                    if let Err(e) = self.queue(id, &queue) {
+                        break Some(e);
+                    }
                     let info = RunInfo {
                         run_id: p.run_id,
                         agent_id: id,
@@ -676,7 +713,7 @@ impl ClaudeSupervisor {
                 control = rx.recv() => match control {
                     Some(Control::Turn(p)) => {
                         if stopping {let _=p.done.send(Err(error(ErrorCode::Conflict,"agent is stopping")));}
-                        else {queue.push_back(p);self.queue(id,&queue);}
+                        else {queue.push_back(p);if let Err(e)=self.queue(id,&queue) {break Some(e);}}
                     }
                     Some(Control::Steer(item, done)) => {
                         let result = if stopping {
@@ -705,8 +742,7 @@ impl ClaudeSupervisor {
                                     Ok(()) => {
                                         started.insert(message_id);
                                         steered.push(queue.remove(index).unwrap());
-                                        self.queue(id, &queue);
-                                        Ok(())
+                                        self.queue(id, &queue)
                                     }
                                     Err(e) => Err(e),
                                 }
@@ -722,8 +758,7 @@ impl ClaudeSupervisor {
                         let result = if let Some(p) = queue.iter_mut().find(|p| p.item.id == message_id) {
                             p.item.text = text;
                             let item = p.item.clone();
-                            self.queue(id, &queue);
-                            Ok(item)
+                            self.queue(id, &queue).map(|()| item)
                         } else {
                             Err(queue_error(message_id, &started))
                         };
@@ -733,8 +768,7 @@ impl ClaudeSupervisor {
                         let result = if let Some(index) = queue.iter().position(|p| p.item.id == message_id) {
                             let p = queue.remove(index).unwrap();
                             let _ = p.done.send(Err(error(ErrorCode::Conflict, "message withdrawn")));
-                            self.queue(id, &queue);
-                            Ok(())
+                            self.queue(id, &queue)
                         } else {
                             Err(queue_error(message_id, &started))
                         };
@@ -753,6 +787,10 @@ impl ClaudeSupervisor {
                             interrupted=true;
                             if let Err(e)=write(&mut stdin,protocol::encode_interrupt(&RunId::generate().to_string())).await {break Some(e);}
                         }
+                        // A turn or fork that ignores the interrupt is killed after the timeout.
+                        if mode==StopMode::Now && kill_at.is_none() && (active.is_some() || request_run.is_some()) {
+                            kill_at=Some(Instant::now()+self.inner.config.stop_timeout);
+                        }
                     }
                     None => break None,
                 },
@@ -762,6 +800,7 @@ impl ClaudeSupervisor {
                     let port = requests.as_ref().unwrap();
                     if let Err(e) = port.report(item.id, RunProgress::Started).await { break Some(e); }
                     request_blocks_main = matches!(item.source, QueueSource::Request { .. });
+                    request_message = Some(item.id);
                     let supervisor = self.clone();
                     let from = self.inner.agents.lock().unwrap()[&id].session.session_id.clone();
                     request_run = Some(Box::pin(async move {
@@ -778,6 +817,7 @@ impl ClaudeSupervisor {
                 },
                 (message_id, result) = async { request_run.as_mut().unwrap().await }, if request_run.is_some() => {
                     request_run = None;
+                    request_message = None;
                     let progress = match result {
                         Ok(TurnResult { outcome: TurnOutcome::Completed, result }) => RunProgress::Completed { result },
                         Ok(TurnResult { outcome: TurnOutcome::Interrupted, .. }) => RunProgress::Interrupted,
@@ -828,6 +868,7 @@ impl ClaudeSupervisor {
                                 stalled=false;
                                 let outcome=if interrupted && result.subtype=="error_during_execution" {TurnOutcome::Interrupted} else if result.is_error || result.subtype!="success" {TurnOutcome::Failed} else {TurnOutcome::Completed};
                                 self.stream(id,StreamDelta::TurnEnded{message_id:p.item.id,outcome});
+                                {let mut agents=self.inner.agents.lock().unwrap();let r=agents.get_mut(&id).unwrap();r.transcript_seq=r.seq;}
                                 self.inner.agents.lock().unwrap().get_mut(&id).unwrap().run=None;
                                 self.state(id,if outcome==TurnOutcome::Failed {AgentState::Error} else {AgentState::Idle},result.terminal_reason,None);
                                 let turn_result = TurnResult{outcome,result:result.result};
@@ -840,6 +881,19 @@ impl ClaudeSupervisor {
                 },
                 _ = tokio::time::sleep_until(last+self.inner.config.stalled_after), if active.is_some() && !stalled => {
                     stalled=true;self.state(id,AgentState::Stalled,Some("no Claude output before stalled threshold".into()),None);
+                }
+                _ = async { tokio::time::sleep_until(kill_at.unwrap()).await }, if kill_at.is_some() => {
+                    // Dropping the fork's future kills its process (`kill_on_drop`); the main
+                    // process is killed below.
+                    if request_run.take().is_some() {
+                        self.inner.forks.lock().unwrap().retain(|_, run| run.agent_id != id);
+                        if let Some(message_id) = request_message.take()
+                            && let Err(e) = requests.as_ref().unwrap().report(message_id, RunProgress::Interrupted).await
+                        {
+                            break Some(e);
+                        }
+                    }
+                    break None;
                 }
             }
         };
@@ -884,7 +938,8 @@ impl ClaudeSupervisor {
             }
         }
         self.inner.agents.lock().unwrap().get_mut(&id).unwrap().run = None;
-        self.queue(id, &queue);
+        // The stored owner queue is kept, so the next start delivers it.
+        self.publish_queue(id, &queue);
         self.state(
             id,
             if failure.is_some() {

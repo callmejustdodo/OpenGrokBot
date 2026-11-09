@@ -5,6 +5,7 @@ use formation_proto::common::{
     ActivityId, AgentId, ApiError, ErrorCode, MemberId, RunId, ScheduleId, Timestamp,
 };
 use formation_proto::harness::SessionInfo;
+use formation_proto::request::QueueItem;
 use formation_proto::snapshot::Settings;
 
 use crate::ports::{
@@ -22,6 +23,7 @@ struct Data {
     agents: Vec<(Agent, Option<Timestamp>)>,
     sessions: Vec<SessionInfo>,
     fork_sessions: std::collections::HashMap<RunId, SessionInfo>,
+    owner_queues: std::collections::HashMap<AgentId, Vec<QueueItem>>,
     schedules: Vec<Schedule>,
     runs: Vec<ScheduleRun>,
     attention: Vec<Attention>,
@@ -133,6 +135,24 @@ impl SessionRepo for MemoryStore {
             .unwrap()
             .fork_sessions
             .insert(run_id, session.clone());
+        Ok(())
+    }
+    fn owner_queue(&self, agent_id: AgentId) -> Result<Vec<QueueItem>> {
+        Ok(self
+            .data
+            .lock()
+            .unwrap()
+            .owner_queues
+            .get(&agent_id)
+            .cloned()
+            .unwrap_or_default())
+    }
+    fn put_owner_queue(&self, agent_id: AgentId, items: &[QueueItem]) -> Result<()> {
+        self.data
+            .lock()
+            .unwrap()
+            .owner_queues
+            .insert(agent_id, items.to_vec());
         Ok(())
     }
 }

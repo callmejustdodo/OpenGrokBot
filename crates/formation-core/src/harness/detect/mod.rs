@@ -1,5 +1,5 @@
 //! Read-only discovery of external sessions and registration with Formation.
-//! Claude activity is recent for 24 hours by default; live state stays unknown.
+//! Claude Code and Codex activity is recent for 24 hours; live state stays unknown.
 use std::{
     collections::HashSet,
     fs,
@@ -26,6 +26,8 @@ use crate::{
 #[derive(Clone)]
 pub struct DetectPaths {
     pub claude_config: PathBuf,
+    /// `$CODEX_HOME/sessions`, or `~/.codex/sessions` when `CODEX_HOME` is unset.
+    pub codex_sessions: PathBuf,
     pub hermes: Vec<PathBuf>,
     pub openclaw: Vec<PathBuf>,
 }
@@ -44,6 +46,11 @@ impl Default for DetectPaths {
         };
         Self {
             claude_config: claude_config_dir().unwrap_or_default(),
+            codex_sessions: std::env::var_os("CODEX_HOME")
+                .map(PathBuf::from)
+                .or_else(|| home.as_ref().map(|h| h.join(".codex")))
+                .map(|h| h.join("sessions"))
+                .unwrap_or_default(),
             hermes: candidates("hermes"),
             openclaw: candidates("openclaw"),
         }
@@ -80,7 +87,16 @@ impl Detect {
                 )
             })
             .collect();
+        let folders: HashSet<_> = agents
+            .iter()
+            .map(|a| {
+                a.folder_path
+                    .canonicalize()
+                    .unwrap_or(a.folder_path.clone())
+            })
+            .collect();
         let mut sessions = HashSet::new();
+        let mut codex_sources = Vec::new();
         for agent in &agents {
             if let Some(session) = self.store.main_session(agent.id)? {
                 sessions.insert(session.session_id);
@@ -90,6 +106,12 @@ impl Detect {
                 && let Some(stem) = source.path.file_stem().and_then(|s| s.to_str())
             {
                 sessions.insert(SessionId(stem.into()));
+            }
+            if let Some(source) = &agent.detected
+                && source.harness == DetectedHarness::Codex
+                && let Some(stem) = source.path.file_stem().and_then(|s| s.to_str())
+            {
+                codex_sources.push(stem.to_owned());
             }
         }
         let mut found = Vec::new();
@@ -152,12 +174,80 @@ impl Detect {
                         path,
                         session_id: Some(session_id),
                         last_activity_at: Some(at),
-                        capabilities: capabilities(true),
+                        capabilities: capabilities(None),
                         connected_agent: None,
                     },
                     cwd,
                 ));
             }
+        }
+        let mut rollouts = Vec::new();
+        if !self.paths.codex_sessions.as_os_str().is_empty() {
+            rollout_files(&self.paths.codex_sessions, &mut rollouts)?;
+        }
+        for path in rollouts {
+            if fs::metadata(&path)
+                .and_then(|m| m.modified())
+                .is_ok_and(|at| Timestamp::from(at) < cutoff)
+            {
+                continue;
+            }
+            let Ok(text) = fs::read_to_string(&path) else {
+                continue;
+            };
+            let Some(meta) = text
+                .lines()
+                .next()
+                .and_then(|line| serde_json::from_str::<Value>(line).ok())
+                .filter(|record| record["type"] == "session_meta")
+            else {
+                continue;
+            };
+            let (Some(id), Some(cwd)) = (
+                meta["payload"]["id"].as_str(),
+                meta["payload"]["cwd"].as_str(),
+            ) else {
+                continue;
+            };
+            let cwd = PathBuf::from(cwd);
+            // The newest record carries the latest activity; scan from the end.
+            let latest = text.lines().rev().find_map(|line| {
+                serde_json::from_str::<Value>(line).ok()?["timestamp"]
+                    .as_str()?
+                    .parse::<Timestamp>()
+                    .ok()
+            });
+            let suffix = format!("-{id}");
+            // The rollout path preserves the session identity in DetectedSource.
+            let identified = path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .is_some_and(|s| s.ends_with(&suffix));
+            if !identified
+                || latest.is_none_or(|at| at < cutoff)
+                || sessions.contains(&SessionId(id.into()))
+                || codex_sources.iter().any(|s| s.ends_with(&suffix))
+                || folders.contains(&cwd.canonicalize().unwrap_or(cwd.clone()))
+            {
+                continue;
+            }
+            found.push((
+                DetectedAgent {
+                    key: format!("codex:{id}"),
+                    harness: DetectedHarness::Codex,
+                    name: cwd
+                        .file_name()
+                        .unwrap_or(cwd.as_os_str())
+                        .to_string_lossy()
+                        .into_owned(),
+                    path,
+                    session_id: Some(SessionId(id.into())),
+                    last_activity_at: latest,
+                    capabilities: capabilities(Some("Codex support arrives with TASK-041")),
+                    connected_agent: None,
+                },
+                cwd,
+            ));
         }
         for (harness, name, paths) in [
             (DetectedHarness::Hermes, "Hermes", &self.paths.hermes),
@@ -181,7 +271,9 @@ impl Detect {
                         path: path.clone(),
                         session_id: None,
                         last_activity_at: None,
-                        capabilities: capabilities(false),
+                        capabilities: capabilities(Some(
+                            "No conversation or fork adapter is available for this harness",
+                        )),
                         connected_agent,
                     },
                     folder,
@@ -305,24 +397,40 @@ fn entries(path: &Path) -> Result<Vec<PathBuf>> {
     }
 }
 
+/// Collects `rollout-*.jsonl` files under the `YYYY/MM/DD` folders Codex writes.
+fn rollout_files(dir: &Path, found: &mut Vec<PathBuf>) -> Result<()> {
+    for path in entries(dir)? {
+        if path.is_dir() {
+            rollout_files(&path, found)?;
+        } else if path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .is_some_and(|s| s.starts_with("rollout-") && s.ends_with(".jsonl"))
+        {
+            found.push(path);
+        }
+    }
+    Ok(())
+}
+
 fn is_installation(path: &Path) -> bool {
     use std::os::unix::fs::PermissionsExt;
     path.is_dir()
         || (path.is_file() && fs::metadata(path).is_ok_and(|m| m.permissions().mode() & 0o111 != 0))
 }
 
-fn capabilities(claude: bool) -> DetectedCapabilities {
+/// `unreadable` is why the conversation cannot be read, or `None` when it can.
+fn capabilities(unreadable: Option<&str>) -> DetectedCapabilities {
     let unsupported = |reason: &str| Capability {
         supported: false,
         reason: Some(reason.into()),
     };
-    let readable = if claude {
-        Capability {
+    let readable = match unreadable {
+        Some(reason) => unsupported(reason),
+        None => Capability {
             supported: true,
             reason: None,
-        }
-    } else {
-        unsupported("No conversation or fork adapter is available for this harness")
+        },
     };
     DetectedCapabilities {
         state: unsupported("Live session state cannot be determined from discovery"),

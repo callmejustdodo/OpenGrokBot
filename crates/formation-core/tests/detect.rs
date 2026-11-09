@@ -34,6 +34,7 @@ impl Fixture {
         let handler = Detect::new(
             DetectPaths {
                 claude_config: root.join("claude"),
+                codex_sessions: root.join("codex/sessions"),
                 hermes: vec![root.join("hermes")],
                 openclaw: vec![root.join("openclaw")],
             },
@@ -70,6 +71,17 @@ impl Fixture {
         fs::create_dir_all(&folder).unwrap();
         let path = folder.join(format!("{sid}.jsonl"));
         fs::write(&path, format!("{}\n", json!({"type":"user", "sessionId":sid, "cwd":cwd, "timestamp":at, "message":{"role":"user","content":"hello"}}))).unwrap();
+        path
+    }
+    fn rollout(&self, project: &str, sid: &str, at: Timestamp) -> PathBuf {
+        let cwd = self.root.join(project);
+        fs::create_dir_all(&cwd).unwrap();
+        let folder = self.root.join("codex/sessions/2026/11/09");
+        fs::create_dir_all(&folder).unwrap();
+        let path = folder.join(format!("rollout-2026-11-09T14-12-39-{sid}.jsonl"));
+        let meta = json!({"timestamp":at, "type":"session_meta", "payload":{"id":sid, "cwd":cwd, "timestamp":at}});
+        let turn = json!({"timestamp":at, "type":"event_msg", "payload":{"type":"task_started"}});
+        fs::write(&path, format!("{meta}\n{turn}\n")).unwrap();
         path
     }
 }
@@ -202,4 +214,79 @@ async fn reports_only_present_installations_with_capability_reasons() {
             .all(|d| d.connected_agent.is_some())
     );
     assert_eq!(f.handler.methods(), vec!["agents_detect", "agent_connect"]);
+}
+
+#[tokio::test]
+async fn detects_recent_codex_sessions_skips_known_ones_and_connects_read_only() {
+    let f = Fixture::new();
+    let now: Timestamp = SystemTime::now().into();
+    let original = f.rollout("codex-external", "codex-session", now);
+    f.rollout(
+        "codex-old",
+        "old-session",
+        (SystemTime::now() - Duration::from_secs(172800)).into(),
+    );
+    f.rollout("owned", "owned-session", now);
+    f.store
+        .insert_agent(&Agent {
+            id: AgentId::generate(),
+            slug: "owned".into(),
+            name: "Owned".into(),
+            role: String::new(),
+            harness: HarnessKind::ClaudeCode,
+            folder_path: f.root.join("owned"),
+            repositories: vec![],
+            avatar: Avatar {
+                shape: "round".into(),
+                color: "blue".into(),
+            },
+            state: AgentState::Idle,
+            files_revision: String::new(),
+            created_at: now,
+            last_activity_at: None,
+            detected: None,
+            running_requests: vec![],
+        })
+        .unwrap();
+    let before = fs::read(&original).unwrap();
+    let found = f.detected().await;
+    assert_eq!(found.len(), 1);
+    let d = &found[0];
+    assert_eq!(d.key, "codex:codex-session");
+    assert_eq!(d.harness, DetectedHarness::Codex);
+    assert_eq!(d.name, "codex-external");
+    assert_eq!(d.path, original);
+    assert_eq!(d.session_id.as_ref().unwrap().0, "codex-session");
+    assert_eq!(d.last_activity_at, Some(now));
+    let reason = Some("Codex support arrives with TASK-041".to_string());
+    assert!(!d.capabilities.read_conversation.supported);
+    assert_eq!(d.capabilities.read_conversation.reason, reason);
+    assert!(!d.capabilities.state.supported);
+    let connected: Agent =
+        serde_json::from_value(f.call("agent_connect", json!({"key":d.key})).await).unwrap();
+    assert_eq!(connected.harness, HarnessKind::Detected);
+    assert_eq!(connected.state, AgentState::Unknown);
+    assert_eq!(connected.folder_path, f.root.join("codex-external"));
+    let source = connected.detected.as_ref().unwrap();
+    assert_eq!(source.harness, DetectedHarness::Codex);
+    assert_eq!(source.path, original);
+    assert_eq!(source.capabilities, d.capabilities);
+    assert_eq!(
+        f.store.agent(connected.id).unwrap(),
+        Some(connected.clone())
+    );
+    // A copy of the connected session elsewhere is still recognised by its session ID.
+    let other = f.root.join("codex/sessions/2026/11/08");
+    fs::create_dir_all(&other).unwrap();
+    fs::copy(
+        &original,
+        other.join("rollout-2026-11-08T10-00-00-codex-session.jsonl"),
+    )
+    .unwrap();
+    assert!(f.detected().await.is_empty());
+    assert_eq!(fs::read(original).unwrap(), before);
+    assert_eq!(
+        fs::read_dir(f.root.join("codex-external")).unwrap().count(),
+        0
+    );
 }
