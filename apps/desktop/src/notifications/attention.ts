@@ -62,6 +62,8 @@ export function attentionKindLabel(t: TFunction, kind: AttentionKind): string {
       return t("attention.kind.agent_stalled", "Stalled");
     case "schedule_failed":
       return t("attention.kind.schedule_failed", "Scheduled run failed");
+    case "schedule_missed":
+      return t("attention.kind.schedule_missed", "Scheduled run missed");
     case "request_finished":
       return t("attention.kind.request_finished", "Request finished");
   }
