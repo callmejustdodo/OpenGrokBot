@@ -1,6 +1,7 @@
 // SC-008 preview: what teammates would see of my agent, from `share_preview`.
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import "./sharing.css";
 import type { AgentId } from "../../ipc/generated/AgentId";
 import type { SharePreviewResult } from "../../ipc/generated/SharePreviewResult";
 import { tauriTransport } from "../../ipc/transport";
