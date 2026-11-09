@@ -4,11 +4,13 @@
  * transparent with sidebar vibrancy and an overlay title bar, so the sidebar
  * is a translucent tint and its top row leaves room for the traffic lights.
  */
-.app { display: grid; grid-template-columns: 280px minmax(0, 1fr) auto; height: 100vh; }
+.app { display: grid; grid-template-columns: 280px minmax(0, 1fr) auto; gap: 10px; padding: 10px; height: 100vh; background: var(--backdrop); }
+/* v2 frosted glass panels floating over the backdrop. */
+.side, .content, .panel { background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(1.4); backdrop-filter: blur(24px) saturate(1.4); border-radius: var(--radius-panel); box-shadow: var(--glass-shadow); }
 
 /* Sidebar */
-.side { background: var(--side-tint); display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--sep); }
-.side-top { display: flex; align-items: center; justify-content: flex-end; gap: 2px; min-height: 52px; padding: 10px 12px 8px 84px; }
+.side { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+.side-top { display: flex; align-items: center; justify-content: flex-end; gap: 2px; min-height: 52px; padding: 10px 12px 8px 74px; }
 .needs { margin: 2px 12px 8px; display: grid; grid-template-columns: auto 1fr; column-gap: 10px; align-items: center; padding: 9px 12px; border-radius: 12px; background: color-mix(in srgb, var(--orange) 12%, var(--side)); border: 0; cursor: pointer; text-align: left; width: calc(100% - 24px); }
 .needs::before { grid-row: 1 / span 2; }
 .needs b { font-weight: 600; }
@@ -17,7 +19,7 @@
 .chat-list { display: flex; flex-direction: column; gap: 2px; }
 .chat { display: flex; align-items: center; gap: 11px; padding: 9px 10px; border-radius: 12px; border: 0; background: transparent; cursor: pointer; text-align: left; width: 100%; }
 .chat:hover { background: var(--hover); }
-.chat[aria-current="true"] { background: var(--sel); }
+.chat[aria-current="true"] { background: var(--card); box-shadow: var(--soft); }
 .chat.detecting { cursor: default; }
 .chat .ct { flex: 1; min-width: 0; }
 .chat .ct .top { display: flex; justify-content: space-between; gap: 8px; }
@@ -32,7 +34,7 @@
 .side-bottom .prof small { display: block; color: var(--text2); font-size: 11.5px; }
 
 /* Content */
-.content { display: flex; flex-direction: column; min-width: 0; min-height: 0; position: relative; background: var(--win); }
+.content { display: flex; flex-direction: column; min-width: 0; min-height: 0; position: relative; overflow: hidden; }
 .content > .banner { margin-top: 14px; }
 .conversation, .home { flex: 1; display: flex; flex-direction: column; min-height: 0; }
 .c-head { height: 64px; flex: none; display: flex; align-items: center; justify-content: center; position: relative; padding: 0 16px; }
@@ -45,7 +47,7 @@
 .page .lead { color: var(--text2); font-size: 13px; }
 
 /* Information panel */
-.panel { position: relative; width: 300px; border-left: 1px solid var(--sep); overflow: auto; padding: 22px 18px; display: flex; flex-direction: column; gap: 12px; background: var(--win); }
+.panel { position: relative; width: 300px; overflow: auto; padding: 22px 18px; display: flex; flex-direction: column; gap: 12px; }
 .panel > .collapse { position: absolute; top: 14px; right: 12px; }
 .p-head { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; padding-right: 32px; }
 .p-head b { font-size: 17px; font-weight: 600; display: block; }

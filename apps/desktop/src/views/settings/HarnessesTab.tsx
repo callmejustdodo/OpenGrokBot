@@ -77,7 +77,7 @@ export default function HarnessesTab() {
         })}
       </ul>
       <p className="muted small">
-        {t("settings.harnesses.note", "Formation never handles sign-in. Sign in from each harness.")}
+        {t("settings.harnesses.note", "OpenGrokBot never handles sign-in. Sign in from each harness.")}
       </p>
       <button type="button" className="btn" onClick={check} disabled={checking || !connected} aria-busy={checking}>
         {checking ? t("settings.harnesses.checking", "Checking…") : t("settings.harnesses.check", "Check again")}

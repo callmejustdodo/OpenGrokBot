@@ -270,7 +270,7 @@ describe("editing limits", () => {
     call.mockRejectedValueOnce({ data: { code: "disconnected", message: "gone" } });
     const form = openEditor();
     await act(async () => fireEvent.submit(form));
-    expect(screen.getByRole("alert")).toHaveTextContent("Formation isn't reachable. Try again in a moment.");
+    expect(screen.getByRole("alert")).toHaveTextContent("OpenGrokBot isn't reachable. Try again in a moment.");
     expect(screen.getByRole("form", { name: "Limits" })).toBeInTheDocument();
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Try again" })));
     expect(call).toHaveBeenCalledTimes(2);

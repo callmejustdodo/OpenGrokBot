@@ -122,7 +122,7 @@ function AskThread({ target }: { target: AskTargetView }) {
         {target.kind === "person" ? (
           <span className="pill">
             <b>{ownerName}</b>
-            <span className="st">{t("ask.personNote", "Asking a person · Formation picks the agent")}</span>
+            <span className="st">{t("ask.personNote", "Asking a person · OpenGrokBot picks the agent")}</span>
           </span>
         ) : (
           <span className="pill">
@@ -230,7 +230,7 @@ function NewQuestion() {
       <div className="msgs">
         <div className="empty">
           <b>{t("ask.whoTitle", "Who do you want to ask?")}</b>
-          <p>{t("ask.whoBody", "Pick a person and Formation picks the agent, or pick an agent directly.")}</p>
+          <p>{t("ask.whoBody", "Pick a person and OpenGrokBot picks the agent, or pick an agent directly.")}</p>
           <div className="row-actions" role="group" aria-label={t("ask.people", "People")}>
             {people.map((m) => (
               <button
