@@ -16,34 +16,40 @@
 //! stopped; its transcript is recorded as the thread's fork and deleted with the
 //! thread like any other.
 //!
+//! Answers in one thread run one at a time: a follow-up forks from the thread's
+//! fork and replaces it, so a second answer started from the same fork would
+//! lose the first one's exchange (and fork from a file the first one deletes).
+//! Every action that forks counts against the member's per-minute limit, not
+//! only `POST /v1/ask`: a refresh or "ask another agent" spends the owner's
+//! quota just the same.
+//!
 //! Masking (NFR-003): the pipeline masks answers, excerpts, and error messages
 //! before they are stored; [`OwnerAsks::new`] gives it the owner's email
 //! addresses so those are masked too.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 use std::time::SystemTime;
 
 use async_trait::async_trait;
 
 use formation_proto::agent::Agent;
-use formation_proto::ask::{Question, QuestionStatus, RouteChoice};
-use formation_proto::common::{ApiError, ErrorCode, MemberId, QuestionId, SessionId};
+use formation_proto::ask::{AskTarget, Question, QuestionStatus, RouteChoice};
+use formation_proto::common::{
+    AgentId, ApiError, ChainId, ErrorCode, MemberId, QuestionId, SessionId,
+};
 use formation_proto::peer::{PeerAsk, PeerAskAccepted, PeerEvent, PeerQuestionAction};
-use formation_proto::policy::{Caller, ShareSettings};
+use formation_proto::policy::{Caller, Chain, ShareSettings};
 
 use super::mask::Masker;
 use super::pipeline::{AskPipeline, Clock};
 use crate::peer::api::{AskEndpoints, PeerEventHub};
 use crate::peer::outbox::lock;
 use crate::policy::sharing::shared_agents;
-use crate::ports::{CollabStore, QuestionRepo, Result, Store};
+use crate::ports::{CollabStore, Policy, QuestionRepo, Result, Store};
 
-/// How long a final question (answered, canceled, failed) is still sent again
-/// when the asker's events connection opens. A Mac offline longer than this
-/// missed the update, but its copy keeps the state it last saw and the owner
-/// still has the question.
-pub const RESEND_FINAL_FOR: chrono::Duration = chrono::Duration::days(7);
+/// One lock per thread with an answer running or waiting; see [`OwnerAsks`].
+type ThreadLocks = Arc<Mutex<HashMap<QuestionId, Arc<tokio::sync::Mutex<()>>>>>;
 
 /// Answers teammates' questions to this Mac's agents. Cheap to clone: every
 /// field is shared, so a background answer holds a clone.
@@ -51,6 +57,9 @@ pub const RESEND_FINAL_FOR: chrono::Duration = chrono::Duration::days(7);
 pub struct OwnerAsks {
     store: Arc<dyn Store>,
     collab: Arc<dyn CollabStore>,
+    /// Counts a refresh or "ask another agent" against the member's limit, as
+    /// the server does for `POST /v1/ask`.
+    policy: Arc<dyn Policy>,
     hub: PeerEventHub,
     pipeline: Arc<AskPipeline>,
     masker: Masker,
@@ -58,6 +67,10 @@ pub struct OwnerAsks {
     /// Questions with a background answer running. A second refresh or choice
     /// for one of them is refused instead of forking twice.
     busy: Arc<Mutex<HashSet<QuestionId>>>,
+    /// Held by a background answer for its whole run, so answers in one thread
+    /// (follow-ups, a refresh of an earlier question) fork one after another,
+    /// each from the fork the previous one left.
+    threads: ThreadLocks,
     /// Serializes the check and the write of [`Gate::put_question`] with a
     /// cancel, so neither overwrites the other.
     writes: Arc<Mutex<()>>,
@@ -67,10 +80,12 @@ impl OwnerAsks {
     /// `pipeline` is configured by the caller (harness, scorer, events, clock);
     /// its masker is replaced by one that also masks `owner_emails`: the owner's
     /// Claude Code account and any other address of theirs a transcript may
-    /// carry (NFR-003).
+    /// carry (NFR-003). `policy` is the one the peer server checks asks with,
+    /// so actions that fork share its per-minute count.
     pub fn new<I, S>(
         store: Arc<dyn Store>,
         collab: Arc<dyn CollabStore>,
+        policy: Arc<dyn Policy>,
         hub: PeerEventHub,
         pipeline: AskPipeline,
         owner_emails: I,
@@ -83,17 +98,19 @@ impl OwnerAsks {
         Self {
             store,
             collab,
+            policy,
             hub,
             pipeline: Arc::new(pipeline.with_masker(masker.clone())),
             masker,
             clock: Arc::new(|| SystemTime::now().into()),
             busy: Arc::default(),
+            threads: Arc::default(),
             writes: Arc::default(),
         }
     }
 
     /// The clock for the times this type sets (`created_at`, `updated_at` of a
-    /// cancel, the resend window). The pipeline keeps its own clock.
+    /// cancel or a recovery). The pipeline keeps its own clock.
     pub fn with_clock(mut self, clock: Clock) -> Self {
         self.clock = clock;
         self
@@ -150,6 +167,8 @@ impl OwnerAsks {
     }
 
     async fn run(self, busy: Busy, mut question: Question, job: Job) {
+        let thread = self.thread_lock(question.thread_id);
+        let held = thread.lock().await;
         let gate = self.gate();
         let result = match self.pool() {
             Ok(pool) => match job {
@@ -175,7 +194,66 @@ impl OwnerAsks {
             question.updated_at = (self.clock)();
             let _ = gate.put_question(&question);
         }
+        drop(held);
+        self.release_thread(question.thread_id, thread);
         drop(busy);
+    }
+
+    /// The thread's lock, created on first use. Every clone is taken under the
+    /// map's lock, which [`release_thread`](Self::release_thread) relies on.
+    fn thread_lock(&self, thread_id: QuestionId) -> Arc<tokio::sync::Mutex<()>> {
+        lock(&self.threads).entry(thread_id).or_default().clone()
+    }
+
+    /// Drops the thread's lock from the map once no other run holds or waits on
+    /// it, so the map does not grow with every thread ever answered.
+    fn release_thread(&self, thread_id: QuestionId, thread: Arc<tokio::sync::Mutex<()>>) {
+        let mut threads = lock(&self.threads);
+        // The map's copy and `thread` itself.
+        if Arc::strong_count(&thread) == 2 {
+            threads.remove(&thread_id);
+        }
+    }
+
+    /// Counts an action that forks against the member's per-minute limit, with
+    /// the policy's sharing check for the agent it forks.
+    async fn admit_fork(&self, member: MemberId, target: &AskTarget) -> Result<()> {
+        let caller = Caller::Member {
+            member_id: member,
+            via_agent: None,
+            chain: Chain {
+                id: ChainId::generate(),
+                depth: 0,
+            },
+        };
+        self.policy.check_ask(&caller, target).await
+    }
+
+    /// Marks every question left `received` or `answering` by a run that did not
+    /// finish (formationd stopped meanwhile) as failed and publishes it, so the
+    /// asker sees it end and may refresh it. Call it on start, before the peer
+    /// server accepts calls. Returns how many questions were recovered.
+    pub fn recover(&self) -> Result<usize> {
+        let mut recovered = 0;
+        for mut question in self.collab.questions()? {
+            if !interrupted_status(question.status) {
+                continue;
+            }
+            // A run started since this Mac came up is not interrupted.
+            let Ok(_busy) = self.claim(question.id) else {
+                continue;
+            };
+            question.status = QuestionStatus::Failed;
+            question.error = Some(interrupted());
+            question.updated_at = (self.clock)();
+            match self.gate().put_question(&question) {
+                Ok(()) => recovered += 1,
+                // Canceled meanwhile: nothing to recover.
+                Err(error) if error.code == ErrorCode::Conflict => {}
+                Err(error) => return Err(error),
+            }
+        }
+        Ok(recovered)
     }
 
     fn cancel(&self, member: MemberId, id: QuestionId) -> Result<Question> {
@@ -228,11 +306,31 @@ fn settled(status: QuestionStatus) -> bool {
     )
 }
 
-fn is_final(status: QuestionStatus) -> bool {
-    matches!(
-        status,
-        QuestionStatus::Answered | QuestionStatus::Canceled | QuestionStatus::Failed
+/// Whether a question in this state, with no run holding it, was left behind by
+/// a run that did not finish: every run claims the question before it stores
+/// either state and keeps the claim until its last write.
+fn interrupted_status(status: QuestionStatus) -> bool {
+    matches!(status, QuestionStatus::Received | QuestionStatus::Answering)
+}
+
+fn interrupted() -> ApiError {
+    ApiError::new(
+        ErrorCode::Internal,
+        "the owner's Mac stopped before answering; refresh to ask again",
     )
+}
+
+/// The target an action forks for, as the policy sees it: the agent chosen or
+/// already answering, else the question's own target (refreshing a question
+/// with no agent routes it again).
+fn fork_target(question: &Question, agent_id: Option<AgentId>) -> AskTarget {
+    match agent_id.or(question.agent_id) {
+        Some(agent_id) => AskTarget::Agent {
+            member_id: question.target.owner(),
+            agent_id,
+        },
+        None => question.target,
+    }
 }
 
 fn not_settled(question: &Question) -> ApiError {
@@ -380,10 +478,28 @@ impl AskEndpoints for OwnerAsks {
             PeerQuestionAction::Route { choice } => Some(choice),
         };
         let question = self.own_question(member, question_id)?;
-        if !settled(question.status) {
+        if !settled(question.status) && !interrupted_status(question.status) {
             return Err(not_settled(&question));
         }
         let busy = self.claim(question_id)?;
+        // Read again under the claim: a run that just finished may have moved
+        // it on. Received or answering with the claim held is a run that never
+        // finished (formationd stopped), which the asker may start again.
+        let question = self.own_question(member, question_id)?;
+        if !settled(question.status) && !interrupted_status(question.status) {
+            return Err(not_settled(&question));
+        }
+        match choice {
+            None => {
+                self.admit_fork(member, &fork_target(&question, None))
+                    .await?
+            }
+            Some(RouteChoice::Agent { agent_id }) => {
+                self.admit_fork(member, &fork_target(&question, Some(agent_id)))
+                    .await?
+            }
+            Some(RouteChoice::Owner) => {}
+        }
         match choice {
             None => self.start(busy, question, Job::Refresh),
             Some(choice @ RouteChoice::Agent { .. }) => {
@@ -402,14 +518,15 @@ impl AskEndpoints for OwnerAsks {
         }
     }
 
+    /// Every question of the member's, final ones too: a member has few, and
+    /// any final one may have become final while they were offline, however
+    /// long ago (a time window would drop the answer for a Mac away longer).
     async fn questions_to_resend(&self, member: MemberId) -> Result<Vec<Question>> {
-        let now = (self.clock)();
         let mut questions: Vec<Question> = self
             .collab
             .questions()?
             .into_iter()
             .filter(|q| q.asker == member)
-            .filter(|q| !is_final(q.status) || now - q.updated_at <= RESEND_FINAL_FOR)
             .collect();
         questions.sort_by_key(|q| (q.updated_at, q.id));
         Ok(questions)
@@ -424,13 +541,17 @@ mod tests {
     use std::time::Duration;
 
     use tokio::sync::Semaphore;
-    use tokio::sync::broadcast::Receiver;
+    use tokio::sync::broadcast::{self, Receiver};
 
-    use formation_proto::agent::{HarnessKind, HarnessStatus};
+    use formation_proto::agent::{HarnessKind, HarnessStatus, StopMode};
     use formation_proto::ask::AskTarget;
-    use formation_proto::common::{ChainId, Timestamp};
-    use formation_proto::harness::{SessionInfo, TurnOutcome};
-    use formation_proto::policy::{Chain, Visibility};
+    use formation_proto::common::{ItemId, RunId, Timestamp};
+    use formation_proto::harness::{
+        AgentStreamEvent, ConversationPageResult, SessionInfo, TurnOutcome,
+    };
+    use formation_proto::peer::SharedAgentView;
+    use formation_proto::policy::{PolicyVerdict, ToolCall, Visibility};
+    use formation_proto::team::WhoIs;
 
     use super::*;
     use crate::ask::mask::MASK;
@@ -439,8 +560,11 @@ mod tests {
     use crate::ask::test_support::TempDir;
     use crate::peer::api::events::HubMessage;
     use crate::policy::sharing::test_support::agent;
-    use crate::ports::{AgentRepo, ForkResult, ShareRepo, TurnResult};
+    use crate::ports::{
+        AgentRepo, ForkResult, ForkRun, Harness, RunInfo, ShareRepo, ToolContext, TurnResult,
+    };
     use crate::testkit::{FakeHarness, HarnessCall, MemoryCollabStore, MemoryStore, ScriptedAgent};
+    use formation_proto::request::QueueItem;
 
     const MAIN: &str = "aaaaaaaa-0000-4000-8000-000000000001";
     const OWNER_EMAIL: &str = "dohyeon@example.com";
@@ -480,6 +604,115 @@ mod tests {
         }
     }
 
+    /// Yields before each fork, as a real fork takes seconds, so another
+    /// background answer gets to run while one forks.
+    struct SlowForks(Arc<FakeHarness>);
+
+    #[async_trait]
+    impl Harness for SlowForks {
+        fn kind(&self) -> HarnessKind {
+            self.0.kind()
+        }
+        async fn status(&self) -> HarnessStatus {
+            self.0.status().await
+        }
+        async fn start(&self, agent: &Agent, resume: Option<SessionId>) -> Result<SessionInfo> {
+            self.0.start(agent, resume).await
+        }
+        async fn run_turn(
+            &self,
+            agent_id: AgentId,
+            run_id: RunId,
+            item: QueueItem,
+        ) -> Result<TurnResult> {
+            self.0.run_turn(agent_id, run_id, item).await
+        }
+        async fn run_fork(&self, agent_id: AgentId, fork: ForkRun) -> Result<ForkResult> {
+            for _ in 0..10 {
+                tokio::task::yield_now().await;
+            }
+            self.0.run_fork(agent_id, fork).await
+        }
+        async fn steer(&self, agent_id: AgentId, item: QueueItem) -> Result<()> {
+            self.0.steer(agent_id, item).await
+        }
+        async fn interrupt(&self, agent_id: AgentId) -> Result<()> {
+            self.0.interrupt(agent_id).await
+        }
+        async fn stop(&self, agent_id: AgentId, mode: StopMode) -> Result<()> {
+            self.0.stop(agent_id, mode).await
+        }
+        async fn session_info(&self, agent_id: AgentId) -> Result<Option<SessionInfo>> {
+            self.0.session_info(agent_id).await
+        }
+        async fn run(&self, run_id: RunId) -> Option<RunInfo> {
+            self.0.run(run_id).await
+        }
+        async fn conversation(
+            &self,
+            agent_id: AgentId,
+            session_id: Option<SessionId>,
+            before: Option<ItemId>,
+            limit: u32,
+        ) -> Result<ConversationPageResult> {
+            self.0
+                .conversation(agent_id, session_id, before, limit)
+                .await
+        }
+        fn subscribe(&self) -> broadcast::Receiver<AgentStreamEvent> {
+            self.0.subscribe()
+        }
+    }
+
+    /// Admits `left` asks, then answers `rate_limited` like the real policy's
+    /// per-minute limit; records the targets it was asked about.
+    struct LimitPolicy {
+        left: Mutex<usize>,
+        targets: Mutex<Vec<AskTarget>>,
+    }
+
+    impl LimitPolicy {
+        fn new(left: usize) -> Self {
+            Self {
+                left: Mutex::new(left),
+                targets: Mutex::default(),
+            }
+        }
+    }
+
+    #[async_trait]
+    impl Policy for LimitPolicy {
+        async fn authenticate(&self, _whois: &WhoIs) -> Result<MemberId> {
+            Err(ApiError::new(ErrorCode::Internal, "not used here"))
+        }
+        async fn visible_agents(&self, _caller: &Caller) -> Result<Vec<SharedAgentView>> {
+            Ok(Vec::new())
+        }
+        async fn check_ask(&self, caller: &Caller, target: &AskTarget) -> Result<()> {
+            assert!(matches!(caller, Caller::Member { .. }), "{caller:?}");
+            lock(&self.targets).push(*target);
+            let mut left = lock(&self.left);
+            if *left == 0 {
+                return Err(ApiError::new(ErrorCode::RateLimited, "too many calls"));
+            }
+            *left -= 1;
+            Ok(())
+        }
+        async fn check_request(&self, _caller: &Caller, _agent_id: AgentId) -> Result<()> {
+            Ok(())
+        }
+        async fn visibility(&self, _agent_id: AgentId) -> Result<Visibility> {
+            Ok(Visibility::AnswerExcerpts)
+        }
+        async fn evaluate(
+            &self,
+            _context: &ToolContext,
+            _call: &ToolCall,
+        ) -> Result<PolicyVerdict> {
+            Err(ApiError::new(ErrorCode::Internal, "not used here"))
+        }
+    }
+
     /// The owner's Mac: one shared agent with scripted fork answers, in-memory
     /// stores, and the hub a test listens on.
     struct Owner {
@@ -488,6 +721,7 @@ mod tests {
         me: MemberId,
         harness: Arc<FakeHarness>,
         collab: Arc<MemoryCollabStore>,
+        policy: Arc<LimitPolicy>,
         hub: PeerEventHub,
         asks: OwnerAsks,
     }
@@ -532,15 +766,25 @@ mod tests {
             let hub = PeerEventHub::new();
             let minute = Arc::new(AtomicI64::new(40));
             let clock: Clock = Arc::new(move || at(minute.fetch_add(1, Ordering::SeqCst)));
-            let pipeline = AskPipeline::new(harness.clone(), scorer).with_clock(clock.clone());
-            let asks = OwnerAsks::new(store, collab.clone(), hub.clone(), pipeline, [OWNER_EMAIL])
-                .with_clock(clock);
+            let pipeline = AskPipeline::new(Arc::new(SlowForks(harness.clone())), scorer)
+                .with_clock(clock.clone());
+            let policy = Arc::new(LimitPolicy::new(usize::MAX));
+            let asks = OwnerAsks::new(
+                store,
+                collab.clone(),
+                policy.clone(),
+                hub.clone(),
+                pipeline,
+                [OWNER_EMAIL],
+            )
+            .with_clock(clock);
             Self {
                 _dir: dir,
                 api,
                 me: MemberId::generate(),
                 harness,
                 collab,
+                policy,
                 hub,
                 asks,
             }
@@ -582,6 +826,18 @@ mod tests {
             })
             .await
             .expect("the background answer finished");
+        }
+
+        /// The `from` session of every fork, in order.
+        fn forked_from(&self) -> Vec<String> {
+            self.harness
+                .calls()
+                .iter()
+                .filter_map(|call| match call {
+                    HarnessCall::RunFork { from, .. } => Some(from.0.clone()),
+                    _ => None,
+                })
+                .collect()
         }
     }
 
@@ -937,7 +1193,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn resend_covers_open_questions_and_recently_final_ones() {
+    async fn resend_covers_every_question_of_the_member_however_old() {
         let owner = Owner::scripted(&[], vec![]);
         let asker = MemberId::generate();
         let base = Question {
@@ -954,11 +1210,11 @@ mod tests {
             created_at: at(0),
             updated_at: at(0),
         };
-        // The owner's clock reads 10:40 on its first call.
-        let old = at(40) - RESEND_FINAL_FOR - chrono::Duration::minutes(1);
+        // Final a month ago, while the asker's Mac was away: still resent.
+        let old = at(0) - chrono::Duration::days(30);
         let questions = [
-            (QuestionStatus::Answered, old, false),
-            (QuestionStatus::Canceled, old, false),
+            (QuestionStatus::Answered, old, true),
+            (QuestionStatus::Canceled, old, true),
             (QuestionStatus::SentToOwner, old, true),
             (QuestionStatus::Unsure, old, true),
             (QuestionStatus::Failed, at(10), true),
@@ -1017,5 +1273,171 @@ mod tests {
             .unwrap_err();
         assert_eq!(error.code, ErrorCode::NotMember);
         assert!(owner.collab.questions().unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn refreshing_and_choosing_count_against_the_members_limit() {
+        let owner = Owner::scripted(
+            &[("f1", "First."), ("f2", "Second."), ("f3", "Third.")],
+            vec![],
+        );
+        let asker = MemberId::generate();
+        let ask = peer_ask(owner.to_agent(), "How far?");
+        let id = ask.question_id;
+        owner.asks.ask(member(asker), ask).await.unwrap();
+        owner.idle().await;
+
+        // The server checked the ask itself; two more forks are allowed.
+        *lock(&owner.policy.left) = 2;
+        owner
+            .asks
+            .question_action(asker, id, PeerQuestionAction::Refresh)
+            .await
+            .unwrap();
+        owner.idle().await;
+        let choice = RouteChoice::Agent {
+            agent_id: owner.api.id,
+        };
+        owner
+            .asks
+            .question_action(asker, id, PeerQuestionAction::Route { choice })
+            .await
+            .unwrap();
+        owner.idle().await;
+        let error = owner
+            .asks
+            .question_action(asker, id, PeerQuestionAction::Refresh)
+            .await
+            .unwrap_err();
+        assert_eq!(error.code, ErrorCode::RateLimited);
+        assert_eq!(owner.forks(), 3);
+        // The limit leaves the question as it was and free for a later action.
+        assert_eq!(owner.stored(id).status, QuestionStatus::Answered);
+        assert!(lock(&owner.asks.busy).is_empty());
+        // Each check named the agent the action forks.
+        assert!(
+            lock(&owner.policy.targets)
+                .iter()
+                .all(|target| *target == owner.to_agent())
+        );
+
+        // Sending it to the owner forks nothing and is not counted.
+        let sent = owner
+            .asks
+            .question_action(
+                asker,
+                id,
+                PeerQuestionAction::Route {
+                    choice: RouteChoice::Owner,
+                },
+            )
+            .await
+            .unwrap();
+        assert_eq!(sent.status, QuestionStatus::SentToOwner);
+    }
+
+    #[tokio::test]
+    async fn follow_ups_sent_back_to_back_fork_one_after_another() {
+        let owner = Owner::scripted(
+            &[("f1", "First."), ("f2", "Second."), ("f3", "Third.")],
+            vec![],
+        );
+        let asker = MemberId::generate();
+        let first = peer_ask(owner.to_agent(), "How far?");
+        owner.asks.ask(member(asker), first.clone()).await.unwrap();
+        owner.idle().await;
+
+        for text in ["And then?", "And after that?"] {
+            let next = PeerAsk {
+                thread_id: Some(first.question_id),
+                ..peer_ask(owner.to_agent(), text)
+            };
+            owner.asks.ask(member(asker), next).await.unwrap();
+        }
+        owner.idle().await;
+        // The second follow-up resumed the fork the first one left, which holds
+        // the first follow-up's exchange.
+        assert_eq!(owner.forked_from(), [MAIN, "f1", "f2"]);
+        assert_eq!(
+            owner.collab.fork_session(first.question_id).unwrap(),
+            Some(SessionId("f3".into()))
+        );
+        let answered = owner
+            .collab
+            .questions()
+            .unwrap()
+            .iter()
+            .filter(|q| q.status == QuestionStatus::Answered)
+            .count();
+        assert_eq!(answered, 3);
+        assert!(lock(&owner.asks.threads).is_empty());
+    }
+
+    /// A question as a run that never finished left it.
+    fn interrupted_question(owner: &Owner, asker: MemberId) -> Question {
+        let id = QuestionId::generate();
+        let question = Question {
+            id,
+            thread_id: id,
+            asker,
+            target: owner.to_agent(),
+            text: "How far?".into(),
+            status: QuestionStatus::Answering,
+            candidates: vec![],
+            agent_id: Some(owner.api.id),
+            answer: None,
+            error: None,
+            created_at: at(0),
+            updated_at: at(0),
+        };
+        owner.collab.put_question(&question).unwrap();
+        question
+    }
+
+    #[tokio::test]
+    async fn a_question_left_answering_by_a_stop_can_be_refreshed() {
+        let owner = Owner::scripted(&[("f1", "An answer.")], vec![]);
+        let asker = MemberId::generate();
+        let question = interrupted_question(&owner, asker);
+        let mut rx = owner.hub.subscribe();
+        owner
+            .asks
+            .question_action(asker, question.id, PeerQuestionAction::Refresh)
+            .await
+            .unwrap();
+        let (_, answered) = statuses_until(&mut rx, asker, &[QuestionStatus::Answered]).await;
+        assert_eq!(answered.answer.unwrap().text, "An answer.");
+        owner.idle().await;
+        assert_eq!(owner.forks(), 1);
+    }
+
+    #[tokio::test]
+    async fn recover_fails_interrupted_questions_and_publishes_them() {
+        let owner = Owner::scripted(&[], vec![]);
+        let asker = MemberId::generate();
+        let interrupted = interrupted_question(&owner, asker);
+        let received = Question {
+            status: QuestionStatus::Received,
+            ..interrupted_question(&owner, asker)
+        };
+        owner.collab.put_question(&received).unwrap();
+        let canceled = Question {
+            status: QuestionStatus::Canceled,
+            ..interrupted_question(&owner, asker)
+        };
+        owner.collab.put_question(&canceled).unwrap();
+        let mut rx = owner.hub.subscribe();
+
+        assert_eq!(owner.asks.recover().unwrap(), 2);
+        for _ in 0..2 {
+            let update = next_update(&mut rx, asker).await;
+            assert!([interrupted.id, received.id].contains(&update.id));
+            assert_eq!(update.status, QuestionStatus::Failed);
+            assert_eq!(update.error.unwrap().code, ErrorCode::Internal);
+        }
+        assert_eq!(owner.stored(canceled.id).status, QuestionStatus::Canceled);
+        assert!(lock(&owner.asks.busy).is_empty());
+        // Nothing is left to recover.
+        assert_eq!(owner.asks.recover().unwrap(), 0);
     }
 }
