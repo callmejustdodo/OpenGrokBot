@@ -257,12 +257,33 @@ async fn a_roster_push_from_the_creator_updates_a_members_team() {
         TeamConfig::default(),
     ));
     let mut changes = team.subscribe_roster();
+    let mut app_events = service.bus.subscribe();
     let bridge = forward_peer_events(
         peers.subscribe(),
         service.ask_commands.clone(),
         service.request_client.clone(),
         team.clone(),
+        service.bus.clone(),
     );
+
+    // A teammate who shares an agent later reaches the app as `peer.presence`.
+    let shared = samples::shared_agent(creator.id, "backend", true);
+    peers.add_teammate(creator.id, vec![]);
+    peers.set_agents(creator.id, vec![shared.clone()]).unwrap();
+    let presence = timeout(Duration::from_secs(5), async {
+        loop {
+            if let formation_proto::events::Event::PeerPresence(presence) =
+                app_events.recv().await.unwrap().event
+                && !presence.agents.is_empty()
+            {
+                return presence;
+            }
+        }
+    })
+    .await
+    .expect("peer.presence with the shared agent");
+    assert_eq!(presence.member_id, creator.id);
+    assert_eq!(presence.agents, vec![shared]);
 
     // The fake pushes version 1 (already held, ignored), then version 2.
     peers.set_roster(vec![creator.clone(), me.clone()]);
