@@ -225,3 +225,31 @@ fn every_named_state_loads() {
         hub.reset(&name).unwrap_or_else(|e| panic!("{name}: {e}"));
     }
 }
+
+#[test]
+fn revoking_a_rule_answers_and_sends_the_revoked_rule() {
+    let path = start("SC-012/default");
+    let mut c = Client::connect(&path);
+    let mut events = Vec::new();
+    let snapshot: Snapshot =
+        serde_json::from_value(c.call("snapshot", json!({}), &mut events)["result"].clone())
+            .unwrap();
+    let rule = snapshot.rules[0].id;
+    let reply = c.call("rules_revoke", json!({ "rule_id": rule }), &mut events);
+    let revoked = &reply["result"];
+    assert_eq!(revoked["id"], json!(rule));
+    assert!(revoked["revoked_at"].is_string(), "{reply}");
+
+    let update = c.event();
+    assert_eq!(update.event.name(), "rule.update");
+    let sent = serde_json::to_value(&update.event).unwrap();
+    assert_eq!(sent["payload"]["rule"], *revoked);
+
+    let reply = c.call(
+        "rules_update",
+        json!({ "rule_id": rule, "expires_at": null, "max_uses": 9 }),
+        &mut events,
+    );
+    assert_eq!(reply["result"]["max_uses"], 9);
+    assert_eq!(reply["result"]["expires_at"], Value::Null);
+}

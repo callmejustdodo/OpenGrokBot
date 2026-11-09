@@ -1,0 +1,51 @@
+{
+  "description": "Both saved rules were revoked",
+  "steps": [
+    {
+      "event": {
+        "type": "rule.update",
+        "payload": {
+          "rule": {
+            "id": "01930000-0000-7000-8000-000000000901",
+            "requester": "01930000-0000-7000-8000-000000000002",
+            "agent_id": "01930000-0000-7000-8000-000000000101",
+            "scope": {
+              "kind": "command",
+              "program": "npm",
+              "arg_pattern": "test -- auth/*",
+              "folder": "~/Codes/shared-api"
+            },
+            "expires_at": "2026-11-15T01:53:00Z",
+            "max_uses": null,
+            "uses": 3,
+            "created_at": "2026-11-08T01:53:00Z",
+            "revoked_at": "2026-11-09T01:52:00Z"
+          }
+        }
+      }
+    },
+    {
+      "event": {
+        "type": "rule.update",
+        "payload": {
+          "rule": {
+            "id": "01930000-0000-7000-8000-000000000902",
+            "requester": "01930000-0000-7000-8000-000000000003",
+            "agent_id": "01930000-0000-7000-8000-000000000102",
+            "scope": {
+              "kind": "command",
+              "program": "write",
+              "arg_pattern": "drafts/*",
+              "folder": "~/Formation/Agents/marketing"
+            },
+            "expires_at": null,
+            "max_uses": null,
+            "uses": 12,
+            "created_at": "2026-11-04T03:00:00Z",
+            "revoked_at": "2026-11-09T01:52:00Z"
+          }
+        }
+      }
+    }
+  ]
+}

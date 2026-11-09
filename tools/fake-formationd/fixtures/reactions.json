@@ -246,5 +246,39 @@
       "play": "settings-changed",
       "example": { "settings": { "language": "en", "notifications": { "enabled": true, "muted_until": null } } }
     }
+  ],
+  "rules_update": [
+    {
+      "when": { "rule_id": "01930000-0000-7000-8000-000000000901" },
+      "result": {"id": "01930000-0000-7000-8000-000000000901", "requester": "01930000-0000-7000-8000-000000000002", "agent_id": "01930000-0000-7000-8000-000000000101", "scope": {"kind": "command", "program": "npm", "arg_pattern": "test -- auth/*", "folder": "~/Codes/shared-api"}, "expires_at": "{{params.expires_at}}", "max_uses": "{{params.max_uses}}", "uses": 3, "created_at": "2026-11-08T01:53:00Z", "revoked_at": null},
+      "play": "rule-changed",
+      "example": {"rule_id": "01930000-0000-7000-8000-000000000901", "expires_at": "2026-11-16T01:53:00Z", "max_uses": 20}
+    },
+    {
+      "when": { "rule_id": "01930000-0000-7000-8000-000000000902" },
+      "result": {"id": "01930000-0000-7000-8000-000000000902", "requester": "01930000-0000-7000-8000-000000000003", "agent_id": "01930000-0000-7000-8000-000000000102", "scope": {"kind": "command", "program": "write", "arg_pattern": "drafts/*", "folder": "~/Formation/Agents/marketing"}, "expires_at": "{{params.expires_at}}", "max_uses": "{{params.max_uses}}", "uses": 12, "created_at": "2026-11-04T03:00:00Z", "revoked_at": null},
+      "play": "rule-changed",
+      "example": {"rule_id": "01930000-0000-7000-8000-000000000902", "expires_at": "2026-11-16T01:53:00Z", "max_uses": 20}
+    }
+  ],
+  "rules_revoke": [
+    {
+      "when": { "rule_id": "01930000-0000-7000-8000-000000000901" },
+      "result": {"id": "01930000-0000-7000-8000-000000000901", "requester": "01930000-0000-7000-8000-000000000002", "agent_id": "01930000-0000-7000-8000-000000000101", "scope": {"kind": "command", "program": "npm", "arg_pattern": "test -- auth/*", "folder": "~/Codes/shared-api"}, "expires_at": "2026-11-15T01:53:00Z", "max_uses": null, "uses": 3, "created_at": "2026-11-08T01:53:00Z", "revoked_at": "{{now}}"},
+      "play": "rule-changed",
+      "example": {"rule_id": "01930000-0000-7000-8000-000000000901"}
+    },
+    {
+      "when": { "rule_id": "01930000-0000-7000-8000-000000000902" },
+      "result": {"id": "01930000-0000-7000-8000-000000000902", "requester": "01930000-0000-7000-8000-000000000003", "agent_id": "01930000-0000-7000-8000-000000000102", "scope": {"kind": "command", "program": "write", "arg_pattern": "drafts/*", "folder": "~/Formation/Agents/marketing"}, "expires_at": null, "max_uses": null, "uses": 12, "created_at": "2026-11-04T03:00:00Z", "revoked_at": "{{now}}"},
+      "play": "rule-changed",
+      "example": {"rule_id": "01930000-0000-7000-8000-000000000902"}
+    }
+  ],
+  "team_leave": [
+    {
+      "result": null,
+      "example": {}
+    }
   ]
 }
