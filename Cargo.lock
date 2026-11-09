@@ -1152,6 +1152,7 @@ dependencies = [
  "formation-proto",
  "futures-util",
  "getrandom 0.4.3",
+ "regex",
  "reqwest",
  "rmcp",
  "rusqlite",
