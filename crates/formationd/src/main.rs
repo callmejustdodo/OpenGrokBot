@@ -1,4 +1,5 @@
 mod fake_commands;
+mod identity;
 mod no_team;
 mod owner_only;
 
@@ -7,21 +8,25 @@ use std::path::Path;
 use std::sync::Arc;
 
 use formation_core::agents::{Agents, ClaudeReadiness, HarnessReadiness};
+use formation_core::collab_store::{COLLAB_MIGRATIONS, SqliteCollabStore};
 use formation_core::harness::claude::{ClaudeConfig, ClaudeSupervisor};
+use formation_core::harness::codex::{CodexConfig, CodexSupervisor};
 use formation_core::harness::detect::{Detect, DetectPaths};
 use formation_core::harness::dispatch::HarnessDispatcher;
 use formation_core::notify::{AttentionNotifier, monitor, reconcile};
 use formation_core::permission::{Gate, PermissionCommands};
-use formation_core::policy::approvals::{Approvals, SystemClock};
+use formation_core::policy::approvals::{ApprovalStore, Approvals, SystemClock};
 use formation_core::ports::{
     CollabStore, CommandHandler, Harness, Notifier, Peers, PermissionGate, Policy, RequestQueue,
     Store,
 };
+use formation_core::requests::{RequestClient, Requests};
 use formation_core::schedules::Schedules;
 use formation_core::service::{
     EventBus, Router, SnapshotBuilder, SocketServer, default_socket_path,
 };
 use formation_core::store::{MIGRATIONS, SqliteStore};
+use formation_core::team::{TeamConfig, TeamService, system_clock};
 use formation_core::testkit::FakeHarness;
 use formation_core::testkit::collab::{
     FakePeers, FakePermissionGate, FakePolicy, FakeRequestQueue, MemoryCollabStore, samples,
@@ -31,6 +36,7 @@ use formation_proto::team::MemberRole;
 use tokio::signal::unix::{SignalKind, signal};
 
 use fake_commands::FakeCommands;
+use identity::TailnetIdentity;
 use no_team::NoTeam;
 use owner_only::OwnerOnly;
 
@@ -44,8 +50,6 @@ struct Service {
     store: Arc<dyn Store>,
     notifier: Arc<dyn Notifier>,
     schedules: Arc<Schedules>,
-    _gate: Option<Arc<dyn PermissionGate>>,
-    _requests: Option<Arc<dyn RequestQueue>>,
 }
 
 fn wiring(directory: &Path, fake_list: &str, detect_paths: DetectPaths) -> Result<Service, Error> {
@@ -64,14 +68,40 @@ fn wiring(directory: &Path, fake_list: &str, detect_paths: DetectPaths) -> Resul
         }
     }
     std::fs::create_dir_all(directory)?;
-    let store: Arc<dyn Store> = Arc::new(SqliteStore::open(
+    // One database: A's repositories use it as `Store`, B's through the wrapper.
+    let sqlite = Arc::new(SqliteStore::open(
         directory.join("formation.db"),
-        &[MIGRATIONS],
+        &[MIGRATIONS, COLLAB_MIGRATIONS],
     )?);
+    let store: Arc<dyn Store> = sqlite.clone();
     let bus = Arc::new(EventBus::new(256));
-    let requests = fakes
-        .contains(&"requests")
-        .then(|| Arc::new(FakeRequestQueue::new()) as Arc<dyn RequestQueue>);
+    // The fake roster stays in memory, so it never reaches the database.
+    let (collab, approval_store): (Arc<dyn CollabStore>, Arc<dyn ApprovalStore>) =
+        if fakes.contains(&"collab") || fakes.contains(&"peers") {
+            let memory = Arc::new(MemoryCollabStore::new());
+            (memory.clone(), memory)
+        } else {
+            let sqlite = Arc::new(SqliteCollabStore::new(sqlite));
+            (sqlite.clone(), sqlite)
+        };
+    let policy: Arc<dyn Policy> = if fakes.contains(&"policy") {
+        Arc::new(FakePolicy::new())
+    } else {
+        Arc::new(OwnerOnly)
+    };
+    let owner_requests = Arc::new(Requests::new(collab.clone(), policy.clone(), bus.clone()));
+    let requests: Arc<dyn RequestQueue> = if fakes.contains(&"requests") {
+        Arc::new(FakeRequestQueue::new())
+    } else {
+        owner_requests.clone()
+    };
+    let notifier: Arc<dyn Notifier> = Arc::new(AttentionNotifier::new(store.clone(), bus.clone()));
+    let approvals = Arc::new(Approvals::new(
+        approval_store.clone(),
+        bus.clone(),
+        notifier.clone(),
+        Arc::new(SystemClock),
+    ));
     let (harness, commands, readiness): (
         Arc<dyn Harness>,
         Arc<dyn CommandHandler>,
@@ -119,40 +149,46 @@ fn wiring(directory: &Path, fake_list: &str, detect_paths: DetectPaths) -> Resul
             config.pre_tool_use_command =
                 format!("'{}' hook pre-tool-use", path.replace('\'', "'\\''"));
         }
-        // Without the `requests` fake this stays `None` until the real queue has its
-        // SQLite collaboration repositories.
         let supervisor = Arc::new(ClaudeSupervisor::with_request_queue(
             config,
             store.clone(),
             bus.clone(),
-            requests.clone(),
+            Some(requests),
         ));
         (supervisor.clone(), supervisor, Arc::new(readiness))
     };
+    // Only Claude Code's permission tool and hook ask by run ID, so the gate looks
+    // runs up in Claude Code's harness; Codex asks the gate directly.
+    let gate = Arc::new(Gate::new(
+        harness.clone(),
+        store.clone(),
+        approval_store,
+        policy,
+        approvals.clone(),
+    ));
+    let codex_gate: Arc<dyn PermissionGate> = if fakes.contains(&"gate") {
+        Arc::new(FakePermissionGate::new())
+    } else {
+        gate.clone()
+    };
+    let codex = Arc::new(CodexSupervisor::new(
+        CodexConfig::default(),
+        store.clone(),
+        bus.clone(),
+        Some(codex_gate),
+    ));
     let dispatcher = Arc::new(HarnessDispatcher::new(
         store.clone(),
-        vec![
-            (harness, commands),
-            // TASK-041: add the Codex supervisor here, as (codex.clone(), codex).
-        ],
+        vec![(harness, commands), (codex.clone(), codex)],
     ));
     let (harness, commands): (Arc<dyn Harness>, Arc<dyn CommandHandler>) =
-        (dispatcher.clone(), dispatcher);
+        (dispatcher.clone(), dispatcher.clone());
     let agents = Arc::new(Agents::new(
         directory.join("agents"),
         store.clone(),
         bus.clone(),
         readiness,
     )?);
-    let no_team = Arc::new(NoTeam::new());
-    // Approvals live in memory until B's SQLite collaboration repositories exist,
-    // so pending approvals are lost when formationd restarts.
-    let memory = Arc::new(MemoryCollabStore::new());
-    let collab: Arc<dyn CollabStore> = if fakes.contains(&"collab") || fakes.contains(&"peers") {
-        memory.clone()
-    } else {
-        no_team.clone()
-    };
     let peers: Arc<dyn Peers> = if fakes.contains(&"peers") {
         let me = samples::member("fake-owner", MemberRole::Creator);
         let teammate = samples::member("fake-teammate", MemberRole::Member);
@@ -168,41 +204,36 @@ fn wiring(directory: &Path, fake_list: &str, detect_paths: DetectPaths) -> Resul
         );
         peers
     } else {
-        no_team
+        Arc::new(NoTeam::new())
     };
-    let notifier: Arc<dyn Notifier> = Arc::new(AttentionNotifier::new(store.clone(), bus.clone()));
+    let team = Arc::new(TeamService::new(
+        collab.clone(),
+        Arc::new(TailnetIdentity),
+        peers.clone(),
+        bus.clone(),
+        system_clock(),
+        TeamConfig::default(),
+    ));
+    let request_client = Arc::new(RequestClient::new(
+        collab.clone(),
+        peers.clone(),
+        harness.clone(),
+        store.clone(),
+        bus.clone(),
+        owner_requests,
+    ));
     let schedules = Arc::new(Schedules::new(
         store.clone(),
         harness.clone(),
         bus.clone(),
         notifier.clone(),
     ));
-    let policy: Arc<dyn Policy> = if fakes.contains(&"policy") {
-        Arc::new(FakePolicy::new())
-    } else {
-        Arc::new(OwnerOnly)
-    };
-    let approvals = Arc::new(Approvals::new(
-        memory.clone(),
-        bus.clone(),
-        notifier.clone(),
-        Arc::new(SystemClock),
-    ));
-    let gate = Arc::new(Gate::new(
-        harness.clone(),
-        store.clone(),
-        memory,
-        policy,
-        approvals.clone(),
-    ));
     let permissions = Arc::new(PermissionCommands::new(gate, approvals));
     let detect = Arc::new(Detect::new(detect_paths, store.clone(), bus.clone()));
-    let snapshots = Arc::new(SnapshotBuilder::new(
-        store.clone(),
-        collab,
-        harness.clone(),
-        peers,
-    ));
+    let snapshots = Arc::new(
+        SnapshotBuilder::new(store.clone(), collab, harness.clone(), peers)
+            .with_harnesses(dispatcher),
+    );
     let router = Arc::new(
         Router::new(vec![
             agents,
@@ -210,6 +241,8 @@ fn wiring(directory: &Path, fake_list: &str, detect_paths: DetectPaths) -> Resul
             detect,
             schedules.clone(),
             permissions,
+            team,
+            request_client,
         ])
         .map_err(io::Error::other)?,
     );
@@ -221,10 +254,6 @@ fn wiring(directory: &Path, fake_list: &str, detect_paths: DetectPaths) -> Resul
         store,
         notifier,
         schedules,
-        _gate: fakes
-            .contains(&"gate")
-            .then(|| Arc::new(FakePermissionGate::new()) as Arc<dyn PermissionGate>),
-        _requests: requests,
     })
 }
 

@@ -31,7 +31,8 @@ export default defineConfig(() => ({
     },
   },
 
-  // One page per window (frontend architecture, "Windows").
+  // One page per window (frontend architecture, "Windows"). preview.html, the
+  // development-only preview page (D-050), is served by `pnpm dev` and left out here.
   build: {
     rollupOptions: {
       input: {
