@@ -100,7 +100,7 @@ A development-only page at `preview/` lists every shared component and every scr
 - **Menus and shortcuts:** the app menu is built in `src-tauri` with accelerators (⌘N new question, ⇧⌘N new agent, ⌘K go to conversation, ⌘↩ send, ⌘. stop, ⌘S save, ⌘, settings) and emits events the UI handles. Esc closes sheets; the approval sheet asks before denying and binds no Return action.
 - **Access denial and errors:** error codes from formationd map to view states, for example `agent_not_shared` → unshared, `peer_offline` → waiting, `rate_limited` → error banner. Banners always offer one recovery action.
 - **Reconnect:** if formationd is unreachable, a banner explains it and retries; the CLI command to start it is shown.
-- **Localization:** `i18next` with `ko.json` and `en.json`; keys grouped by view; the language follows macOS unless set in Settings (D-033). No user-facing text is hard-coded.
+- **Localization:** `i18next` with `ko.json` and `en.json`; keys grouped by view; the language follows macOS unless set in Settings (D-033). No user-facing text is hard-coded. Code calls `t("view.key", "English default")`; `pnpm i18n:extract` writes `en.json` from those defaults, and `pnpm i18n:check` (also a Vitest test) fails when `ko.json` misses a key, keeps a key no code uses, or changes a `{{placeholder}}`.
 
 ## Reuse from open-source competitors (D-051)
 
