@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "io.github.callmejustdodo.formation",
   "build": {
-    "beforeDevCommand": "pnpm dev",
+    "beforeDevCommand": "cargo build -p formationd && pnpm dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "pnpm build",
+    "beforeBuildCommand": "cargo build --release -p formationd && pnpm build",
     "frontendDist": "../dist"
   },
   "app": {
@@ -17,7 +17,8 @@
         "width": 1180,
         "height": 740,
         "minWidth": 900,
-        "minHeight": 560
+        "minHeight": 560,
+        "visible": false
       }
     ],
     "security": {
@@ -35,7 +36,10 @@
       "icons/icon.ico"
     ],
     "macOS": {
-      "minimumSystemVersion": "13.0"
+      "minimumSystemVersion": "13.0",
+      "files": {
+        "MacOS/formationd": "../../../target/release/formationd"
+      }
     }
   }
 }
