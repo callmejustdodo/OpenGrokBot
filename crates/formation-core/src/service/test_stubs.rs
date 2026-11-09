@@ -49,6 +49,8 @@ impl SettingsRepo for Stub {
 impl TeamRepo for Stub {
     fn me(&self) -> Result<Option<MemberId>> { Ok(Some(member_id())) }
     fn set_me(&self, _id: MemberId) -> Result<()> { unreachable!("unused port method") }
+    fn team(&self) -> Result<Option<crate::ports::TeamRecord>> { unreachable!("unused port method") }
+    fn put_team(&self, _team: Option<&crate::ports::TeamRecord>) -> Result<()> { unreachable!("unused port method") }
     fn members(&self) -> Result<Vec<Member>> { Ok(vec![member(member_id()), member(teammate_id())]) }
     fn member(&self, _id: MemberId) -> Result<Option<Member>> { unreachable!("unused port method") }
     fn member_by_tailscale(&self, _login: &str) -> Result<Option<Member>> { unreachable!("unused port method") }

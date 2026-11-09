@@ -1,0 +1,42 @@
+{
+  "Node": {
+    "ID": 1000000000000003,
+    "StableID": "nEXAMPLE0003CNTRL",
+    "Name": "build-server.tail0000.ts.net.",
+    "User": 3000000000000003,
+    "Tags": [
+      "tag:server"
+    ],
+    "Key": "nodekey:0000000000000000000000000000000000000000000000000000000000000003",
+    "KeyExpiry": "0001-01-01T00:00:00Z",
+    "DiscoKey": "discokey:0000000000000000000000000000000000000000000000000000000000000003",
+    "Addresses": [
+      "100.101.102.105/32",
+      "fd7a:115c:a1e0::1234:567a/128"
+    ],
+    "AllowedIPs": [
+      "100.101.102.105/32",
+      "fd7a:115c:a1e0::1234:567a/128"
+    ],
+    "Endpoints": [
+      "192.0.2.30:41641"
+    ],
+    "HomeDERP": 1,
+    "Hostinfo": {
+      "OS": "linux",
+      "Hostname": "build-server"
+    },
+    "Created": "2026-10-01T00:00:00.000000000Z",
+    "Cap": 130,
+    "LastSeen": "2026-11-09T00:00:00Z",
+    "Online": true,
+    "ComputedName": "build-server",
+    "ComputedNameWithHost": "build-server"
+  },
+  "UserProfile": {
+    "ID": 3000000000000003,
+    "LoginName": "tagged-devices",
+    "DisplayName": "Tagged Devices"
+  },
+  "CapMap": null
+}

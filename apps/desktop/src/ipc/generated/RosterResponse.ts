@@ -4,4 +4,9 @@ import type { Member } from "./Member";
 /**
  * `GET /v1/team`
  */
-export type RosterResponse = { members: Array<Member>, };
+export type RosterResponse = { members: Array<Member>, 
+/**
+ * Starts at 1 when the team is created and goes up by one on every roster change
+ * on the creator's Mac. A Mac applies a roster only when its version is newer.
+ */
+version: number, };
