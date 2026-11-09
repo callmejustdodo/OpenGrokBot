@@ -5,6 +5,10 @@ mod store;
 pub use harness::{FakeHarness, HarnessCall, ScriptedAgent, ScriptedPage};
 pub use store::MemoryStore;
 
+// B's fakes of the collaboration ports (TASK-042).
+pub mod collab;
+pub use collab::*;
+
 use std::sync::Mutex;
 
 use formation_proto::{common::Seq, events::Event};
