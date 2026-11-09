@@ -37,6 +37,7 @@ export default defineConfig(() => ({
       input: {
         main: "index.html",
         menubar: "menubar.html",
+        settings: "settings.html",
       },
     },
   },
