@@ -100,8 +100,9 @@ Stored in SQLite on each member's Mac. Times are UTC in storage and shown in loc
 
 | Entity | Key fields | Rules |
 | --- | --- | --- |
-| `member` | id, github_login, display_name, tailscale_login, tailscale_node, joined_at, role (`creator` or `member`), removed_at | Unique `github_login`; removal ends access at once (FR-008). |
-| `invitation` | id, code, created_by, expires_at, used_by, used_at | Expires; single team. |
+| `member` | id, github_login, display_name, tailscale_login, tailscale_node (the node's `StableID`), joined_at, role (`creator` or `member`), removed_at | Unique `github_login` and `tailscale_login` among current members; removal ends access at once (FR-008). |
+| `invitation` | id, code, link, created_by, expires_at, used_by, used_at | Single use; expires 24 hours after it is made; single team. |
+| `team` | id, creator_host, creator_port, roster_version, open invitation; this Mac's own member | One per Mac; see [team and roster](#team-and-roster). |
 | `agent` | id, slug, name, role, harness (`claude_code`, `codex`, `detected`), folder_path, avatar_shape, avatar_color, created_at, deleted_at | Unique slug per Mac; detected agents record their harness and source path. |
 | `agent_share` | agent_id, shared, visibility (`answer`, `answer_excerpts`), accepts_requests | Defaults: not shared, `answer_excerpts`, false (D-025, D-026, FR-009). |
 | `session` | id (harness session ID), agent_id, started_at, last_activity_at, state | One main session per running agent. |
@@ -138,11 +139,20 @@ The core listens on the Mac's Tailscale address only, port 7413 (assumed), versi
 | `POST /v1/questions/{id}/action` | The asker cancels, refreshes, or routes a question ("Ask another agent", "Ask Minsu"). |
 | `POST /v1/requests` | Create a work request with an idempotency key. |
 | `GET /v1/requests/{id}` · `POST /v1/requests/{id}/cancel` | Status and cancel. |
-| `GET /v1/team` | The roster; the creator's Mac is authoritative. |
+| `GET /v1/team` | The roster and its version; the creator's Mac is authoritative ([team and roster](#team-and-roster)). |
 | `POST /v1/team/join` | Creator's Mac only: join with an invitation code and a GitHub login. |
 | `WS /v1/events` | Presence, question, request, and roster updates for this caller. |
 
-Every request is authenticated by Tailscale WhoIs on the connection and mapped to a member; unknown callers get `403`, except `POST /v1/team/join`, which checks the invitation code instead. Errors use `{ "error": { "code", "message" } }`.
+Every request is authenticated by Tailscale WhoIs on the connection and mapped to a member; unknown callers get `403`, except `POST /v1/team/join`, which still needs WhoIs but checks the invitation code instead of membership. Errors use `{ "error": { "code", "message" } }`.
+
+#### Team and roster
+
+Decided 2026-11-09 (TASK-017); identity checks are in the backend architecture's [identity and team](6_backend_architecture.md#identity-and-team).
+
+- **Roster:** the creator's Mac holds the authoritative roster, with a version that starts at 1 and goes up by one on every join or removal. Other members' Macs fetch it with `GET /v1/team`, get a `roster` push on `WS /v1/events` when it changes, and fetch it again on reconnect; a Mac applies a roster only when its version is newer. While the creator's Mac is offline, nobody can join and members keep the roster they hold.
+- **Removal applies first:** the creator's Mac stores the removal before anything else and closes the member's connections; every other Mac refuses the member as soon as it applies the new roster. A removed member's Mac forgets the team.
+- **Invitation link:** `formation://join/<code>?host=<MagicDNS name or 100.x>&port=<peer port>&team=<team id>`. The code, such as `7F3K-Q9PX` (8 symbols of Crockford base32), works once and expires 24 hours after it is made; a new invitation replaces the open one.
+- **Joining:** the invitee's formationd sends the code, the GitHub login, and a display name to the host in the link. The new member's Tailscale login and node come from WhoIs on that connection, never from the body. Unknown, used, or expired codes return `not_found` and count as bad attempts, which are rate-limited per Tailscale login and for all callers together (assumed 5 and 20 per 10 minutes).
 
 ### CLI (`formation`) and MCP server
 
