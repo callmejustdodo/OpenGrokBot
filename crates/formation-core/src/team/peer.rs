@@ -53,15 +53,19 @@ impl<S: TeamRepo + Send + Sync + ?Sized + 'static> JoinEndpoint for TeamJoinEndp
 ///   [`PeerEventHub::publish_all`]; a roster push makes each events connection
 ///   check its member first, so a removed member's connection closes instead of
 ///   receiving it.
-/// - On a member's Mac (a roster applied from the creator's push or
-///   `GET /v1/team`), nothing is pushed, since teammates take the roster only
+/// - On a member's Mac (the roster received on `team_join`, or one applied
+///   from the creator's push or `GET /v1/team`), nothing is pushed, since teammates take the roster only
 ///   from the creator's Mac. [`PeerEventHub::recheck_members`] still closes the
 ///   connections of members who were removed, including every connection when
 ///   this Mac itself was removed.
 ///
 /// After each change, `on_change` runs: formationd passes
 /// [`PeerClient::sync_members`](crate::peer::client::PeerClient::sync_members),
-/// so links to new teammates open and links to removed ones close.
+/// so links to new teammates open and links to removed ones close. Joining a
+/// team counts as a change, so a newly joined Mac connects without waiting for
+/// the creator's push. Changes made before this call are not replayed:
+/// formationd also runs `sync_members` once at startup for the roster it
+/// already holds.
 ///
 /// When the subscription falls behind, the missed changes are replaced by the
 /// current roster: the push carries the whole roster with its version, so the
@@ -177,13 +181,25 @@ mod tests {
     }
 
     fn service(name: &str) -> Arc<TeamService<MemoryCollabStore>> {
-        Arc::new(TeamService::new(
+        service_with(
+            name,
             Arc::new(MemoryCollabStore::new()),
+            Arc::new(FakePeers::new(MemberId::generate())),
+        )
+    }
+
+    fn service_with(
+        name: &str,
+        store: Arc<MemoryCollabStore>,
+        peers: Arc<FakePeers>,
+    ) -> Arc<TeamService<MemoryCollabStore>> {
+        Arc::new(TeamService::new(
+            store,
             Arc::new(Stub {
                 whois: whois(name),
                 github_login: name.into(),
             }),
-            Arc::new(FakePeers::new(MemberId::generate())),
+            peers,
             Arc::new(RecordingEventSink::default()),
             system_clock(),
             TeamConfig::default(),
@@ -379,6 +395,148 @@ mod tests {
             events.try_recv().is_err(),
             "a member's Mac pushes no roster"
         );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn joining_a_team_runs_the_callback_so_the_new_member_connects() {
+        // Minsu has no link to anyone before the join, so the creator's roster push
+        // cannot reach him: the join itself has to start the peer client.
+        let (creator, _) = creator();
+        let invitation = creator.invite().unwrap();
+        let link = crate::team::InvitationLink::parse(&invitation.link).unwrap();
+        let minsu_id = MemberId::generate();
+        let peers = Arc::new(FakePeers::new(minsu_id));
+        peers.set_roster(creator.roster().unwrap().members);
+        peers.expect_join(&link.address(), &invitation.code, whois("minsu"));
+        let minsu = service_with("minsu", Arc::new(MemoryCollabStore::new()), peers);
+
+        let hub = PeerEventHub::new();
+        let mut events = hub.subscribe();
+        let synced = Arc::new(AtomicUsize::new(0));
+        let counter = synced.clone();
+        let _task = forward_roster(minsu.clone(), hub, move || {
+            counter.fetch_add(1, Ordering::SeqCst);
+        });
+
+        let team = minsu
+            .join(&formation_proto::team::TeamJoin {
+                code: invitation.link.clone(),
+                display_name: None,
+            })
+            .await
+            .unwrap();
+        assert_eq!(team.me, minsu_id);
+
+        wait_for(&synced, 1).await;
+        match next_message(&mut events).await {
+            HubMessage::Recheck => {}
+            other => panic!("expected a member recheck, got {other:?}"),
+        }
+    }
+
+    /// On a current-thread runtime the forwarding task cannot run until the test
+    /// awaits, so every change below is made before it reads the first one.
+    #[tokio::test]
+    async fn a_lagging_subscription_pushes_the_current_roster_first() {
+        let (team, _) = creator();
+        let hub = PeerEventHub::new();
+        let mut events = hub.subscribe();
+        let _task = forward_roster(team.clone(), hub, || {});
+
+        // More joins than the roster channel holds (64).
+        for i in 0..70 {
+            let code = team.invite().unwrap().code;
+            let name = format!("member{i}");
+            team.handle_join(Some(&whois(&name)), &peer_join(&code, &name))
+                .unwrap();
+        }
+        let latest = team.roster().unwrap();
+        assert_eq!(latest.version, 71);
+
+        match next_message(&mut events).await {
+            HubMessage::Event {
+                audience: crate::peer::api::Audience::Members,
+                event: PeerEvent::Roster { members, version },
+            } => {
+                assert_eq!(version, latest.version);
+                assert_eq!(members.len(), latest.members.len());
+            }
+            other => panic!("expected the current roster, got {other:?}"),
+        }
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn removing_a_member_closes_their_events_connection() {
+        use futures_util::StreamExt;
+        use tokio_tungstenite::tungstenite::Message;
+        use tokio_tungstenite::tungstenite::protocol::frame::coding::CloseCode;
+
+        use crate::peer::api::{BlockingIdentity, PeerApi, PeerApiConfig, PeerApiDeps};
+        use crate::policy::TeamPolicy;
+        use crate::testkit::MemoryStore;
+
+        let store = Arc::new(MemoryCollabStore::new());
+        let team = service_with(
+            "dohyeon",
+            store.clone(),
+            Arc::new(FakePeers::new(MemberId::generate())),
+        );
+        team.create(Some("Dohyeon")).unwrap();
+        let code = team.invite().unwrap().code;
+        let minsu = team
+            .handle_join(Some(&whois("minsu")), &peer_join(&code, "minsu"))
+            .unwrap()
+            .member_id;
+
+        // Every loopback connection is Minsu's Mac.
+        let hub = PeerEventHub::new();
+        let api = PeerApi::bind(
+            PeerApiConfig::new("127.0.0.1:0".parse().unwrap()),
+            PeerApiDeps {
+                identity: Arc::new(BlockingIdentity::new(|_| Ok(whois("minsu")))),
+                policy: Arc::new(TeamPolicy::new(
+                    store.clone(),
+                    Arc::new(MemoryStore::default()),
+                )),
+                team: store.clone(),
+                join: None,
+                ask: None,
+                requests: None,
+                hub: hub.clone(),
+            },
+        )
+        .await
+        .unwrap();
+        let _task = forward_roster(team.clone(), hub.clone(), || {});
+
+        let (mut socket, _) =
+            tokio_tungstenite::connect_async(format!("ws://{}/v1/events", api.local_addr()))
+                .await
+                .expect("Minsu connects as a member");
+        let hello = tokio::time::timeout(WAIT, socket.next())
+            .await
+            .expect("a hello")
+            .expect("open")
+            .expect("a message");
+        assert!(matches!(hello, Message::Text(_)), "got {hello:?}");
+
+        team.remove(minsu).unwrap();
+        let closed = tokio::time::timeout(WAIT, async {
+            loop {
+                match socket.next().await {
+                    Some(Ok(Message::Close(frame))) => return frame,
+                    Some(Ok(Message::Text(text))) => {
+                        panic!("a removed member received {text}")
+                    }
+                    Some(Ok(_)) => {}
+                    other => panic!("expected a close frame, got {other:?}"),
+                }
+            }
+        })
+        .await
+        .expect("the connection closed");
+        assert_eq!(closed.expect("a close frame").code, CloseCode::Policy);
+        api.shutdown().await.unwrap();
     }
 
     #[tokio::test(flavor = "multi_thread")]
