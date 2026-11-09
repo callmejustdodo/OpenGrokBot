@@ -308,6 +308,15 @@ async fn wake_runs_once_for_many_missed_slots() {
         f.store.schedule_runs(schedule.id, None, 10).unwrap().len(),
         1
     );
+    let alerts = f.notifier.inbox().await.unwrap();
+    assert_eq!(alerts.len(), 1);
+    assert_eq!(alerts[0].kind, AttentionKind::ScheduleMissed);
+    assert_eq!(
+        alerts[0].target,
+        AttentionTarget::Schedule {
+            schedule_id: schedule.id
+        }
+    );
 }
 
 #[tokio::test]
@@ -328,6 +337,14 @@ async fn failed_turn_and_harness_error_record_failure_and_alert() {
     assert!(
         runs.iter()
             .all(|r| r.result == Some(ScheduleRunResult::Failed) && r.finished_at.is_some())
+    );
+    // Newest first: the harness error, then the failed turn without reply text.
+    assert_eq!(
+        runs.iter().map(|r| r.error.as_deref()).collect::<Vec<_>>(),
+        [
+            Some("no scripted agent or response"),
+            Some("turn did not complete")
+        ]
     );
     let alerts = f.notifier.inbox().await.unwrap();
     assert_eq!(alerts.len(), 2);
