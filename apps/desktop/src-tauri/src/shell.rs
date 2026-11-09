@@ -125,15 +125,15 @@ pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
                 toggle_panel(tray.app_handle(), rect);
             }
         });
-    if let Some(icon) = app.default_window_icon() {
-        builder = builder.icon(icon.clone());
+    if let Some(icon) = tray_glyph() {
+        builder = builder.icon(icon);
     }
     builder.build(app)?;
     Ok(())
 }
 
 /// The tray icon in its two looks: plain, and with a dot when something needs
-/// the owner (SC-002). Both are template images, made once from the app icon.
+/// the owner (SC-002). Both are template images, made once from the tray glyph.
 pub struct TrayIcons {
     plain: Option<Image<'static>>,
     dotted: Option<Image<'static>>,
@@ -141,8 +141,8 @@ pub struct TrayIcons {
 }
 
 impl TrayIcons {
-    pub fn new(app: &AppHandle) -> Self {
-        let plain = app.default_window_icon().cloned().map(Image::to_owned);
+    pub fn new() -> Self {
+        let plain = tray_glyph();
         let dotted = plain.as_ref().map(|icon| {
             let (width, height) = (icon.width(), icon.height());
             Image::new_owned(with_dot(icon.rgba(), width, height), width, height)
@@ -153,6 +153,15 @@ impl TrayIcons {
             attention: Mutex::new(false),
         }
     }
+}
+
+/// The menu bar glyph: the app icon's chat bubble with its eyes cut out, black
+/// on clear (icons/source/tray-icon.svg). The app icon itself is a filled
+/// square, which as a template image would draw as a solid block.
+fn tray_glyph() -> Option<Image<'static>> {
+    Image::from_bytes(include_bytes!("../icons/tray-icon.png"))
+        .ok()
+        .map(Image::to_owned)
 }
 
 /// Shows or removes the tray icon's dot. The menu bar panel's window calls
@@ -263,10 +272,21 @@ pub fn on_window_event(window: &Window, event: &WindowEvent) {
 
 #[cfg(test)]
 mod tests {
-    use super::{panel_origin, with_dot};
+    use super::{panel_origin, tray_glyph, with_dot};
 
     fn alpha(rgba: &[u8], width: u32, x: u32, y: u32) -> u8 {
         rgba[((y * width + x) * 4 + 3) as usize]
+    }
+
+    #[test]
+    fn the_tray_glyph_is_a_bubble_with_clear_eyes() {
+        let glyph = tray_glyph().expect("icons/tray-icon.png decodes");
+        let (width, height) = (glyph.width(), glyph.height());
+        assert_eq!((width, height), (44, 44));
+        // A template image: the corner is clear, the bubble opaque, the eyes cut out.
+        assert_eq!(alpha(glyph.rgba(), width, 0, 0), 0);
+        assert_eq!(alpha(glyph.rgba(), width, 22, 12), 255);
+        assert_eq!(alpha(glyph.rgba(), width, 15, 22), 0);
     }
 
     #[test]
