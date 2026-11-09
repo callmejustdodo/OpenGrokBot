@@ -189,7 +189,7 @@ export default function MyConversation({ agentId }: { agentId: AgentId }) {
             aria-label={t("conversation.message", "Message")}
             placeholder={
               detected
-                ? t("conversation.detectedPlaceholder", "Formation can't send messages to this session")
+                ? t("conversation.detectedPlaceholder", "OpenGrokBot can't send messages to this session")
                 : t("conversation.placeholder", "Message {{name}}", { name: agent.name })
             }
             disabled={detected}

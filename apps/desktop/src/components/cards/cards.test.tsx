@@ -62,7 +62,7 @@ describe("PermissionCard (SC-005)", () => {
     const card = screen.getByRole("region", { name: "Claude Code asks for permission" });
     expect(card).toHaveTextContent("Delete the build folder and rebuild");
     expect(card).toHaveTextContent("rm -rf dist/ && npm run build");
-    expect(card).toHaveTextContent("Teammates' requests follow Formation's approval rules.");
+    expect(card).toHaveTextContent("Teammates' requests follow OpenGrokBot's approval rules.");
 
     const choices: [string, string][] = [
       ["Allow", "allow_once"],

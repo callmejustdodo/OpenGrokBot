@@ -99,7 +99,7 @@ function QuestionRow({ question, asker, agents }: {
       <span className="t">
         <b>{asker}</b> · “{question.text}”
         <small>
-          {t("inbox.questions.why", "Formation wasn't sure which agent should answer; {{asker}} chose to ask you", {
+          {t("inbox.questions.why", "OpenGrokBot wasn't sure which agent should answer; {{asker}} chose to ask you", {
             asker,
           })}
         </small>
