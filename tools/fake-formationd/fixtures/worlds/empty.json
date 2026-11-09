@@ -1,0 +1,38 @@
+{
+  "seq": 0,
+  "team": {
+    "me": "01930000-0000-7000-8000-000000000001",
+    "members": [
+      {
+        "id": "01930000-0000-7000-8000-000000000001",
+        "github_login": "dohyeon",
+        "display_name": "Dohyeon",
+        "tailscale_login": "dohyeon@github",
+        "tailscale_node": "dohyeon-mbp",
+        "role": "creator",
+        "joined_at": "2026-11-09T01:50:00Z",
+        "online": true,
+        "last_seen_at": null
+      }
+    ],
+    "invitation": null
+  },
+  "agents": [],
+  "shares": [],
+  "schedules": [],
+  "conversations": [],
+  "teammate_agents": [],
+  "inbox": [],
+  "questions": [],
+  "requests": [],
+  "approvals": [],
+  "rules": [],
+  "harnesses": [
+    { "harness": "claude_code", "installed": true, "signed_in": true, "version": "2.1.319", "path": "~/.local/bin/claude", "problem": null },
+    { "harness": "codex", "installed": true, "signed_in": true, "version": "0.98.0", "path": "/opt/homebrew/bin/codex", "problem": null }
+  ],
+  "settings": {
+    "language": null,
+    "notifications": { "enabled": true, "muted_until": null }
+  }
+}
