@@ -171,7 +171,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: B
 
 ### TASK-007: Two Macs reach each other with verified identity
-- Status: pending
+- Status: complete
 - References: [identity](6_backend_architecture.md#identity-and-team), D-045, D-046
 - Prerequisites: TASK-001
 - Change locations: `crates/formation-core/src/peer/` (spike)
