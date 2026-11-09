@@ -65,10 +65,19 @@
     ],
     "macOS": {
       "minimumSystemVersion": "13.0",
+      "signingIdentity": "-",
       "files": {
         "MacOS/formationd": "../../../target/release/formationd",
         "MacOS/formation": "../../../target/release/formation"
       }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEEyQTk4Qzc3RjlFRjFCRTgKUldUb0crLzVkNHlwb2l1WHVxWlk5OVRQNm51WUw5bkNlQ0lOdFRQemFiZEhaZlFOT05uM3B0eDAK",
+      "endpoints": [
+        "https://github.com/callmejustdodo/OpenGrokBot/releases/latest/download/latest.json"
+      ]
     }
   }
 }

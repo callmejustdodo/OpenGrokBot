@@ -13,6 +13,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
     "ipc:generate": "sh scripts/generate-ipc.sh",
+    "release": "sh scripts/release.sh",
     "i18n:extract": "node scripts/i18n.mjs",
     "i18n:check": "node scripts/i18n.mjs --check"
   },

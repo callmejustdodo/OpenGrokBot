@@ -179,6 +179,19 @@ pub fn register(app_identifier: &str) -> Result<Outcome, Error> {
     }
 }
 
+/// Restarts the loaded formationd, so it runs the binary now in the bundle
+/// (after an update). The plist is unchanged, so [`register`] alone would keep
+/// the old process running. This stops agent turns in progress.
+pub fn restart(app_identifier: &str) -> Result<(), Error> {
+    // SAFETY: getuid has no preconditions and cannot fail.
+    let service = format!(
+        "gui/{}/{}",
+        unsafe { libc::getuid() },
+        label(app_identifier)
+    );
+    checked(&mut launchctl, &["kickstart", "-k", &service])
+}
+
 /// How often, and how many times, to check that a booted-out service is gone
 /// (about 5 s in all).
 const GONE_POLL_INTERVAL: Duration = Duration::from_millis(100);

@@ -19,7 +19,7 @@ Build OpenGrokBot, a macOS app that runs role agents on Claude Code (later Codex
 
 - **Code:** none yet. The repository has the documents, the mockup, `.claude/skills/` (macOS skills; Tauri was chosen over Swift, so they matter mainly for native details), `AGENTS.md` conventions, and one check: `node scripts/check-documentation.mjs`.
 - **Excluded from the first version:** see the [PRD exclusions](1_product_requirements_documentation.md#exclusions) (usage and cost view, Slack, customer-facing channels, personal cloud agents, web UI, Windows and Linux, billing, large-team administration).
-- **Not built here:** signing, notarization, and an updater (before wider release); a non-Tailscale transport (after the MVP).
+- **Not built here:** Developer ID signing and notarization (before wider release); a non-Tailscale transport (after the MVP). The updater is built ([tech spec](4_techspec.md#technology-choices), "App updates").
 
 ## Roles and ownership
 

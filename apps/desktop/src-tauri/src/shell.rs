@@ -78,21 +78,28 @@ pub fn show_settings_window(app: &AppHandle) -> tauri::Result<()> {
     window.set_focus()
 }
 
-/// The app menu: the standard macOS menus, with "Settings…" (⌘,) in the app
-/// menu after "About".
-pub fn create_app_menu(app: &AppHandle) -> tauri::Result<()> {
+/// The app menu: the standard macOS menus, with "Check for Updates…" and
+/// "Settings…" (⌘,) in the app menu after "About". Picking "Check for
+/// Updates…" calls `check_for_updates`.
+pub fn create_app_menu(
+    app: &AppHandle,
+    check_for_updates: impl Fn(&AppHandle) + Send + Sync + 'static,
+) -> tauri::Result<()> {
     let menu = Menu::default(app)?;
     #[cfg(target_os = "macos")]
     if let Some(tauri::menu::MenuItemKind::Submenu(app_menu)) = menu.items()?.into_iter().next() {
+        let updates = MenuItem::with_id(app, "updates", "Check for Updates…", true, None::<&str>)?;
         let settings = MenuItem::with_id(app, "settings", "Settings…", true, Some("CmdOrCtrl+,"))?;
         let separator = tauri::menu::PredefinedMenuItem::separator(app)?;
-        app_menu.insert_items(&[&separator, &settings], 1)?;
+        app_menu.insert_items(&[&updates, &separator, &settings], 1)?;
     }
     app.set_menu(menu)?;
-    app.on_menu_event(|app, event| {
-        if event.id() == "settings" {
+    app.on_menu_event(move |app, event| match event.id().as_ref() {
+        "settings" => {
             let _ = show_settings_window(app);
         }
+        "updates" => check_for_updates(app),
+        _ => {}
     });
     Ok(())
 }
