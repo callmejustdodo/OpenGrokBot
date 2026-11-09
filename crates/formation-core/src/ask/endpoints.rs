@@ -276,6 +276,65 @@ impl OwnerAsks {
         publish(&self.hub, &question);
         Ok(question)
     }
+
+    /// `question_answer`: the owner answers a question a teammate sent to them
+    /// (US-010). The answer is masked and published to the asker like an
+    /// agent's.
+    pub fn answer_in_person(&self, id: QuestionId, text: &str) -> Result<Question> {
+        if text.trim().is_empty() {
+            return Err(ApiError::new(
+                ErrorCode::InvalidParams,
+                "the answer is empty",
+            ));
+        }
+        let busy = self.claim(id)?;
+        let mut question = self.sent_to_owner(id)?;
+        self.pipeline
+            .answer_in_person(&self.gate(), &mut question, text)?;
+        drop(busy);
+        Ok(question)
+    }
+
+    /// `question_handoff`: the owner hands a question a teammate sent to them to
+    /// one of their shared agents (US-010), which answers it in a fork in the
+    /// background as when the asker chooses an agent. Returns the question as
+    /// accepted; every later state is published to the asker.
+    pub fn handoff(&self, id: QuestionId, agent_id: AgentId) -> Result<Question> {
+        let busy = self.claim(id)?;
+        let question = self.sent_to_owner(id)?;
+        // Checked here so a private agent leaves the question waiting on the
+        // owner instead of failing it.
+        if !self.pool()?.iter().any(|(agent, _)| agent.id == agent_id) {
+            return Err(ApiError::new(
+                ErrorCode::AgentNotShared,
+                "the agent is not shared",
+            ));
+        }
+        self.start(busy, question, Job::Choose(RouteChoice::Agent { agent_id }))
+    }
+
+    /// A question a teammate asked this Mac's owner that waits on the owner
+    /// (`sent_to_owner`). `not_found` for any other question on this Mac,
+    /// including the owner's own copies of questions they asked; `conflict`
+    /// once the question has moved on, for example when the asker canceled it.
+    fn sent_to_owner(&self, id: QuestionId) -> Result<Question> {
+        let me = self.collab.me()?;
+        let question = self
+            .collab
+            .question(id)?
+            .filter(|q| me.is_some_and(|me| q.target.owner() == me && q.asker != me))
+            .ok_or_else(|| ApiError::new(ErrorCode::NotFound, "no such question"))?;
+        if question.status != QuestionStatus::SentToOwner {
+            return Err(ApiError::new(
+                ErrorCode::Conflict,
+                format!(
+                    "the question is not waiting on you: it is {:?}",
+                    question.status
+                ),
+            ));
+        }
+        Ok(question)
+    }
 }
 
 /// What a background run does with the question.
@@ -554,6 +613,7 @@ mod tests {
     use formation_proto::team::WhoIs;
 
     use super::*;
+    use crate::ask::AskCommands;
     use crate::ask::mask::MASK;
     use crate::ask::routing::test_support::ScriptedScorer;
     use crate::ask::routing::{AgentScore, RoutingProfile, Scorer};
@@ -561,9 +621,13 @@ mod tests {
     use crate::peer::api::events::HubMessage;
     use crate::policy::sharing::test_support::agent;
     use crate::ports::{
-        AgentRepo, ForkResult, ForkRun, Harness, RunInfo, ShareRepo, ToolContext, TurnResult,
+        AgentRepo, CommandCall, CommandHandler, ForkResult, ForkRun, Harness, RunInfo, ShareRepo,
+        TeamRepo, ToolContext, TurnResult,
     };
-    use crate::testkit::{FakeHarness, HarnessCall, MemoryCollabStore, MemoryStore, ScriptedAgent};
+    use crate::testkit::{
+        FakeHarness, FakePeers, HarnessCall, MemoryCollabStore, MemoryStore, RecordingEventSink,
+        ScriptedAgent,
+    };
     use formation_proto::request::QueueItem;
 
     const MAIN: &str = "aaaaaaaa-0000-4000-8000-000000000001";
@@ -720,6 +784,7 @@ mod tests {
         api: Agent,
         me: MemberId,
         harness: Arc<FakeHarness>,
+        store: Arc<MemoryStore>,
         collab: Arc<MemoryCollabStore>,
         policy: Arc<LimitPolicy>,
         hub: PeerEventHub,
@@ -756,6 +821,8 @@ mod tests {
             let store = Arc::new(MemoryStore::default());
             store.insert_agent(&api).unwrap();
             let collab = Arc::new(MemoryCollabStore::new());
+            let me = MemberId::generate();
+            collab.set_me(me).unwrap();
             collab
                 .put_share(&ShareSettings {
                     shared: true,
@@ -770,7 +837,7 @@ mod tests {
                 .with_clock(clock.clone());
             let policy = Arc::new(LimitPolicy::new(usize::MAX));
             let asks = OwnerAsks::new(
-                store,
+                store.clone(),
                 collab.clone(),
                 policy.clone(),
                 hub.clone(),
@@ -781,8 +848,9 @@ mod tests {
             Self {
                 _dir: dir,
                 api,
-                me: MemberId::generate(),
+                me,
                 harness,
+                store,
                 collab,
                 policy,
                 hub,
@@ -1439,5 +1507,174 @@ mod tests {
         assert!(lock(&owner.asks.busy).is_empty());
         // Nothing is left to recover.
         assert_eq!(owner.asks.recover().unwrap(), 0);
+    }
+
+    /// The owner's local socket commands, with the owner's side of questions.
+    fn owner_commands(owner: &Owner) -> AskCommands {
+        AskCommands::new(
+            owner.collab.clone(),
+            Arc::new(FakePeers::new(owner.me)),
+            owner.harness.clone(),
+            owner.store.clone(),
+            Arc::new(RecordingEventSink::default()),
+        )
+        .with_owner_asks(owner.asks.clone())
+    }
+
+    async fn owner_call(
+        commands: &AskCommands,
+        method: &str,
+        params: serde_json::Value,
+    ) -> Result<Question> {
+        let value = commands
+            .handle(CommandCall {
+                caller: Caller::Owner,
+                method: method.into(),
+                params,
+            })
+            .await?;
+        Ok(serde_json::from_value(value).unwrap())
+    }
+
+    /// A question the asker sent to the owner after routing was unsure.
+    async fn sent_to_owner(
+        owner: &Owner,
+        asker: MemberId,
+        rx: &mut Receiver<HubMessage>,
+    ) -> QuestionId {
+        let ask = peer_ask(owner.to_person(), "Who broke the build?");
+        let id = ask.question_id;
+        owner.asks.ask(member(asker), ask).await.unwrap();
+        statuses_until(rx, asker, &[QuestionStatus::Unsure]).await;
+        owner.idle().await;
+        let route = PeerQuestionAction::Route {
+            choice: RouteChoice::Owner,
+        };
+        let sent = owner.asks.question_action(asker, id, route).await.unwrap();
+        assert_eq!(sent.status, QuestionStatus::SentToOwner);
+        assert_eq!(next_update(rx, asker).await, sent);
+        id
+    }
+
+    #[tokio::test]
+    async fn the_owners_own_answer_reaches_the_asker_masked() {
+        let owner = Owner::scripted(&[], Vec::new());
+        let commands = owner_commands(&owner);
+        let asker = MemberId::generate();
+        let mut rx = owner.hub.subscribe();
+        let id = sent_to_owner(&owner, asker, &mut rx).await;
+
+        let text = format!("I did, sorry. Ask me at {OWNER_EMAIL}.");
+        let answered = owner_call(
+            &commands,
+            "question_answer",
+            serde_json::json!({ "question_id": id, "text": text }),
+        )
+        .await
+        .unwrap();
+        assert_eq!(answered.status, QuestionStatus::Answered);
+        assert_eq!(answered.agent_id, None);
+        let answer = answered.answer.as_ref().unwrap();
+        assert_eq!(answer.agent_id, None);
+        assert!(answer.excerpts.is_empty());
+        assert!(
+            answer.text.contains(MASK) && !answer.text.contains(OWNER_EMAIL),
+            "{}",
+            answer.text
+        );
+        assert_eq!(next_update(&mut rx, asker).await, answered);
+        assert_eq!(owner.stored(id), answered);
+        assert_eq!(owner.forks(), 0);
+        assert!(lock(&owner.asks.busy).is_empty());
+
+        // Answered: no longer waiting on the owner.
+        let error = owner.asks.answer_in_person(id, "Again.").unwrap_err();
+        assert_eq!(error.code, ErrorCode::Conflict);
+    }
+
+    #[tokio::test]
+    async fn a_handed_off_question_is_answered_by_the_agent_for_the_asker() {
+        let owner = Owner::scripted(&[("f1", "Commit abc broke it.")], Vec::new());
+        let commands = owner_commands(&owner);
+        let asker = MemberId::generate();
+        let mut rx = owner.hub.subscribe();
+        let id = sent_to_owner(&owner, asker, &mut rx).await;
+
+        let accepted = owner_call(
+            &commands,
+            "question_handoff",
+            serde_json::json!({ "question_id": id, "agent_id": owner.api.id }),
+        )
+        .await
+        .unwrap();
+        assert_eq!(accepted.status, QuestionStatus::Received);
+        let (statuses, answered) =
+            statuses_until(&mut rx, asker, &[QuestionStatus::Answered]).await;
+        assert_eq!(
+            statuses,
+            [
+                QuestionStatus::Received,
+                QuestionStatus::Answering,
+                QuestionStatus::Answered
+            ]
+        );
+        assert_eq!(answered.agent_id, Some(owner.api.id));
+        assert_eq!(answered.answer.unwrap().text, "Commit abc broke it.");
+        owner.idle().await;
+        assert_eq!(owner.forks(), 1);
+        // The owner's hand-off is not the asker's to pay for.
+        assert!(lock(&owner.policy.targets).is_empty());
+    }
+
+    #[tokio::test]
+    async fn in_person_commands_refuse_unknown_canceled_and_other_questions() {
+        let owner = Owner::scripted(&[("f1", "An answer.")], Vec::new());
+        let asker = MemberId::generate();
+        let mut rx = owner.hub.subscribe();
+
+        // Unknown.
+        let unknown = QuestionId::generate();
+        let error = owner.asks.answer_in_person(unknown, "Done.").unwrap_err();
+        assert_eq!(error.code, ErrorCode::NotFound);
+        let error = owner.asks.handoff(unknown, owner.api.id).unwrap_err();
+        assert_eq!(error.code, ErrorCode::NotFound);
+
+        // Waiting on the owner, but not for an empty answer or a private agent.
+        let id = sent_to_owner(&owner, asker, &mut rx).await;
+        let error = owner.asks.answer_in_person(id, "  ").unwrap_err();
+        assert_eq!(error.code, ErrorCode::InvalidParams);
+        let error = owner.asks.handoff(id, AgentId::generate()).unwrap_err();
+        assert_eq!(error.code, ErrorCode::AgentNotShared);
+        assert_eq!(owner.stored(id).status, QuestionStatus::SentToOwner);
+
+        // Canceled by the asker meanwhile.
+        owner
+            .asks
+            .question_action(asker, id, PeerQuestionAction::Cancel)
+            .await
+            .unwrap();
+        let error = owner.asks.answer_in_person(id, "Done.").unwrap_err();
+        assert_eq!(error.code, ErrorCode::Conflict);
+        let error = owner.asks.handoff(id, owner.api.id).unwrap_err();
+        assert_eq!(error.code, ErrorCode::Conflict);
+        assert_eq!(owner.stored(id).status, QuestionStatus::Canceled);
+
+        // The owner's copy of a question they asked a teammate.
+        let teammate = MemberId::generate();
+        let mine = Question {
+            asker: owner.me,
+            target: AskTarget::Person {
+                member_id: teammate,
+            },
+            status: QuestionStatus::SentToOwner,
+            ..interrupted_question(&owner, teammate)
+        };
+        owner.collab.put_question(&mine).unwrap();
+        let error = owner.asks.answer_in_person(mine.id, "Done.").unwrap_err();
+        assert_eq!(error.code, ErrorCode::NotFound);
+
+        owner.idle().await;
+        assert_eq!(owner.forks(), 0);
+        assert!(lock(&owner.asks.busy).is_empty());
     }
 }

@@ -18,15 +18,11 @@
 //!   owner's Mac and store the copy it returns.
 //!
 //! `question_handoff` and `question_answer` are the owner's commands for a
-//! question sent to them in person (SC-010), and this handler does not claim
-//! them. They change a question that lives on this Mac and must reach the asker
-//! through the peer server's [`PeerEventHub`](crate::peer::api::PeerEventHub),
-//! so they need the [`AskPipeline`] and the hub together, which the owner's
-//! [`AskEndpoints`](crate::peer::api::AskEndpoints) adapter has. That adapter is
-//! a peer-server trait, so the two local-socket methods still need their own
-//! [`CommandHandler`] beside this one; leaving them out of
-//! [`AskCommands::methods`] lets it register them without a duplicate method,
-//! and until then the router answers them as unknown methods.
+//! question a teammate sent to them in person (US-010, SC-010). They change a
+//! question that lives on this Mac and must reach the asker through the peer
+//! server's [`PeerEventHub`](crate::peer::api::PeerEventHub), so this handler
+//! passes them to the owner's [`OwnerAsks`], given with
+//! [`AskCommands::with_owner_asks`].
 
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::SystemTime;
@@ -36,8 +32,8 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 
 use formation_proto::ask::{
-    Ask, AskTarget, Question, QuestionCancel, QuestionDelete, QuestionRefresh, QuestionRouteChoose,
-    QuestionStatus, QuestionUpdateEvent,
+    Ask, AskTarget, Question, QuestionAnswer, QuestionCancel, QuestionDelete, QuestionHandoff,
+    QuestionRefresh, QuestionRouteChoose, QuestionStatus, QuestionUpdateEvent,
 };
 use formation_proto::common::{
     ApiError, ChainId, Command, ErrorCode, MemberId, QuestionId, RunId, Timestamp,
@@ -49,6 +45,7 @@ use formation_proto::policy::{
 };
 use formation_proto::request::QueueSource;
 
+use super::endpoints::OwnerAsks;
 use super::pipeline::AskPipeline;
 use crate::policy::sharing::{self, ShareChange};
 use crate::ports::{
@@ -78,6 +75,7 @@ pub struct AskCommands {
     agents: Arc<dyn Store>,
     events: Arc<dyn EventSink>,
     owner_pipeline: Option<Arc<AskPipeline>>,
+    owner_asks: Option<OwnerAsks>,
     share_hook: Option<ShareHook>,
     /// Held around each read-compare-write of a local copy, because owner updates
     /// ([`AskCommands::apply_update`]) and command results race for the same row.
@@ -100,6 +98,7 @@ impl AskCommands {
             agents,
             events,
             owner_pipeline: None,
+            owner_asks: None,
             share_hook: None,
             copies: Mutex::new(()),
         }
@@ -111,6 +110,13 @@ impl AskCommands {
     /// leaving the transcript behind.
     pub fn with_owner_pipeline(mut self, pipeline: Arc<AskPipeline>) -> Self {
         self.owner_pipeline = Some(pipeline);
+        self
+    }
+
+    /// The owner's side of teammates' questions, which serves
+    /// `question_handoff` and `question_answer`. Without it both are refused.
+    pub fn with_owner_asks(mut self, asks: OwnerAsks) -> Self {
+        self.owner_asks = Some(asks);
         self
     }
 
@@ -388,6 +394,16 @@ impl AskCommands {
         }
     }
 
+    fn owner_asks(&self) -> Result<&OwnerAsks> {
+        self.owner_asks.as_ref().ok_or_else(|| {
+            error(
+                ErrorCode::Internal,
+                "answering questions sent to you is not available yet: \
+                 formationd has not connected the ask pipeline",
+            )
+        })
+    }
+
     fn me(&self) -> Result<MemberId> {
         self.collab
             .me()?
@@ -532,6 +548,8 @@ impl CommandHandler for AskCommands {
             QuestionCancel::METHOD,
             QuestionRefresh::METHOD,
             QuestionRouteChoose::METHOD,
+            QuestionHandoff::METHOD,
+            QuestionAnswer::METHOD,
             QuestionDelete::METHOD,
             ShareUpdate::METHOD,
             SharePreview::METHOD,
@@ -558,6 +576,15 @@ impl CommandHandler for AskCommands {
             respond(self.refresh(question_id).await)
         } else if method == QuestionRouteChoose::METHOD {
             respond(self.route_choose(params(&call)?).await)
+        } else if method == QuestionHandoff::METHOD {
+            let QuestionHandoff {
+                question_id,
+                agent_id,
+            } = params(&call)?;
+            respond(self.owner_asks()?.handoff(question_id, agent_id))
+        } else if method == QuestionAnswer::METHOD {
+            let QuestionAnswer { question_id, text } = params(&call)?;
+            respond(self.owner_asks()?.answer_in_person(question_id, &text))
         } else if method == QuestionDelete::METHOD {
             let QuestionDelete { question_id } = params(&call)?;
             respond(self.delete(question_id).await)

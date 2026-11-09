@@ -42,7 +42,10 @@ pub struct ForkRun {
 pub enum ForkTools {
     /// `--tools ""`, for the ask pipeline's answer.
     None,
-    /// Tools go through the permission gate for a teammate's work request.
+    /// Tools go through the permission gate, for a teammate's work request or a
+    /// schedule. Only a teammate's request fork also ignores the owner's Claude Code
+    /// settings (`--permission-mode default`, `--setting-sources ""`); a schedule
+    /// loads them, like the owner's other runs (#202).
     Gated,
 }
 

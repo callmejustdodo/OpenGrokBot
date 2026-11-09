@@ -231,10 +231,12 @@ pub enum PermissionVerdict {
     /// `PreToolUse` hook only, and never for a denied call: make no decision, so
     /// Claude Code's own permission flow and the permission tool decide. A hook that
     /// answered allow would skip that flow, and the owner's permission cards with it.
-    /// Safe only with `--permission-mode default` and setting sources that cannot
-    /// carry allow rules; the harness adapter enforces both. In acceptEdits, auto,
-    /// and bypassPermissions, writes, Bash, and network calls never reach the
-    /// permission tool (TASK-005 #10).
+    /// For a teammate's request fork, safe only with `--permission-mode default` and
+    /// setting sources that cannot carry allow rules; the harness adapter passes both
+    /// to those forks only (#202). The owner's own runs, schedules included, load the
+    /// owner's Claude Code settings, so the owner's allow rules and permission mode
+    /// apply there. In acceptEdits, auto, and bypassPermissions, writes, Bash, and
+    /// network calls never reach the permission tool (TASK-005 #10).
     Defer,
 }
 

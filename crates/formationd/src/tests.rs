@@ -1,6 +1,6 @@
 use super::*;
 use formation_core::service::connection;
-use formation_proto::common::{AgentId, ApprovalId, MemberId, RequestId, RunId};
+use formation_proto::common::{AgentId, ApprovalId, MemberId, QuestionId, RequestId, RunId};
 use formation_proto::policy::{
     ApprovalChoice, ApprovalDecide, PermissionDecide, PermissionPrompt, PermissionSource, ToolCall,
 };
@@ -156,6 +156,16 @@ async fn check_wiring(fakes: &str, fake_peers: bool) {
             }),
         ),
         (13, "teammate_agents", json!({"member_id": null})),
+        (
+            14,
+            "question_handoff",
+            json!({"question_id": QuestionId::generate(), "agent_id": AgentId::generate()}),
+        ),
+        (
+            15,
+            "question_answer",
+            json!({"question_id": QuestionId::generate(), "text": "it was me"}),
+        ),
     ] {
         let mut request = serde_json::to_vec(
             &json!({"jsonrpc": "2.0", "id": id, "method": method, "params": params}),
@@ -178,6 +188,10 @@ async fn check_wiring(fakes: &str, fake_peers: bool) {
         if method == "permission_decide" {
             // An unknown run is denied, not left to Claude Code.
             assert_eq!(response["result"]["behavior"], "deny", "{response}");
+        }
+        if method == "question_handoff" || method == "question_answer" {
+            // Served by the owner's asks: an unknown question is not found.
+            assert_eq!(response["error"]["data"]["code"], "not_found", "{response}");
         }
         if method == "teammate_agents" {
             if fake_peers {
