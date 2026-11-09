@@ -94,7 +94,9 @@ export default function MyConversation({ agentId }: { agentId: AgentId }) {
       <div className="c-head" data-tauri-drag-region>
         <span className="pill">
           <AgentAvatar avatar={agent.avatar} size={28} working={agent.state === "working"} />
-          <span className="nm">{agent.name}</span>
+          <span className="nm" role="heading" aria-level={1}>
+            {agent.name}
+          </span>
           <span className="st status" data-state={state}>
             {stateLabel(t, agent.state)}
           </span>
@@ -148,7 +150,7 @@ export default function MyConversation({ agentId }: { agentId: AgentId }) {
         </div>
       ) : null}
 
-      <div className="msgs">
+      <div className="msgs" role="log" aria-label={t("conversation.messages", "Messages")}>
         <Messages items={items} />
         {working ? (
           <div className="working" role="status">

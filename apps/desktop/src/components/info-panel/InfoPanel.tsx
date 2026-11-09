@@ -189,7 +189,7 @@ function MyAgentPanel({ agentId }: { agentId: AgentId }) {
           <SharingCard agentId={agentId} />
           {teammateQuestions.length > 0 ? (
             <>
-              <div className="p-lbl">{t("panel.teammateQuestions", "Teammates' questions")}</div>
+              <div className="p-lbl" role="heading" aria-level={2}>{t("panel.teammateQuestions", "Teammates' questions")}</div>
               {teammateQuestions.map((q) => (
                 <div key={q.id} className="p-card">
                   <small>
@@ -290,7 +290,7 @@ function PersonPanel({ memberId }: { memberId: MemberId }) {
           {t("panel.personNote", "When you ask a person, OpenGrokBot picks which shared agent answers.")}
         </small>
       </div>
-      <div className="p-lbl">{t("panel.sharedAgents", "Shared agents")}</div>
+      <div className="p-lbl" role="heading" aria-level={2}>{t("panel.sharedAgents", "Shared agents")}</div>
       {agents && agents.length > 0 ? (
         agents.map((a) => (
           <button

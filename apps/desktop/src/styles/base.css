@@ -5,6 +5,10 @@
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+/* Reduce Transparency: no blur behind the (now opaque) glass; see tokens.css. */
+@media (prefers-reduced-transparency: reduce) {
+  *, *::before, *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+}
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
 body {
