@@ -1,0 +1,6 @@
+dir=/var/folders/XX/RANDOM/T/tmp.VmltuTN0hz mode=manual tool_decision=deny hook_decision=allow
+note.txt: present: original note 
+edit.txt: present: color=red 
+write.txt: present: written
+bash.txt: present: ran
+curl.html: present: <!doctype html><html lang=en><head><meta charset=utf-8><link

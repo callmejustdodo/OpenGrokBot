@@ -118,7 +118,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: A
 
 ### TASK-005: Permission routing covers every tool call
-- Status: pending
+- Status: in progress
 - References: NFR-004, FR-015, FR-022, [tech spec assumptions](4_techspec.md#assumptions-to-verify-early)
 - Prerequisites: TASK-001
 - Change locations: `crates/formation-core/src/harness/permission/` (spike), `crates/formation-cli/` (`formation mcp --permission` stub)
