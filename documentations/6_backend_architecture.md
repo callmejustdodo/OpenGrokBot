@@ -74,7 +74,7 @@ Work requests follow the same entry path to `requests`; they wait for the curren
 
 ## Error codes
 
-`not_member`, `agent_not_shared`, `requests_not_accepted`, `not_found`, `peer_offline` (queued in the outbox), `approval_expired`, `denied`, `rate_limited`, `harness_unavailable` (not installed or not signed in), `harness_unsupported` (detected agent cannot do this), `conflict` (state changed), `internal`. The CLI maps them to the exit codes in the [tech spec](4_techspec.md#cli-formation-and-mcp-server).
+`not_member`, `agent_not_shared`, `requests_not_accepted`, `not_found`, `peer_offline` (queued in the outbox), `approval_expired`, `denied`, `rate_limited`, `harness_unavailable` (not installed or not signed in), `harness_unsupported` (detected agent cannot do this), `conflict` (state changed), `invalid_params` (the request does not match the command), `internal` (also what an older Mac reads for a code added later). The CLI maps them to the exit codes in the [tech spec](4_techspec.md#cli-formation-and-mcp-server).
 
 ## Storage and data ownership
 

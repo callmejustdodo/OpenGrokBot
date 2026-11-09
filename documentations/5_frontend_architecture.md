@@ -41,12 +41,12 @@ apps/desktop/
 ```mermaid
 flowchart LR
   D["formationd"] -- "snapshot on connect" --> R["store reducer"]
-  D -- "events: agent.state, agent.stream, agent.queue, approval.raised, question.update, request.update, peer.presence, notify" --> R
+  D -- "events (agent.*, schedule.update, harness.update, notify, approval.*, question.update, request.update, share.update, rule.update, team.update, peer.presence, settings.update)" --> R
   R --> V["views (React)"]
   V -- "commands via ipc/" --> T["src-tauri client"] --> D
 ```
 
-- **Types:** request, event, and error types are written once in Rust (`formation-proto`) and generated into TypeScript (for example with `ts-rs` or `tauri-specta`; choose at setup), so the UI and core cannot drift apart.
+- **Types:** request, event, and error types are written once in Rust (`formation-proto`) and generated into TypeScript with `ts-rs` (proposed in TASK-002: `cargo test` writes the bindings; C decides where the app build reads them), so the UI and core cannot drift apart.
 - **Store:** a single reducer over normalized slices (`agents`, `conversations` keyed by agent, `questions`, `requests`, `approvals`, `team`, `inbox`, `ui`). A small library such as Zustand holds it; selectors feed views.
 - **Snapshot then events:** on connect or reconnect the store replaces its contents with formationd's snapshot, then applies events in sequence order. A gap in sequence numbers triggers a new snapshot.
 - **Immediate feedback:** every action shows a pending state within 100 ms (doc 3 direction), then settles on the confirming event or shows the mapped error.
