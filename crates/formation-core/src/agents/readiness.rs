@@ -1,8 +1,16 @@
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+use std::sync::Mutex;
 
 use crate::ports::Result;
 use formation_proto::agent::{HarnessKind, HarnessStatus};
+
+/// Problems from a failed authentication, by located Claude Code executable. They
+/// override `claude auth status` until a turn succeeds: in the IC-1 run it still said
+/// signed in after the OAuth session had expired. Process-wide, so the supervisor's
+/// `status` and the `harness_check` command see the same state.
+static AUTH_PROBLEMS: Mutex<Option<HashMap<PathBuf, String>>> = Mutex::new(None);
 
 /// Inject readiness in tests without requiring an installed or signed-in harness.
 pub trait HarnessReadiness: Send + Sync {
@@ -27,6 +35,17 @@ impl Default for ClaudeReadiness {
 impl ClaudeReadiness {
     pub fn new(binary: PathBuf) -> Self {
         Self { binary }
+    }
+    /// Records (`Some`) or clears (`None`) an authentication failure of `binary`;
+    /// returns whether the recorded state changed.
+    pub fn set_auth_problem(binary: &Path, problem: Option<String>) -> bool {
+        let key = locate(binary).unwrap_or_else(|| binary.to_path_buf());
+        let mut problems = AUTH_PROBLEMS.lock().unwrap();
+        let problems = problems.get_or_insert_with(HashMap::new);
+        match problem {
+            Some(problem) => problems.insert(key, problem.clone()).as_ref() != Some(&problem),
+            None => problems.remove(&key).is_some(),
+        }
     }
 }
 impl HarnessReadiness for ClaudeReadiness {
@@ -58,6 +77,15 @@ impl HarnessReadiness for ClaudeReadiness {
             Some(false) => Some("Sign in to Claude Code with claude auth login".into()),
             None => Some("Could not determine Claude Code sign-in status".into()),
         };
+        if let Some(problem) = AUTH_PROBLEMS
+            .lock()
+            .unwrap()
+            .as_ref()
+            .and_then(|problems| problems.get(&path))
+        {
+            status.signed_in = Some(false);
+            status.problem = Some(problem.clone());
+        }
         Ok(vec![status])
     }
 }
