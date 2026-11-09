@@ -354,6 +354,12 @@ async fn schedule_fork_loads_the_owner_settings_and_keeps_the_gate() {
         assert!(!has(args, "--setting-sources"));
         assert!(!has(args, "--permission-mode"));
     }
-    assert!(has(&launches[1]["args"], "--fork-session"));
+    assert_eq!(
+        launches
+            .iter()
+            .filter(|l| has(&l["args"], "--fork-session"))
+            .count(),
+        1
+    );
     s.supervisor.stop(s.agent.id, StopMode::Now).await.unwrap();
 }
