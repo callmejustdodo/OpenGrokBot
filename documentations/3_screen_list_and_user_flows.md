@@ -1,10 +1,10 @@
-# Formation — Screens and user flows
+# OpenGrokBot — Screens and user flows
 
 Rev 3 · 2026-11-09 · Based on the confirmed [product requirements](1_product_requirements_documentation.md) (Rev 2) and [user stories](2_user_stories.md) (Rev 2). Decision IDs refer to the [planning progress](0_one_pager.md#planning-progress) record. Rev 2 replaces Rev 1's six-section sidebar with an agent chat list and a new visual tone, following mockup M1 feedback (D-034 to D-039). Rev 3 draws agent avatars as open-bot-avatar characters, following mockup M2 feedback (D-042).
 
 ## App structure
 
-Formation is a macOS app with two surfaces (D-030):
+OpenGrokBot is a macOS app with two surfaces (D-030):
 
 - **Menu bar item:** a small panel for a quick check of agent state and anything that needs the owner.
 - **Main window:** three columns, like a messaging app (D-034, D-037):
@@ -37,7 +37,7 @@ Every member uses the same app as owner and as teammate.
 | --- | --- | --- | --- |
 | My agent | Agent avatar with a state dot | Latest message or step | SC-005, conversation with my agent (FR-022) |
 | Teammate's agent | Agent avatar with the owner's initial | "Minsu · " and the latest answer | SC-015, asking that agent |
-| Teammate (person-level) | Person avatar | Latest answer and the agent that gave it | SC-015, asking a person (Formation routes) |
+| Teammate (person-level) | Person avatar | Latest answer and the agent that gave it | SC-015, asking a person (OpenGrokBot routes) |
 | Connected detected agent | Agent avatar with a state dot | Latest activity | SC-005, read-only when it does not accept input |
 
 The list is ordered by most recent activity, mixing my agents and teammates' agents (D-034). On launch, the window reopens the last conversation. When something needs the owner, a "Needs you" line at the top of the list shows the count and opens Inbox.
@@ -54,7 +54,7 @@ The list is ordered by most recent activity, mixing my agents and teammates' age
 | SC-006 | Instructions & skills (sheet) | Edit the agent's instructions and skills, opened from the information panel. | Owner | Edit and save instructions; add, edit, remove skills | US-004 · FR-004 |
 | SC-007 | Schedules (panel section and sheet) | Recurring tasks, their next run, and run history. | Owner | Add, edit, pause, delete a schedule | US-005 · FR-005 |
 | SC-008 | Sharing (panel section) | Share or unshare; visibility; work requests; preview. | Owner | Share; set visibility; allow work requests; preview; unshare | US-009 · FR-009 |
-| SC-009 | Connect detected agent (sheet) | Show what Formation can do with a detected agent and connect it. | Owner | Connect; cancel | US-006 · FR-006 |
+| SC-009 | Connect detected agent (sheet) | Show what OpenGrokBot can do with a detected agent and connect it. | Owner | Connect; cancel | US-006 · FR-006 |
 | SC-010 | Inbox (center) | Everything waiting for the owner: approvals, questions sent to the owner, work requests, alerts. | Owner | Open item; answer; hand to agent | US-007, US-010, US-011 · FR-007, FR-010, FR-015 |
 | SC-011 | Approval (sheet) | Decide on one action from a teammate's request. | Owner | Allow once; keep allowing similar; allow all for this requester and agent; deny | US-011 · FR-015 |
 | SC-012 | Rules (center) | Saved approval rules. | Owner | Edit limits; revoke | US-012 · FR-015 |
@@ -118,7 +118,7 @@ Interfaces without screens:
 - **States:** private; shared; preview (sheet with a sample answer); unshare confirmation.
 
 ### SC-009 Connect detected agent (sheet)
-- **Shows:** what was detected (harness, folder, state); which operations work and which do not, with reasons; a note that Formation will not change the agent's own configuration.
+- **Shows:** what was detected (harness, folder, state); which operations work and which do not, with reasons; a note that OpenGrokBot will not change the agent's own configuration.
 - **States:** connectable; read-only; not supported.
 
 ### SC-010 Inbox (center)
@@ -144,7 +144,7 @@ Interfaces without screens:
 - **States:** online; offline (questions wait); no shared agents.
 
 ### SC-015 Asking conversation
-- **Top pill:** the agent ("Minsu · Auth") or the person ("Minsu"); for a person, a note that Formation picks the agent.
+- **Top pill:** the agent ("Minsu · Auth") or the person ("Minsu"); for a person, a note that OpenGrokBot picks the agent.
 - **Answer bubble:** the answer; a footer with the agent that answered and "As of 10:42"; "Possibly out of date" when the source is older than 1 hour; excerpts, collapsible, when visibility allows; actions "Refresh," "Ask another agent," "Ask Minsu," "Request work…"
 - **Routing unsure:** one card with the best-guess agent first, other candidates, and "Ask Minsu."
 - **States:** new; received (within 5 seconds); answering; answered; unsure; possibly out of date; waiting because the owner is offline (cancel or ask again); sent to owner; no longer shared (composer disabled); error (retry).
@@ -181,7 +181,7 @@ flowchart TD
   B --> C{Minsu's Mac online?}
   C -- No --> W[Waiting: answered when Minsu returns<br/>Cancel or Ask again]
   C -- Yes --> D[Received within 5 s]
-  D --> E{Asked a person and Formation unsure?}
+  D --> E{Asked a person and OpenGrokBot unsure?}
   E -- No --> F[Answer: agent, as-of time, excerpts]
   E -- Yes --> G[Choice card: best guess · candidates · Ask Minsu]
   G -- Agent picked --> F
@@ -195,7 +195,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-  A[Open Formation or menu bar panel] --> B[Chat list: state dots on my agents]
+  A[Open OpenGrokBot or menu bar panel] --> B[Chat list: state dots on my agents]
   B --> C{Needs you line?}
   C -- No --> D[Open an agent's conversation and give it work]
   C -- Yes --> E[Inbox]
@@ -239,7 +239,7 @@ flowchart TD
 ```mermaid
 flowchart TD
   A[Dohyeon: Team → Invite] --> B[Expiring link sent outside the app]
-  B --> C[Minsu installs Formation] --> D[Welcome: Join with link]
+  B --> C[Minsu installs OpenGrokBot] --> D[Welcome: Join with link]
   D --> E{Link valid?}
   E -- No --> F[Expired: ask for a new link]
   E -- Yes --> G[Team members and their shared agents visible]
@@ -281,7 +281,7 @@ flowchart TD
 
 ## Visual direction and design system
 
-**Direction (D-038, with D-031):** bright, airy, and rounded, like the Reason and Grok Bot apps the user showed: a soft gray sidebar, a near-white conversation area, a centered pill naming who you are talking to, light bubbles for agents and dark bubbles for me, black primary buttons, and a large rounded composer. Calm and simple, fast to respond (feedback within 100 ms of any action), and keyboard-first. Formation uses its own avatars and assets, not those products' characters or logos.
+**Direction (D-038, with D-031):** bright, airy, and rounded, like the Reason and Grok Bot apps the user showed: a soft gray sidebar, a near-white conversation area, a centered pill naming who you are talking to, light bubbles for agents and dark bubbles for me, black primary buttons, and a large rounded composer. Calm and simple, fast to respond (feedback within 100 ms of any action), and keyboard-first. OpenGrokBot uses its own avatars and assets, not those products' characters or logos.
 
 **Foundation:** native macOS window, menu, keyboard, sidebar, and Settings conventions from the [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/), styled in the tone above. One deliberate departure: primary buttons and my message bubbles are monochrome (black in light mode, white in dark mode) instead of the system accent color; the system accent still marks keyboard focus. The production stack is decided in the tech spec.
 
@@ -385,4 +385,4 @@ Open the file in a browser. A review bar (English, not product UI) selects the s
 
 **Not verified:** rendering on an actual Mac display; VoiceOver; shortcuts the browser reserves (⌘N, ⇧⌘N, ⌘K), shown only as hints; the minimum window size (only the default 1180 × 740 window is shown).
 
-**Sources and attribution:** layout and tone follow the Reason and Grok Bot screenshots the user supplied (D-034, D-038), with Formation's own app mark and role glyphs; agent avatar shapes come from the open-bot-avatar gallery (MIT, notice included in the mockup source); none of those products' characters, logos, or assets were copied. macOS conventions follow the Apple Human Interface Guidelines and the repository's `macos-design-guidelines` skill (MIT). Icons are simple original SVGs. The fake macOS menu bar uses a neutral circle instead of the Apple logo. System fonts only; no external resources are loaded.
+**Sources and attribution:** layout and tone follow the Reason and Grok Bot screenshots the user supplied (D-034, D-038), with OpenGrokBot's own app mark and role glyphs; agent avatar shapes come from the open-bot-avatar gallery (MIT, notice included in the mockup source); none of those products' characters, logos, or assets were copied. macOS conventions follow the Apple Human Interface Guidelines and the repository's `macos-design-guidelines` skill (MIT). Icons are simple original SVGs. The fake macOS menu bar uses a neutral circle instead of the Apple logo. System fonts only; no external resources are loaded.

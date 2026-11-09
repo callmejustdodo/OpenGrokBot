@@ -1,10 +1,10 @@
-# Formation — Implementation plan
+# OpenGrokBot — Implementation plan
 
 Rev 2 · 2026-11-09 · For the coding agents of a team of three developers and one designer. Decision IDs refer to the [planning progress](0_one_pager.md#planning-progress) record. Rev 2 removes the waits between roles: the contract is written together at kickoff, each role builds the fakes it needs, tasks depend on interfaces instead of another role's implementation, and work is rebalanced (D-054).
 
 ## Goal
 
-Build Formation, a macOS app that runs role agents on Claude Code (later Codex) and lets a four-person team ask each other's agents, as specified in the documents below. **First milestone (today, D-052):** on two Macs on the team's tailnet, a member can chat with their own Claude Code agent, a teammate can ask that member's agent and get an answer from its session conversation, and a teammate can send a work request that runs after the owner approves its command.
+Build OpenGrokBot, a macOS app that runs role agents on Claude Code (later Codex) and lets a four-person team ask each other's agents, as specified in the documents below. **First milestone (today, D-052):** on two Macs on the team's tailnet, a member can chat with their own Claude Code agent, a teammate can ask that member's agent and get an answer from its session conversation, and a teammate can send a work request that runs after the owner approves its command.
 
 ## Read first, in this order
 
@@ -156,7 +156,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Prerequisites: TASK-001
 - Change locations: `crates/formation-core/src/permission/` (spike), `crates/formation-cli/` (`formation mcp --permission` stub)
 - Work: run Claude Code with `--permission-prompt-tool mcp__formation__permission` and an injected `PreToolUse` hook via `--settings`; try each permission mode and tool type (read, edit, bash, network); log which calls reach the tool and which reach the hook. Hand the exact flags to A for TASK-013.
-- Acceptance criteria: a coverage table showing that every write, command, and network call reaches Formation before it runs; the flag set A must pass when spawning.
+- Acceptance criteria: a coverage table showing that every write, command, and network call reaches OpenGrokBot before it runs; the flag set A must pass when spawning.
 - Verification: the spike's logged run.
 - Owner: B
 

@@ -46,7 +46,7 @@ describe("Questions sent to me (SC-010)", () => {
     const row = within(group).getByRole("listitem");
     expect(row).toHaveTextContent("Jiwoo");
     expect(row).toHaveTextContent("When will the payment refactor be done?");
-    expect(row).toHaveTextContent("Formation wasn't sure which agent should answer; Jiwoo chose to ask you");
+    expect(row).toHaveTextContent("OpenGrokBot wasn't sure which agent should answer; Jiwoo chose to ask you");
     expect(within(row).getByRole("button", { name: "Answer" })).toBeEnabled();
     expect(within(row).getByRole("button", { name: "Hand to agent" })).toBeEnabled();
   });

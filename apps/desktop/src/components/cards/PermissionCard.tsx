@@ -95,7 +95,7 @@ export default function PermissionCard({ approvalId }: { approvalId: ApprovalId 
       <p className="small">
         {t(
           "permission.note",
-          "These are {{harness}}'s own choices. Teammates' requests follow Formation's approval rules.",
+          "These are {{harness}}'s own choices. Teammates' requests follow OpenGrokBot's approval rules.",
           { harness: harnessName(t, harness) },
         )}
       </p>

@@ -74,7 +74,7 @@ function MyAgentPanel({ agentId }: { agentId: AgentId }) {
           <small>
             {t(
               "panel.detectedNote",
-              "Detected agent. Instructions, schedules, and sharing are for agents Formation created.",
+              "Detected agent. Instructions, schedules, and sharing are for agents OpenGrokBot created.",
             )}
           </small>
         </div>
@@ -192,7 +192,7 @@ function PersonPanel({ memberId }: { memberId: MemberId }) {
       </div>
       <div className="p-card">
         <small>
-          {t("panel.personNote", "When you ask a person, Formation picks which shared agent answers.")}
+          {t("panel.personNote", "When you ask a person, OpenGrokBot picks which shared agent answers.")}
         </small>
       </div>
       <div className="p-lbl">{t("panel.sharedAgents", "Shared agents")}</div>

@@ -1,10 +1,10 @@
-# Formation — Product requirements
+# OpenGrokBot — Product requirements
 
 Rev 2 · 2026-11-09 · Based on the [one-pager](0_one_pager.md) (Rev 6). Rev 2 adds FR-022, chatting with one's own agent (D-035). Decision IDs (D-xxx) refer to the [planning progress](0_one_pager.md#planning-progress) record.
 
 ## Goals and boundaries
 
-Formation is a Mac app that runs and manages a person's role-based agents and lets teammates ask those agents directly. The first version serves one team of four, each member running several agents on their own Mac.
+OpenGrokBot is a Mac app that runs and manages a person's role-based agents and lets teammates ask those agents directly. The first version serves one team of four, each member running several agents on their own Mac.
 
 - **Goal 1:** a teammate gets the state of someone's work from the agent doing it, without waiting for the person (target: about 5 minutes instead of about 2 hours, D-018).
 - **Goal 2:** an owner can run, watch, and shape all of their agents in one place, including giving them work by chat.
@@ -18,7 +18,7 @@ Formation is a Mac app that runs and manages a person's role-based agents and le
 | Teammate | Another member of the same team, asking or requesting work from an owner's agents. |
 | Teammate's agent | An agent acting for a teammate through the CLI or MCP server. |
 | Agent | A role agent defined by one dedicated folder (instructions, skills, memory, schedules), run by Claude Code or Codex (D-009, D-012). Roles are owner-defined and not limited to coding (D-021). |
-| Detected agent | An agent Formation did not create: a Claude Code or Codex session started elsewhere, or a Hermes or OpenClaw instance on the Mac (D-010). |
+| Detected agent | An agent OpenGrokBot did not create: a Claude Code or Codex session started elsewhere, or a Hermes or OpenClaw instance on the Mac (D-010). |
 | Session | One conversation of an agent with its runtime. An agent can have many sessions over time; its main session is the one currently doing work. |
 | Side conversation | A separate conversation that answers a teammate from an agent's session conversation, without touching the main session. |
 | Work request | A teammate's request for an agent to do something in a fork of its session (FR-014). |
@@ -27,7 +27,7 @@ Formation is a Mac app that runs and manages a person's role-based agents and le
 
 - **App:** a macOS desktop app installed on all four Macs, used both as owner and as teammate (D-001, D-007). The minimum macOS version is set in the tech spec.
 - **Agent interfaces:** a CLI and an MCP server for teammates' agents (D-022).
-- **Runtimes:** Claude Code and Codex must be installed and signed in on the owner's Mac. Formation does not handle provider sign-in, and provider credentials never leave that Mac.
+- **Runtimes:** Claude Code and Codex must be installed and signed in on the owner's Mac. OpenGrokBot does not handle provider sign-in, and provider credentials never leave that Mac.
 - **Availability:** an owner's agents run and answer only while the owner's Mac is awake and online.
 - **macOS permissions:** notifications, for monitoring alerts. Any other permission is justified in the tech spec.
 - **Distribution:** direct to the team, outside the Mac App Store; details in the tech spec.
@@ -48,16 +48,16 @@ All requirements are **Must** for the first version.
 
 ### Managing agents (owner)
 
-**FR-001 Create an agent.** The owner creates an agent by giving a name, a role in free text, a runtime (Claude Code or Codex), and optional starting instructions. Formation creates the agent's dedicated folder with its instructions, skills, memory, and schedules in a documented layout. *Proposed:* a coding agent's folder also lists the repositories it works in.
+**FR-001 Create an agent.** The owner creates an agent by giving a name, a role in free text, a runtime (Claude Code or Codex), and optional starting instructions. OpenGrokBot creates the agent's dedicated folder with its instructions, skills, memory, and schedules in a documented layout. *Proposed:* a coding agent's folder also lists the repositories it works in.
 - A new agent appears in the overview as stopped and private (D-026).
 - The folder opens in Finder from the app, and its instructions file contains what the owner entered.
 - Any role can be created, for example marketing or customer support, not only coding.
 
-**FR-002 See all agents.** The overview lists every agent on the Mac: those Formation created, detected Claude Code and Codex sessions, and detected Hermes and OpenClaw instances. Each row shows name, role, runtime or harness, state (working, idle, waiting for approval, stopped, error, unknown), last activity time, shared or private, and pending teammate requests.
+**FR-002 See all agents.** The overview lists every agent on the Mac: those OpenGrokBot created, detected Claude Code and Codex sessions, and detected Hermes and OpenClaw instances. Each row shows name, role, runtime or harness, state (working, idle, waiting for approval, stopped, error, unknown), last activity time, shared or private, and pending teammate requests.
 - A state change appears in the overview within 5 seconds (assumed target).
-- A detected agent is labeled as detected, and states Formation cannot read show as unknown rather than guessed.
+- A detected agent is labeled as detected, and states OpenGrokBot cannot read show as unknown rather than guessed.
 
-**FR-003 Start, stop, restart.** The owner starts, stops, and restarts agents Formation created.
+**FR-003 Start, stop, restart.** The owner starts, stops, and restarts agents OpenGrokBot created.
 - Start runs the agent's runtime in the agent's folder.
 - Stopping an agent in the middle of a task asks whether to stop now or after the current turn.
 - Restart continues the latest session when the runtime supports it, and says so when it starts a new one.
@@ -72,7 +72,7 @@ All requirements are **Must** for the first version.
 - A message sent while the agent is working waits and is delivered when the current turn ends; the waiting message is shown as queued and can be edited or withdrawn until it is delivered.
 - The owner can instead choose **Steer now**, which delivers the message into the running turn at the next point the runtime allows, or **Stop**, which ends the turn (FR-003).
 - *Proposed:* permission requests that the runtime raises for the owner's own work appear in the conversation for the owner to answer. Teammates' requests still follow FR-015.
-- For a detected session, the conversation shows its activity read-only; work through Formation uses forks (FR-006).
+- For a detected session, the conversation shows its activity read-only; work through OpenGrokBot uses forks (FR-006).
 - Teammates never see this conversation; they see only side-conversation answers within the agent's visibility setting (FR-009, FR-012).
 
 **FR-005 Schedule work.** The owner gives an agent a recurring task: a prompt and a schedule (for example, every weekday at 09:00).
@@ -80,13 +80,13 @@ All requirements are **Must** for the first version.
 - Scheduled runs follow the same approval rules as other work.
 - *Proposed:* a run missed because the Mac was asleep or off is marked missed and runs once when the Mac wakes.
 
-**FR-006 Detect and connect other agents.** Formation finds Claude Code and Codex sessions started outside Formation, and Hermes and OpenClaw instances on the Mac. The owner can connect a detected agent, which adds it to the overview and makes it shareable.
-- Formation reads detected sessions and works only in forks; it never resumes or writes to the original session (D-056).
-- Formation does not create new agents on Hermes or OpenClaw (D-012).
+**FR-006 Detect and connect other agents.** OpenGrokBot finds Claude Code and Codex sessions started outside OpenGrokBot, and Hermes and OpenClaw instances on the Mac. The owner can connect a detected agent, which adds it to the overview and makes it shareable.
+- OpenGrokBot reads detected sessions and works only in forks; it never resumes or writes to the original session (D-056).
+- OpenGrokBot does not create new agents on Hermes or OpenClaw (D-012).
 - For each detected agent, the app shows which operations work (state, reading the conversation, answering teammates, receiving work requests) and which do not, with the reason.
 - Detection does not change the detected agent's own configuration without the owner's consent.
 
-**FR-007 Monitoring.** Formation alerts the owner only when something needs them (D-019, delegated):
+**FR-007 Monitoring.** OpenGrokBot alerts the owner only when something needs them (D-019, delegated):
 - an agent is waiting for approval;
 - an agent hits an error or exits unexpectedly;
 - an agent is working but has shown no activity for 10 minutes (assumed threshold);
@@ -108,7 +108,7 @@ Unsharing an agent blocks new questions and requests at once and cancels pending
 
 ### Asking
 
-**FR-010 Ask a person.** A teammate picks a member and asks a question, for example "how far is the login work?". Formation on the owner's Mac picks the shared agent most able to answer, using the agents' roles, instructions, and recent session content (D-015, D-016).
+**FR-010 Ask a person.** A teammate picks a member and asks a question, for example "how far is the login work?". OpenGrokBot on the owner's Mac picks the shared agent most able to answer, using the agents' roles, instructions, and recent session content (D-015, D-016).
 - When confident, the chosen agent answers and the answer names it.
 - When not confident, the asker chooses (D-027) from one prompt that shows the best guess first, the other candidate agents, and "ask the owner."
 - "Ask the owner" sends the question to the owner, who can answer it or hand it to an agent.
@@ -141,7 +141,7 @@ Unsharing an agent blocks new questions and requests at once and cancels pending
 - Saved rules are listed, editable, and revocable, with optional time and use limits.
 - *Proposed:* an unanswered approval waits and the request expires after 24 hours.
 
-**FR-016 Owner offline.** Teammates see whether each member and agent is online. *Proposed:* a question or request sent while the owner's Mac is offline waits and is processed when it returns, after Formation checks again that sharing and permissions still allow it; the asker is notified.
+**FR-016 Owner offline.** Teammates see whether each member and agent is online. *Proposed:* a question or request sent while the owner's Mac is offline waits and is processed when it returns, after OpenGrokBot checks again that sharing and permissions still allow it; the asker is notified.
 
 ### Agent interfaces
 
@@ -152,7 +152,7 @@ Unsharing an agent blocks new questions and requests at once and cancels pending
 
 **FR-018 MCP server.** The same operations are available as MCP tools, under the same permissions and request IDs (D-022).
 
-**FR-019 Agent-to-agent safeguards.** Every request records the human teammate, the agent acting for them, and the chain of requests. Formation limits chain depth (3, assumed), request rate, and run time so agents cannot keep querying each other. A remote answer can never grant a permission or act as an instruction from the owner.
+**FR-019 Agent-to-agent safeguards.** Every request records the human teammate, the agent acting for them, and the chain of requests. OpenGrokBot limits chain depth (3, assumed), request rate, and run time so agents cannot keep querying each other. A remote answer can never grant a permission or act as an instruction from the owner.
 
 ### Records and future channels
 
@@ -171,7 +171,7 @@ Unsharing an agent blocks new questions and requests at once and cancels pending
 | NFR-005 | Freshness (D-024) | Every answer carries the time of its source content; stale or unsupported claims are labeled (FR-012). |
 | NFR-006 | Connection security | Only team members connect; connections are authenticated and encrypted. |
 | NFR-007 | Reliability | Questions, requests, and statuses survive app restarts and network drops; a retried request never runs twice. |
-| NFR-008 | Resource use | Formation's own idle use stays small; assumed target under 1% CPU and 200 MB memory, measured separately from the agents' runtimes. |
+| NFR-008 | Resource use | OpenGrokBot's own idle use stays small; assumed target under 1% CPU and 200 MB memory, measured separately from the agents' runtimes. |
 | NFR-009 | Accessibility | Standard macOS controls, VoiceOver labels on all actions, and keyboard operation for asking, approving, and starting or stopping agents. |
 
 ## Data and retention
@@ -179,7 +179,7 @@ Unsharing an agent blocks new questions and requests at once and cancels pending
 | Data | Lives on | Kept |
 | --- | --- | --- |
 | Agent folders (instructions, skills, memory, schedules) | Owner's Mac | Until the owner deletes the agent. |
-| Session conversations | Owner's Mac, in the runtime's own storage | As the runtime keeps them; Formation does not copy them off the Mac except as permitted excerpts. |
+| Session conversations | Owner's Mac, in the runtime's own storage | As the runtime keeps them; OpenGrokBot does not copy them off the Mac except as permitted excerpts. |
 | Questions, answers, excerpts | Owner's Mac and the asker's Mac | Until deleted (D-029, FR-013). |
 | Work requests, approvals, rules, activity record | Owner's Mac; request status also on the requester's Mac | Until deleted. |
 | Team membership and invitations | Each member's Mac; anything shared between Macs is decided in the tech spec | Invitations expire; membership until removed. |
@@ -197,7 +197,7 @@ Not in the first version: a per-agent usage and cost view; Slack; any customer-f
 ## Open decisions
 
 - Which runtime is supported first, Claude Code or Codex (D-005).
-- Build Formation or extend an existing product such as Reason Network (D-006).
+- Build OpenGrokBot or extend an existing product such as Reason Network (D-006).
 - How the Macs connect, and the remaining defaults (D-008).
 - The minimum macOS version and the distribution method (tech spec).
 - Request-fork file isolation and result delivery to the owner and main session: see the [tech spec's open decisions](4_techspec.md#open-decisions).

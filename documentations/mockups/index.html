@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Formation — Mockup M3</title>
+<title>OpenGrokBot — Mockup M3</title>
 <style>
 /* ---------- Product tokens (3_screen_list_and_user_flows.md Rev 2, design system) ---------- */
 :root {
@@ -339,7 +339,7 @@ button.p-card { cursor: pointer; } button.p-card:hover { box-shadow: 0 0 0 1px v
 </head>
 <body>
 <header class="review" aria-label="Mockup review controls, not product UI">
-  <div><strong>Formation · Mockup M3</strong><span class="rv-tag">Review only · sample data</span></div>
+  <div><strong>OpenGrokBot · Mockup M3</strong><span class="rv-tag">Review only · sample data</span></div>
   <label>Screen <select id="rv-screen" aria-label="Screen"></select></label>
   <div class="rv-states" id="rv-states" aria-label="Screen state"></div>
   <div class="rv-right">
@@ -472,7 +472,7 @@ const pAva = (p, size = 40) => `<span class="ava ci" style="--c:${p.c};width:${s
 /* ================= Screen registry ================= */
 const SCREENS = [
   { id: "SC-001", name: "Welcome and setup", states: ["default", "harness-missing", "invite-expired"], refs: "US-008, US-020 · FR-008", note: "First launch: harness check, team, notifications." },
-  { id: "SC-002", name: "Menu bar panel", states: ["default", "all-clear", "offline"], refs: "US-001, US-007 · FR-002, FR-007", note: "Opened from the Formation icon in the macOS menu bar (click it to toggle)." },
+  { id: "SC-002", name: "Menu bar panel", states: ["default", "all-clear", "offline"], refs: "US-001, US-007 · FR-002, FR-007", note: "Opened from the OpenGrokBot icon in the macOS menu bar (click it to toggle)." },
   { id: "SC-003", name: "Sidebar: chat list", states: ["default", "empty", "detecting"], refs: "US-001, US-006, US-013, US-015, US-024 · FR-002, FR-006, FR-010, FR-011, FR-022", note: "Focus on the left sidebar: top icons, the Needs-you line, the mixed chat list by recency (my agents with state dots, teammates' agents with the owner's initial, a person), Connect agents. Click items to open them." },
   { id: "SC-004", name: "New agent (+ menu and sheet)", states: ["plus-menu", "default", "harness-not-ready", "name-taken"], refs: "US-002 · FR-001", note: "The + icon offers New agent and New question. The owner picks the harness: Claude Code or Codex in the first version (D-039)." },
   { id: "SC-005", name: "Conversation with my agent", states: ["working", "idle", "queued", "permission", "approval", "stalled", "error", "stopped", "detected", "stop-confirm"], refs: "US-001, US-003, US-024 · FR-002, FR-003, FR-022", note: "Give the agent work by chat; steps and teammate requests appear in the same conversation. Send while it works to see the queued message with Steer now (⌘↩ sends)." },
@@ -550,7 +550,7 @@ function sidebar() {
   </aside>`;
 }
 function mainWindow(center, panel = "", overlay = "", cls = "") {
-  return `<div class="window main-win ${cls}" role="application" aria-label="Formation">${sidebar()}<section class="center">${center}</section>${S.panel && panel ? panel : "<div></div>"}${overlay}</div>`;
+  return `<div class="window main-win ${cls}" role="application" aria-label="OpenGrokBot">${sidebar()}<section class="center">${center}</section>${S.panel && panel ? panel : "<div></div>"}${overlay}</div>`;
 }
 const headRight = (extra = "") => `<div class="right">${extra}<button class="ticon" data-act="panel" aria-label="${L("정보 패널", "Info panel")}" aria-pressed="${S.panel}" title="${L("정보 패널", "Info panel")}">${icon("panel")}</button><button class="ticon" aria-label="${L("더 보기", "More")}">${icon("more")}</button></div>`;
 
@@ -570,7 +570,7 @@ function myConversationCenter(state) {
       <div class="ag">${L("엔드포인트 정리는 끝났어요. 지금 auth/token.ts에 만료 검사를 넣고 있어요.", "The endpoints are done. Now adding the expiry check in auth/token.ts.")}</div>
       <div class="icard"><div class="h">${pAva(MINSU, 22)}<span>${L("민수의 작업 요청", "Work request from Minsu")}</span><span class="tagpill">${state === "approval" ? L("승인 1건 대기", "1 approval waiting") : L("이번 차례 다음 실행", "Runs after this turn")}</span></div><p>${L("“토큰 만료 테스트를 추가해줘. 만료 직전·직후 두 경우 모두.”", "“Add token expiry tests, both just before and just after expiry.”")}</p>${state === "approval" ? `<div class="row-actions"><span class="mono muted">npm test -- auth/token.spec.ts</span><span class="spacer"></span>${btn(L("검토", "Review"), { kind: "primary", go: "SC-011" })}</div>` : ""}</div>`;
     if (state === "idle") msgs += `<div class="ag">${L("만료 검사까지 추가했어요. 테스트는 아직 돌리지 않았어요.", "The expiry check is in. I haven't run the tests yet.")}</div>`;
-    if (state === "permission") msgs += `<div class="icard"><div class="h">${icon("hand")}<span>${L("Claude Code가 권한을 요청해요", "Claude Code asks for permission")}</span></div><p>${L("빌드 폴더를 지우고 다시 빌드하려고 해요.", "It wants to delete the build folder and rebuild.")}</p><div class="code">rm -rf dist/ &amp;&amp; npm run build</div><div class="row-actions" style="margin-top:10px">${btn(L("허용", "Allow"), { kind: "primary", act: "toast-allow" })}${btn(L("이 세션 동안 허용", "Allow for this session"), { act: "toast-allow" })}${btn(L("거부", "Deny"), { kind: "destructive", act: "toast-deny" })}</div><p class="small" style="margin:8px 0 0">${L("Claude Code의 권한 선택이에요. 팀원 요청은 Formation 승인 규칙을 따라요.", "These are Claude Code's own choices. Teammates' requests follow Formation's approval rules.")}</p></div>`;
+    if (state === "permission") msgs += `<div class="icard"><div class="h">${icon("hand")}<span>${L("Claude Code가 권한을 요청해요", "Claude Code asks for permission")}</span></div><p>${L("빌드 폴더를 지우고 다시 빌드하려고 해요.", "It wants to delete the build folder and rebuild.")}</p><div class="code">rm -rf dist/ &amp;&amp; npm run build</div><div class="row-actions" style="margin-top:10px">${btn(L("허용", "Allow"), { kind: "primary", act: "toast-allow" })}${btn(L("이 세션 동안 허용", "Allow for this session"), { act: "toast-allow" })}${btn(L("거부", "Deny"), { kind: "destructive", act: "toast-deny" })}</div><p class="small" style="margin:8px 0 0">${L("Claude Code의 권한 선택이에요. 팀원 요청은 OpenGrokBot 승인 규칙을 따라요.", "These are Claude Code's own choices. Teammates' requests follow OpenGrokBot's approval rules.")}</p></div>`;
     if (["working", "queued", "approval", "permission", "stop-confirm"].includes(state)) msgs += `<div class="working"><span class="dots"><i></i><i></i><i></i></span>${state === "approval" ? L("민수의 요청 처리 중 · 승인을 기다려요", "Handling Minsu's request · waiting for approval") : L("작업 중 · auth/token.ts 수정", "Working · editing auth/token.ts")}</div>`;
     const queued = state === "queued" ? `<div class="queued">${icon("hourglass")}<span class="qt">“${L("테스트도 같이 돌려줘", "Run the tests too")}”<small>${L("대기 중 · 이번 차례가 끝나면 전달돼요", "Queued · delivered when this turn ends")}</small></span>${btn(L("지금 끼어들기", "Steer now"), { kind: "primary", icon: "steer", act: "steer" })}${btn(L("수정", "Edit"), { kind: "plain" })}${btn(L("취소", "Withdraw"), { kind: "plain", act: "withdraw" })}</div>` : "";
     bottom = queued + composer(state !== "idle", false);
@@ -583,7 +583,7 @@ function myConversationCenter(state) {
     msgs = `<div class="sep-t">${L("어제 오후 6:40", "Yesterday 6:40 PM")}</div><div class="me">${L("이번 주 기획 회의 내용을 문서로 정리해줘.", "Write up this week's planning meeting.")}</div><div class="ag">${L("planning/2026-11-w2.md에 정리했어요.", "Done in planning/2026-11-w2.md.")}</div>`;
     bottom = `<div class="stopped-bar">${status(state === "error" ? "error" : "stopped")}<span>${L("에이전트가 실행 중이 아니에요", "This agent isn't running")}</span>${btn(L("시작", "Start"), { kind: "primary", icon: "play", go: "SC-005", st: "idle" })}</div>`;
   } else {
-    banner = `<div class="banner info">${icon("question")}<div class="bt"><b>${L("읽기 전용 · 탐지된 에이전트", "Read-only · detected agent")}</b>${L("터미널에서 시작한 세션이라 Formation에서 메시지를 보낼 수 없어요. 활동과 대화는 볼 수 있어요.", "This session was started in Terminal, so Formation can't send it messages. You can still see its activity.")}</div></div>`;
+    banner = `<div class="banner info">${icon("question")}<div class="bt"><b>${L("읽기 전용 · 탐지된 에이전트", "Read-only · detected agent")}</b>${L("터미널에서 시작한 세션이라 OpenGrokBot에서 메시지를 보낼 수 없어요. 활동과 대화는 볼 수 있어요.", "This session was started in Terminal, so OpenGrokBot can't send it messages. You can still see its activity.")}</div></div>`;
     msgs = `<div class="sep-t">${L("어제 오후 4:05", "Yesterday 4:05 PM")}</div><div class="me">${L("랜딩 페이지 헤더 반응형 고쳐줘.", "Fix the landing page header on small screens.")}</div><div class="ag">${L("헤더 레이아웃을 flex로 바꾸고 768px 이하에서 메뉴를 접었어요.", "Switched the header to flex and collapsed the menu under 768px.")}</div>${stepGroup(false, [["edit", "app/components/Header.tsx"], ["run", "pnpm test"]], L("단계 2개", "2 steps"))}`;
     bottom = composer(false, true, L("터미널 세션에는 보낼 수 없어요", "Can't send to a Terminal session"));
   }
@@ -605,7 +605,7 @@ function panelMine(key, st, opts = {}) {
   return `<aside class="panel" aria-label="${L("에이전트 정보", "Agent information")}">
     <div class="p-head">${agAva(a, 56, "")}<span><b>${an(a)}</b><small>${L(a.role[0], a.role[1])}</small></span></div>
     <div class="p-card"><dl class="kv"><dt>${L("상태", "State")}</dt><dd>${status(st)}</dd><dt>${L("하네스", "Harness")}</dt><dd>${a.h}</dd><dt>${L("폴더", "Folder")}</dt><dd><span class="mono">${a.folder}</span><br>${btn(L("Finder에서 보기", "Show in Finder"), { kind: "plain", icon: "folder" })}</dd></dl></div>
-    ${a.detected ? `<div class="p-card"><small style="margin:0">${L("탐지된 에이전트예요. 지시문·정기 작업·공유는 Formation이 만든 에이전트에서 쓸 수 있어요.", "Detected agent. Instructions, schedules, and sharing are for agents Formation created.")}</small></div>` : `
+    ${a.detected ? `<div class="p-card"><small style="margin:0">${L("탐지된 에이전트예요. 지시문·정기 작업·공유는 OpenGrokBot이 만든 에이전트에서 쓸 수 있어요.", "Detected agent. Instructions, schedules, and sharing are for agents OpenGrokBot created.")}</small></div>` : `
     <button class="p-card" ${go("SC-006", "default")}><span class="pr">${icon("doc")}<b>${L("지시문·스킬", "Instructions & skills")}</b>${icon("chev", "chev")}</span><small>instructions.md · ${L("스킬 3개", "3 skills")}</small></button>
     ${schedCard}${shareCard}
     <div class="p-lbl">${L("팀원 질문", "Teammates' questions")}</div>
@@ -624,7 +624,7 @@ function panelTeammate(a) {
 function panelPerson(p) {
   return `<aside class="panel" aria-label="${L("팀원 정보", "Teammate information")}">
     <div class="p-head">${pAva(p, 56)}<span><b>${nm(p)}</b><small><span class="online">${L("온라인", "Online")}</span></small></span></div>
-    <div class="p-card"><small style="margin:0">${L("사람에게 물으면 Formation이 공유된 에이전트 중 답할 에이전트를 골라요.", "When you ask a person, Formation picks which shared agent answers.")}</small></div>
+    <div class="p-card"><small style="margin:0">${L("사람에게 물으면 OpenGrokBot이 공유된 에이전트 중 답할 에이전트를 골라요.", "When you ask a person, OpenGrokBot picks which shared agent answers.")}</small></div>
     <div class="p-lbl">${L("공유된 에이전트", "Shared agents")}</div>
     ${[TA.auth, TA.frontend, TA.qa].map((a) => `<button class="p-card" ${go("SC-015", "answered")}><span class="pr">${agAva(a, 26, "")}<b>${an(a)}</b>${status(a.st)}</span></button>`).join("")}
   </aside>`;
@@ -643,7 +643,7 @@ function askConversation(state, overlay = "") {
   const a2 = ans(L("refresh 토큰을 쓸 때마다 새 토큰으로 바꾸는 회전 방식이에요. 이전 토큰은 바로 무효가 돼요.", "Rotation: each time a refresh token is used it's replaced, and the old one stops working at once."), L("민수의 인증 에이전트 · 10:42 기준", "Minsu's Auth agent · As of 10:42"), [L("[10:38] 에이전트: 탈취 대비로 refresh 토큰 회전 방식을 쓰기로 했어요.", "[10:38] Agent: Chose refresh-token rotation to limit token theft.")]);
   let body = "", composerOn = true, banner = "";
   if (state === "new") {
-    body = `<div class="empty" style="padding:50px 10px">${icon("person")}<b>${L("누구에게 물을까요?", "Who do you want to ask?")}</b>${L("사람을 고르면 Formation이 답할 에이전트를 골라요. 에이전트를 바로 고를 수도 있어요.", "Pick a person and Formation picks the agent, or pick an agent directly.")}<div class="row-actions">${[MINSU, JIWOO, SEO].map((p) => `<button class="btn" ${go("SC-015", "answered")}>${pAva(p, 20)}<span>${nm(p)}</span></button>`).join("")}<button class="btn" ${go("SC-015", "answered")}>${agAva(TA.auth, 20, "")}<span>${L("민수 · 인증", "Minsu · Auth")}</span></button></div></div>`;
+    body = `<div class="empty" style="padding:50px 10px">${icon("person")}<b>${L("누구에게 물을까요?", "Who do you want to ask?")}</b>${L("사람을 고르면 OpenGrokBot이 답할 에이전트를 골라요. 에이전트를 바로 고를 수도 있어요.", "Pick a person and OpenGrokBot picks the agent, or pick an agent directly.")}<div class="row-actions">${[MINSU, JIWOO, SEO].map((p) => `<button class="btn" ${go("SC-015", "answered")}>${pAva(p, 20)}<span>${nm(p)}</span></button>`).join("")}<button class="btn" ${go("SC-015", "answered")}>${agAva(TA.auth, 20, "")}<span>${L("민수 · 인증", "Minsu · Auth")}</span></button></div></div>`;
   } else if (state === "received" || state === "answering") {
     body = `<div class="sep-t">${L("오늘 오전 10:41", "Today 10:41 AM")}</div>` + q1 + `<div class="working"><span class="dots"><i></i><i></i><i></i></span>${state === "received" ? L("받았어요 · 답을 준비하는 중", "Received · preparing an answer") : L("인증 에이전트가 답하는 중… 민수의 작업은 끊기지 않아요", "The Auth agent is answering… Minsu's work isn't interrupted")}</div>`;
   } else if (state === "unsure") {
@@ -655,7 +655,7 @@ function askConversation(state, overlay = "") {
   } else if (state === "stale") {
     body = `<div class="sep-t">${L("어제 오후 6:30", "Yesterday 6:30 PM")}</div><div class="me">${L("토큰 갱신 작업 시작했어?", "Has the token refresh work started?")}</div>` + ans(L("아직이에요. 로그인 API 엔드포인트를 먼저 정리하는 중이에요.", "Not yet. The login endpoints are being cleaned up first."), L("민수의 인증 에이전트 · 어제 18:20 기준", "Minsu's Auth agent · As of yesterday 18:20"), [L("[18:20] 에이전트: 엔드포인트부터 정리할게요.", "[18:20] Agent: Starting with the endpoints.")], true);
   } else if (off) {
-    body = `<div class="sep-t">${L("오늘 오전 9:58", "Today 9:58 AM")}</div><div class="me">${L("디자인 시안 업데이트됐어?", "Are the design mockups updated?")}</div><div class="icard"><div class="h">${icon("hourglass")}<span>${L("지우의 맥이 오프라인이에요", "Jiwoo's Mac is offline")}</span></div><p>${L("지우가 돌아오면 공유와 권한을 다시 확인한 뒤 답하고 알려드릴게요.", "When Jiwoo is back, Formation re-checks sharing and permissions, answers, and notifies you.")}</p><div class="row-actions">${btn(L("질문 취소", "Cancel question"), { act: "toast-cancel" })}${btn(L("다시 묻기", "Ask again"), { go: "SC-015", st: "new" })}</div></div>`;
+    body = `<div class="sep-t">${L("오늘 오전 9:58", "Today 9:58 AM")}</div><div class="me">${L("디자인 시안 업데이트됐어?", "Are the design mockups updated?")}</div><div class="icard"><div class="h">${icon("hourglass")}<span>${L("지우의 맥이 오프라인이에요", "Jiwoo's Mac is offline")}</span></div><p>${L("지우가 돌아오면 공유와 권한을 다시 확인한 뒤 답하고 알려드릴게요.", "When Jiwoo is back, OpenGrokBot re-checks sharing and permissions, answers, and notifies you.")}</p><div class="row-actions">${btn(L("질문 취소", "Cancel question"), { act: "toast-cancel" })}${btn(L("다시 묻기", "Ask again"), { go: "SC-015", st: "new" })}</div></div>`;
   } else if (state === "sent-to-owner") {
     body = `<div class="sep-t">${L("오늘 오전 10:20", "Today 10:20 AM")}</div><div class="me">${L("이번 주 배포 일정 어떻게 돼?", "What's the deploy schedule this week?")}</div><div class="icard"><div class="h">${pAva(MINSU, 22)}<span>${L("민수에게 질문을 보냈어요", "Sent to Minsu")}</span></div><p>${L("민수가 답하거나 에이전트에게 넘기면 여기에 표시돼요.", "When Minsu answers or hands it to an agent, it shows up here.")}</p></div>`;
   } else if (state === "unshared") {
@@ -666,7 +666,7 @@ function askConversation(state, overlay = "") {
   } else {
     body = `<div class="sep-t">${L("오늘 오전 10:41", "Today 10:41 AM")}</div>` + q1 + a1 + q2 + a2;
   }
-  const pill = state === "new" ? `<span class="pill" style="padding:8px 18px">${L("새 질문", "New question")}</span>` : person ? `<span class="pill">${pAva(MINSU, 28)}${nm(MINSU)}<span class="st">${L("사람에게 묻기 · Formation이 에이전트를 골라요", "Asking a person · Formation picks the agent")}</span></span>` : `<span class="pill">${agAva(a, 28, "owner")}${an(a)}<span class="st">${nm(a.owner)} · ${status(a.st)}</span></span>`;
+  const pill = state === "new" ? `<span class="pill" style="padding:8px 18px">${L("새 질문", "New question")}</span>` : person ? `<span class="pill">${pAva(MINSU, 28)}${nm(MINSU)}<span class="st">${L("사람에게 묻기 · OpenGrokBot이 에이전트를 골라요", "Asking a person · OpenGrokBot picks the agent")}</span></span>` : `<span class="pill">${agAva(a, 28, "owner")}${an(a)}<span class="st">${nm(a.owner)} · ${status(a.st)}</span></span>`;
   const ph = composerOn ? (person ? L("민수에게 질문", "Ask Minsu") : state === "new" ? L("질문을 입력하세요", "Type a question") : L(`${an(a)} 에이전트에게 질문`, `Ask ${an(a)}`)) : L("공유가 꺼져서 물을 수 없어요", "Sharing is off");
   const composer = `<div class="composer ${composerOn ? "" : "off"}"><textarea id="ask-input" aria-label="${L("질문", "Question")}" placeholder="${ph}" ${composerOn ? "" : "disabled"}></textarea><button class="cbtn go" data-act="send" aria-label="${L("보내기 ⌘↩", "Send ⌘↩")}" ${composerOn ? "" : "disabled"}>${icon("send")}</button></div>`;
   const extra = state === "new" || person || !a.req ? "" : btn(L("작업 요청…", "Request work…"), { go: "SC-016", st: "compose", disabled: state === "unshared" });
@@ -744,7 +744,7 @@ function inbox(st) {
     <div class="grp">${icon("hand")}${L("승인 대기", "Approvals waiting")}</div>
     <div class="list"><button class="row" ${go("SC-011")}>${pAva(MINSU, 32)}<span class="t"><b>${nm(MINSU)} → ${an(AG.backend)}</b> · ${L("명령 실행", "Run a command")}<small class="mono">npm test -- auth/token.spec.ts</small></span><span class="when">${L("3분 전", "3 min ago")}</span>${icon("chev")}</button></div>
     <div class="grp">${icon("person")}${L("나에게 온 질문", "Questions sent to me")}</div>
-    <div class="list"><div class="row">${pAva(JIWOO, 32)}<span class="t"><b>${nm(JIWOO)}</b> · “${L("결제 모듈 리팩터링 언제 끝나?", "When will the payment refactor be done?")}”<small>${L("답할 에이전트를 확실히 찾지 못해 지우가 직접 묻기를 골랐어요", "Formation wasn't sure which agent should answer; Jiwoo chose to ask you")}</small></span>${btn(L("답하기", "Answer"))}${btn(L("에이전트에게 넘기기", "Hand to agent"))}</div></div>
+    <div class="list"><div class="row">${pAva(JIWOO, 32)}<span class="t"><b>${nm(JIWOO)}</b> · “${L("결제 모듈 리팩터링 언제 끝나?", "When will the payment refactor be done?")}”<small>${L("답할 에이전트를 확실히 찾지 못해 지우가 직접 묻기를 골랐어요", "OpenGrokBot wasn't sure which agent should answer; Jiwoo chose to ask you")}</small></span>${btn(L("답하기", "Answer"))}${btn(L("에이전트에게 넘기기", "Hand to agent"))}</div></div>
     <div class="grp">${icon("bell")}${L("알림", "Alerts")}</div>
     <div class="list"><button class="row" ${go("SC-005", "stalled")}>${agAva(AG.research, 32)}<span class="t"><b>${an(AG.research)}</b> · ${L("14분째 활동이 없어요", "No activity for 14 minutes")}</span><span class="when">${L("14분 전", "14 min ago")}</span>${icon("chev")}</button>
     <button class="row" ${go("SC-007", "missed")}>${agAva(AG.support, 32, "")}<span class="t"><b>${an(AG.support)}</b> · ${L("정기 작업 놓침 → 깨어난 뒤 실행됨", "Scheduled run missed → ran on wake")}</span><span class="when">${L("오전 9:47", "9:47 AM")}</span>${icon("chev")}</button></div>`);
@@ -794,7 +794,7 @@ function workRequest(st) {
   } else sheet = `<div class="scrim" data-close></div><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="wr-t"><h2 id="wr-t">${L("작업 요청", "Request work")}</h2><p class="lead">${L("받는 에이전트: 민수의 인증 · 작업 요청 받음", "To: Minsu's Auth agent · accepts work requests")}</p>
     <label class="field"><span>${L("요청 내용", "Request")}</span><textarea class="textarea">${L("토큰 만료 테스트를 추가해줘. 만료 직전·직후 두 경우 모두.", "Add token expiry tests, both just before and just after expiry.")}</textarea></label>
     <div class="field"><span>${L("대화에서 함께 보낼 메시지", "Include messages from the conversation")}</span><label class="check"><input type="checkbox" checked> ${L("인증: refresh 토큰 회전 방식이에요…", "Auth: Rotation — each refresh token is replaced…")}</label><label class="check"><input type="checkbox"> ${L("나: 토큰 갱신은 어떤 방식이야?", "Me: How does the token refresh work?")}</label></div>
-    <div class="field"><span>${L("전달될 프롬프트 미리보기", "Exact prompt to be delivered")}</span><div class="code">${esc(L("[Formation · 도현의 작업 요청]\n토큰 만료 테스트를 추가해줘. 만료 직전·직후 두 경우 모두.\n\n참고 대화:\n- 인증: refresh 토큰 회전 방식이에요…", "[Formation · work request from Dohyeon]\nAdd token expiry tests, both just before and just after expiry.\n\nContext:\n- Auth: Rotation — each refresh token is replaced…"))}</div><small>${L("현재 차례가 끝난 뒤 실행되고, 명령은 민수의 승인 규칙을 따라요.", "Runs after the current turn; actions follow Minsu's approval rules.")}</small></div>
+    <div class="field"><span>${L("전달될 프롬프트 미리보기", "Exact prompt to be delivered")}</span><div class="code">${esc(L("[OpenGrokBot · 도현의 작업 요청]\n토큰 만료 테스트를 추가해줘. 만료 직전·직후 두 경우 모두.\n\n참고 대화:\n- 인증: refresh 토큰 회전 방식이에요…", "[OpenGrokBot · work request from Dohyeon]\nAdd token expiry tests, both just before and just after expiry.\n\nContext:\n- Auth: Rotation — each refresh token is replaced…"))}</div><small>${L("현재 차례가 끝난 뒤 실행되고, 명령은 민수의 승인 규칙을 따라요.", "Runs after the current turn; actions follow Minsu's approval rules.")}</small></div>
     <div class="sheet-foot">${btn(L("취소", "Cancel"), { act: "close" })}${btn(L("보내기", "Send"), { kind: "primary", go: "SC-016", st: "status" })}</div></div>`;
   return askConversation("answered", sheet);
 }
@@ -807,12 +807,12 @@ function historyView(st) {
 }
 function connectSheet(st) {
   const items = [["connectable", AG.ccweb, "Claude Code"], ["read-only", { n: ["Hermes", "Hermes"], shape: "cloud", c: "#1f7cf2" }, "Hermes"], ["not-supported", { n: ["OpenClaw", "OpenClaw"], shape: "bull", c: "#f2384b" }, "OpenClaw"]];
-  const caps = st === "connectable" ? [[1, L("상태 보기", "Show state")], [1, L("대화 읽기", "Read the conversation")], [1, L("팀원 질문에 답하기", "Answer teammates")], [0, L("메시지 보내기·작업 요청 받기", "Send messages, receive requests"), L("Formation이 시작하지 않은 세션에는 프롬프트를 보낼 수 없어요", "Formation can't send prompts to a session it didn't start")], [0, L("시작·중지", "Start and stop"), L("터미널에서 실행 중인 세션이에요", "The session belongs to Terminal")]]
+  const caps = st === "connectable" ? [[1, L("상태 보기", "Show state")], [1, L("대화 읽기", "Read the conversation")], [1, L("팀원 질문에 답하기", "Answer teammates")], [0, L("메시지 보내기·작업 요청 받기", "Send messages, receive requests"), L("OpenGrokBot이 시작하지 않은 세션에는 프롬프트를 보낼 수 없어요", "OpenGrokBot can't send prompts to a session it didn't start")], [0, L("시작·중지", "Start and stop"), L("터미널에서 실행 중인 세션이에요", "The session belongs to Terminal")]]
     : st === "read-only" ? [[1, L("상태 보기", "Show state")], [0, L("대화 읽기", "Read the conversation"), L("이 버전의 기록 형식을 아직 읽을 수 없어요", "This version's history format isn't readable yet")], [0, L("팀원 질문에 답하기", "Answer teammates"), L("대화를 읽을 수 없어서 답할 수 없어요", "Needs the conversation")], [0, L("메시지 보내기", "Send messages"), L("지원하지 않아요", "Not supported")]]
     : [[0, L("상태 보기", "Show state"), L("이 하네스는 아직 지원하지 않아요", "This harness isn't supported yet")]];
-  const sheet = `<div class="scrim" data-close></div><div class="sheet" role="dialog" aria-modal="true" style="width:640px"><h2>${L("에이전트 연결", "Connect agents")}</h2><p class="lead">${L("이 맥에서 Formation 밖에서 실행 중인 에이전트를 찾았어요. 연결하면 대화 목록에 비공개로 추가돼요.", "Agents found running outside Formation on this Mac. Connecting adds them to your list, private.")}</p>
+  const sheet = `<div class="scrim" data-close></div><div class="sheet" role="dialog" aria-modal="true" style="width:640px"><h2>${L("에이전트 연결", "Connect agents")}</h2><p class="lead">${L("이 맥에서 OpenGrokBot 밖에서 실행 중인 에이전트를 찾았어요. 연결하면 대화 목록에 비공개로 추가돼요.", "Agents found running outside OpenGrokBot on this Mac. Connecting adds them to your list, private.")}</p>
     <div style="display:grid;grid-template-columns:200px 1fr;gap:14px"><div class="list">${items.map(([k, a, h]) => `<button class="row" ${go("SC-009", k)} style="${k === st ? "background:var(--sel)" : ""}">${agAva(a, 28, "")}<span class="t"><b>${an(a)}</b><small>${h}</small></span></button>`).join("")}</div>
-    <div><div class="list">${caps.map(([ok, t, why]) => `<div class="row"><span class="${ok ? "ok" : "muted"}">${icon(ok ? "check" : "x")}</span><span class="t">${t}${why ? `<small>${why}</small>` : ""}</span></div>`).join("")}</div><p class="muted small">${L("Formation은 이 에이전트의 설정을 바꾸지 않아요.", "Formation won't change this agent's own configuration.")}</p></div></div>
+    <div><div class="list">${caps.map(([ok, t, why]) => `<div class="row"><span class="${ok ? "ok" : "muted"}">${icon(ok ? "check" : "x")}</span><span class="t">${t}${why ? `<small>${why}</small>` : ""}</span></div>`).join("")}</div><p class="muted small">${L("OpenGrokBot은 이 에이전트의 설정을 바꾸지 않아요.", "OpenGrokBot won't change this agent's own configuration.")}</p></div></div>
     <div class="sheet-foot">${btn(L("취소", "Cancel"), { act: "close" })}${btn(L("연결", "Connect"), { kind: "primary", go: "SC-005", st: "detected", disabled: st === "not-supported" })}</div></div>`;
   return myConversation("working", sheet);
 }
@@ -821,14 +821,14 @@ function connectSheet(st) {
 function menuBarPanel(st) {
   const ag = Object.entries(AG).filter(([k]) => k !== "ccweb").map(([k, a]) => [k, a, st === "all-clear" && ["approval", "stalled"].includes(a.st) ? "working" : a.st]);
   const target = (k) => ({ backend: "working", research: "stalled", planning: "stopped" }[k] || "working");
-  return `<div class="mb-panel" role="dialog" aria-label="${L("Formation 메뉴바 패널", "Formation menu bar panel")}"><div class="head"><b>Formation</b><div class="muted small">${st === "offline" ? L("팀에 연결할 수 없어요 · 내 에이전트는 계속 실행 중", "Can't reach the team · local agents keep running") : st === "all-clear" ? L("모두 잘 돌아가고 있어요", "Everything is running") : L("에이전트 5개 · 2개 확인 필요", "5 agents · 2 need you")}</div></div>
+  return `<div class="mb-panel" role="dialog" aria-label="${L("OpenGrokBot 메뉴바 패널", "OpenGrokBot menu bar panel")}"><div class="head"><b>OpenGrokBot</b><div class="muted small">${st === "offline" ? L("팀에 연결할 수 없어요 · 내 에이전트는 계속 실행 중", "Can't reach the team · local agents keep running") : st === "all-clear" ? L("모두 잘 돌아가고 있어요", "Everything is running") : L("에이전트 5개 · 2개 확인 필요", "5 agents · 2 need you")}</div></div>
     ${st === "default" ? `<div class="sec"><div>${L("나에게 필요한 일", "Needs you")}</div><button class="mb-row" ${go("SC-011")}>${agAva(AG.backend, 26)}<span>${an(AG.backend)} · ${L("승인 대기", "approval")}</span><span class="r">${L("3분", "3m")}</span></button><button class="mb-row" ${go("SC-005", "stalled")}>${agAva(AG.research, 26)}<span>${an(AG.research)} · ${L("진행 멈춤", "stalled")}</span><span class="r">${L("14분", "14m")}</span></button></div>` : ""}
     <div class="sec"><div>${L("내 에이전트", "My agents")}</div>${ag.map(([k, a, s]) => `<button class="mb-row" ${go("SC-005", target(k))}>${agAva(a, 26, "state", s)}<span>${an(a)}</span><span class="r">${L(ST[s][1], ST[s][2])}</span></button>`).join("")}</div>
-    <div class="sec" style="display:flex;gap:6px;padding:8px 14px">${btn(L("Formation 열기", "Open Formation"), { kind: "primary", go: "SC-005", st: "working" })}${btn(L("알림 1시간 끄기", "Pause alerts 1 hr"))}</div></div>`;
+    <div class="sec" style="display:flex;gap:6px;padding:8px 14px">${btn(L("OpenGrokBot 열기", "Open OpenGrokBot"), { kind: "primary", go: "SC-005", st: "working" })}${btn(L("알림 1시간 끄기", "Pause alerts 1 hr"))}</div></div>`;
 }
 function welcome(st) {
-  return `<div class="window sub-win welcome" role="dialog" aria-label="${L("Formation 시작하기", "Welcome to Formation")}"><div class="titlebar"><div class="traffic" aria-hidden="true"><i class="tl r"></i><i class="tl y"></i><i class="tl g"></i></div></div><div class="wbody">
-    <div style="text-align:center;margin:0 0 6px"><span class="appicon" style="width:56px;height:56px;border-radius:16px;margin:0 auto 10px">${icon("formation")}</span><h2 style="margin:0;font-size:22px">${L("Formation 시작하기", "Welcome to Formation")}</h2><p class="muted" style="margin:6px 0 0">${L("팀원이 내 에이전트에게 직접 묻고, 나는 에이전트를 한곳에서 굴려요.", "Teammates ask your agents directly, and you run your agents in one place.")}</p></div>
+  return `<div class="window sub-win welcome" role="dialog" aria-label="${L("OpenGrokBot 시작하기", "Welcome to OpenGrokBot")}"><div class="titlebar"><div class="traffic" aria-hidden="true"><i class="tl r"></i><i class="tl y"></i><i class="tl g"></i></div></div><div class="wbody">
+    <div style="text-align:center;margin:0 0 6px"><span class="appicon" style="width:56px;height:56px;border-radius:16px;margin:0 auto 10px">${icon("formation")}</span><h2 style="margin:0;font-size:22px">${L("OpenGrokBot 시작하기", "Welcome to OpenGrokBot")}</h2><p class="muted" style="margin:6px 0 0">${L("팀원이 내 에이전트에게 직접 묻고, 나는 에이전트를 한곳에서 굴려요.", "Teammates ask your agents directly, and you run your agents in one place.")}</p></div>
     <div class="wstep"><span class="n">1</span><div style="flex:1"><b>${L("하네스 확인", "Check harnesses")}</b><div class="check"><span class="ok">${icon("check")}</span>Claude Code · ${L("설치됨, 로그인됨", "Installed, signed in")}</div>${st === "harness-missing" ? `<div class="check"><span class="bad">${icon("exclaim")}</span>Codex · ${L("설치되지 않음 — Codex 에이전트는 설치 후 실행할 수 있어요", "Not installed — Codex agents can run after you install it")}</div>` : `<div class="check"><span class="ok">${icon("check")}</span>Codex · ${L("설치됨, 로그인됨", "Installed, signed in")}</div>`}</div></div>
     <div class="wstep"><span class="n">2</span><div style="flex:1"><b>${L("팀", "Team")}</b><div class="row-actions" style="margin:8px 0">${btn(L("새 팀 만들기", "Create a team"), { kind: "primary" })}</div><div class="row-actions"><input class="input ${st === "invite-expired" ? "invalid" : ""}" style="flex:1" value="formation://join/7F3K-Q9PX" aria-label="${L("초대 링크", "Invitation link")}">${btn(L("합류", "Join"))}</div>${st === "invite-expired" ? `<span class="err">${L("만료된 링크예요. 팀원에게 새 링크를 요청하세요.", "This link has expired. Ask your teammate for a new one.")}</span>` : ""}</div></div>
     <div class="wstep"><span class="n">3</span><div style="flex:1"><b>${L("알림", "Notifications")}</b><div class="muted small">${L("승인, 오류, 멈춤처럼 내가 필요할 때만 알려요.", "Only when you're needed: approvals, errors, stalls.")}</div><div style="margin-top:8px">${btn(L("알림 허용", "Allow notifications"))}</div></div></div>
@@ -837,8 +837,8 @@ function welcome(st) {
 function settings(st) {
   const tabs = [["general", "gear", L("일반", "General")], ["harnesses", "terminal", L("하네스", "Harnesses")], ["notifications", "bell", L("알림", "Notifications")], ["team", "team", L("팀", "Team")]];
   const content = {
-    general: `<div class="form-row"><span>${L("로그인할 때 Formation 실행", "Open Formation at login")}</span>${sw(true)}</div><div class="form-row"><span>${L("메뉴바에 표시", "Show in menu bar")}</span>${sw(true)}</div><div class="form-row"><span>${L("언어", "Language")}</span><div class="seg"><button aria-pressed="true" data-act="seg">${L("시스템", "System")}</button><button aria-pressed="false" data-act="seg">한국어</button><button aria-pressed="false" data-act="seg">English</button></div></div>`,
-    harnesses: `<div class="form-row"><span><b>Claude Code</b><small class="mono">/usr/local/bin/claude</small></span><span class="ok">${icon("check")} ${L("로그인됨", "Signed in")}</span></div><div class="form-row"><span><b>Codex</b><small class="mono">~/.local/bin/codex</small></span><span class="bad">${icon("exclaim")} ${L("로그인 필요", "Sign-in needed")}</span></div><p class="muted small">${L("Formation은 로그인 정보를 다루지 않아요. 각 하네스에서 직접 로그인하세요.", "Formation never handles sign-in. Sign in from each harness.")}</p>`,
+    general: `<div class="form-row"><span>${L("로그인할 때 OpenGrokBot 실행", "Open OpenGrokBot at login")}</span>${sw(true)}</div><div class="form-row"><span>${L("메뉴바에 표시", "Show in menu bar")}</span>${sw(true)}</div><div class="form-row"><span>${L("언어", "Language")}</span><div class="seg"><button aria-pressed="true" data-act="seg">${L("시스템", "System")}</button><button aria-pressed="false" data-act="seg">한국어</button><button aria-pressed="false" data-act="seg">English</button></div></div>`,
+    harnesses: `<div class="form-row"><span><b>Claude Code</b><small class="mono">/usr/local/bin/claude</small></span><span class="ok">${icon("check")} ${L("로그인됨", "Signed in")}</span></div><div class="form-row"><span><b>Codex</b><small class="mono">~/.local/bin/codex</small></span><span class="bad">${icon("exclaim")} ${L("로그인 필요", "Sign-in needed")}</span></div><p class="muted small">${L("OpenGrokBot은 로그인 정보를 다루지 않아요. 각 하네스에서 직접 로그인하세요.", "OpenGrokBot never handles sign-in. Sign in from each harness.")}</p>`,
     notifications: [L("승인 대기", "Waiting for approval"), L("오류·예기치 않은 종료", "Errors and unexpected exits"), L("진행 멈춤 (10분)", "Stalled (10 minutes)"), L("팀원 작업 요청", "Teammate work requests"), L("정기 작업 실패·놓침", "Scheduled run failed or missed")].map((t) => `<div class="form-row"><span>${t}</span>${sw(true, t)}</div>`).join(""),
     team: `<div class="form-row"><span>${L("팀", "Team")}</span><span>${L("도현의 팀", "Dohyeon's team")}</span></div><div class="form-row"><span>${L("내 역할", "My role")}</span><span class="muted">${L("팀을 만든 사람", "Team creator")}</span></div><div class="form-row"><span></span>${btn(L("팀 나가기", "Leave team"), { kind: "destructive" })}</div>`
   }[st];
@@ -846,7 +846,7 @@ function settings(st) {
 }
 function notification(st) {
   const n = st === "error" ? [L("기획 에이전트가 예기치 않게 종료됐어요", "Planning exited unexpectedly"), L("exit code 1 · 클릭해서 확인", "exit code 1 · Click to review"), go("SC-005", "error")] : [L("승인이 필요해요", "Approval needed"), L("민수의 요청 · 백엔드: npm test -- auth/token.spec.ts", "Minsu's request · Backend: npm test -- auth/token.spec.ts"), go("SC-011")];
-  return `<button class="notif" ${n[2]}><span class="appicon">${icon("formation")}</span><span class="nt"><small><span>Formation</span><span>${L("지금", "now")}</span></small><b>${n[0]}</b><br>${n[1]}</span></button>`;
+  return `<button class="notif" ${n[2]}><span class="appicon">${icon("formation")}</span><span class="nt"><small><span>OpenGrokBot</span><span>${L("지금", "now")}</span></small><b>${n[0]}</b><br>${n[1]}</span></button>`;
 }
 function terminal(id) {
   const ko = S.lang === "ko";
@@ -881,15 +881,15 @@ function terminal(id) {
                          "as_of": "2026-11-09T10:44:00+09:00", "possibly_stale": false } }
 
 <span class="c"># ${ko ? "권한, 요청 ID, 체인 깊이 제한(3)은 CLI와 같아요" : "Same permissions, request IDs, and chain-depth limit (3) as the CLI"}</span>`;
-  return `<div class="window sub-win term" aria-label="Terminal"><div class="titlebar"><div class="traffic" aria-hidden="true"><i class="tl r"></i><i class="tl y"></i><i class="tl g"></i></div>${id === "IF-001" ? "minsu — zsh" : "MCP — Formation"}</div><pre>${id === "IF-001" ? cli : mcp}</pre></div>`;
+  return `<div class="window sub-win term" aria-label="Terminal"><div class="titlebar"><div class="traffic" aria-hidden="true"><i class="tl r"></i><i class="tl y"></i><i class="tl g"></i></div>${id === "IF-001" ? "minsu — zsh" : "MCP — OpenGrokBot"}</div><pre>${id === "IF-001" ? cli : mcp}</pre></div>`;
 }
 
 /* ================= Scene assembly ================= */
 function macBar() {
   const dot = !(S.screen === "SC-002" && S.state === "all-clear");
   const open = S.screen === "SC-002";
-  return `<div class="mac-bar"><svg class="logo" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5" fill="currentColor"/></svg><b>Formation</b><span class="mb-item ${S.menu ? "open" : ""}" data-act="menu" role="button" tabindex="0">${L("파일", "File")}</span><span class="mb-item">${L("편집", "Edit")}</span><span class="mb-item">${L("보기", "View")}</span><span class="mb-item">${L("윈도우", "Window")}</span><span class="mb-item">${L("도움말", "Help")}</span>
-    <span class="mb-right"><button class="mb-icon ${open ? "open" : ""}" ${go(open ? "SC-005" : "SC-002", open ? "working" : "default")} aria-label="${L("Formation 메뉴바 아이콘", "Formation menu bar icon")}">${icon("formation")}${dot ? '<span class="d"></span>' : ""}</button><span>${L("11월 9일 (월) 오전 10:45", "Mon Nov 9  10:45 AM")}</span></span></div>
+  return `<div class="mac-bar"><svg class="logo" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5" fill="currentColor"/></svg><b>OpenGrokBot</b><span class="mb-item ${S.menu ? "open" : ""}" data-act="menu" role="button" tabindex="0">${L("파일", "File")}</span><span class="mb-item">${L("편집", "Edit")}</span><span class="mb-item">${L("보기", "View")}</span><span class="mb-item">${L("윈도우", "Window")}</span><span class="mb-item">${L("도움말", "Help")}</span>
+    <span class="mb-right"><button class="mb-icon ${open ? "open" : ""}" ${go(open ? "SC-005" : "SC-002", open ? "working" : "default")} aria-label="${L("OpenGrokBot 메뉴바 아이콘", "OpenGrokBot menu bar icon")}">${icon("formation")}${dot ? '<span class="d"></span>' : ""}</button><span>${L("11월 9일 (월) 오전 10:45", "Mon Nov 9  10:45 AM")}</span></span></div>
     ${S.menu ? `<div class="mb-menu" role="menu"><button ${go("SC-015", "new")}>${L("새 질문", "New Question")}<kbd>⌘N</kbd></button><button ${go("SC-004", "default")}>${L("새 에이전트", "New Agent")}<kbd>⇧⌘N</kbd></button><button ${go("SC-005", "working")}>${L("대화로 이동…", "Go to Conversation…")}<kbd>⌘K</kbd></button><hr><button ${go("SC-013", "invite")}>${L("팀원 초대…", "Invite Teammate…")}<kbd>⌥⌘I</kbd></button><button ${go("SC-018", "general")}>${L("설정…", "Settings…")}<kbd>⌘,</kbd></button></div>` : ""}`;
 }
 const dimmed = (html) => html.replace('class="window main-win ', 'class="window main-win dim ');

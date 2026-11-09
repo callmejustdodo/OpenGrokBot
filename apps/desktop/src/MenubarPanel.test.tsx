@@ -16,7 +16,7 @@ const MINSU = "01930000-0000-7000-8000-000000000002";
 const SEOYEON = "01930000-0000-7000-8000-000000000004";
 
 function panel() {
-  return screen.getByRole("main", { name: "Formation menu bar panel" });
+  return screen.getByRole("main", { name: "OpenGrokBot menu bar panel" });
 }
 
 /** M3's clock: the approval came in 3 minutes ago, as in the mockup. */
@@ -156,13 +156,13 @@ describe("menu bar panel (SC-002)", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Couldn't change alerts");
   });
 
-  it("opens Formation, Settings, and quits", () => {
+  it("opens OpenGrokBot, Settings, and quits", () => {
     render(<MenubarPanel />);
-    fireEvent.click(screen.getByRole("button", { name: "Open Formation" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open OpenGrokBot" }));
     expect(invoke).toHaveBeenLastCalledWith("show_main_window");
     fireEvent.click(screen.getByRole("button", { name: "Settings…" }));
     expect(invoke).toHaveBeenLastCalledWith("show_settings_window");
-    fireEvent.click(screen.getByRole("button", { name: "Quit Formation" }));
+    fireEvent.click(screen.getByRole("button", { name: "Quit OpenGrokBot" }));
     expect(invoke).toHaveBeenLastCalledWith("quit_app");
   });
 });

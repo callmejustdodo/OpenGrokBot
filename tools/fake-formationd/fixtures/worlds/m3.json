@@ -151,7 +151,7 @@
           "state": { "supported": true, "reason": null },
           "read_conversation": { "supported": true, "reason": null },
           "answer_teammates": { "supported": true, "reason": null },
-          "receive_requests": { "supported": false, "reason": "Started in Terminal, so Formation can't send it messages" }
+          "receive_requests": { "supported": false, "reason": "Started in Terminal, so OpenGrokBot can't send it messages" }
         }
       },
       "running_requests": []

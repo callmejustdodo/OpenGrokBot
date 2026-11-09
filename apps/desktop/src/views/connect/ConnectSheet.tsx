@@ -85,7 +85,7 @@ export default function ConnectSheet() {
   } else if (agents && agents.length === 0) {
     body = (
       <p className="empty" data-state="empty">
-        {t("connect.none", "No agents are running outside Formation on this Mac.")}
+        {t("connect.none", "No agents are running outside OpenGrokBot on this Mac.")}
       </p>
     );
   } else if (agents) {
@@ -120,14 +120,14 @@ export default function ConnectSheet() {
               <p className="p-card">
                 {t(
                   "connect.readOnly",
-                  "Read-only: Formation can show this agent's activity but can't use it for teammates.",
+                  "Read-only: OpenGrokBot can show this agent's activity but can't use it for teammates.",
                 )}
               </p>
             ) : null}
             {kind === "not-supported" ? (
-              <p className="p-card">{t("connect.notSupported", "Formation can't connect this agent yet.")}</p>
+              <p className="p-card">{t("connect.notSupported", "OpenGrokBot can't connect this agent yet.")}</p>
             ) : null}
-            <ul className="list" aria-label={t("connect.capabilities", "What Formation can do")}>
+            <ul className="list" aria-label={t("connect.capabilities", "What OpenGrokBot can do")}>
               {capabilityRows(current.capabilities, t).map((c) => (
                 <li key={c.key} className="row" data-supported={c.supported}>
                   <span className={c.supported ? "ok" : "muted"}>
@@ -141,12 +141,12 @@ export default function ConnectSheet() {
               ))}
             </ul>
             <p className="muted small">
-              {t("connect.noChange", "Formation won't change this agent's own configuration.")}
+              {t("connect.noChange", "OpenGrokBot won't change this agent's own configuration.")}
             </p>
             {connectError?.key === current.key ? (
               <p role="alert" data-state="connect-error">
                 {connectError.code === "harness_unsupported"
-                  ? t("connect.error.harness_unsupported", "Formation doesn't support this harness yet.")
+                  ? t("connect.error.harness_unsupported", "OpenGrokBot doesn't support this harness yet.")
                   : t("connect.error.other", "Couldn't connect this agent. Try again.")}
               </p>
             ) : null}
@@ -180,7 +180,7 @@ export default function ConnectSheet() {
       title={t("connect.title", "Connect agents")}
       lead={t(
         "connect.lead",
-        "Agents found running outside Formation on this Mac. Connecting adds them to your list, private.",
+        "Agents found running outside OpenGrokBot on this Mac. Connecting adds them to your list, private.",
       )}
       footer={
         <>

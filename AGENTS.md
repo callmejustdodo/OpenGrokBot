@@ -1,6 +1,6 @@
 # Agent guidance
 
-Formation is a proposed open-source macOS app and CLI for collaborating through local Claude Code and Codex sessions; the repository holds the product documentation and an early scaffold of the Rust workspace and the desktop app. Keep changes small, reviewable and aligned with the agreed requirements.
+OpenGrokBot is a proposed open-source macOS app and CLI for collaborating through local Claude Code and Codex sessions; the repository holds the product documentation and an early scaffold of the Rust workspace and the desktop app. Keep changes small, reviewable and aligned with the agreed requirements.
 
 ## Repository layout
 

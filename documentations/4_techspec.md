@@ -1,4 +1,4 @@
-# Formation — Technical specification
+# OpenGrokBot — Technical specification
 
 Rev 3 · 2026-11-09 · Based on the confirmed [product requirements](1_product_requirements_documentation.md) (Rev 2), [user stories](2_user_stories.md) (Rev 2), and [screens and flows](3_screen_list_and_user_flows.md) (Rev 3) with the approved [mockup M3](mockups/index.html). Decision IDs refer to the [planning progress](0_one_pager.md#planning-progress) record. Rev 2 sets the minimum macOS version to 13 (D-047). Rev 3 moves the core out of the app into a background service, because agents are harness sessions that outlive the app (D-048).
 
@@ -7,10 +7,10 @@ Rev 3 · 2026-11-09 · Based on the confirmed [product requirements](1_product_r
 - **Product:** a macOS app that runs role agents on Claude Code and Codex, and lets a team of four ask each other's agents (one-pager).
 - **Existing code:** none. The repository holds planning documents, the mockup, five macOS-related skills under `.claude/skills/`, and repository conventions (`AGENTS.md`, issue and PR templates, a documentation link check).
 - **Builders:** three developers and one designer, each working through a coding agent; same-day first use is the goal (D-020). Running cost has no limit.
-- **Integration:** Formation launches and talks to the Claude Code and Codex CLI processes directly; it does not use the Claude Agent SDK (D-043). Claude Code comes first (D-005).
+- **Integration:** OpenGrokBot launches and talks to the Claude Code and Codex CLI processes directly; it does not use the Claude Agent SDK (D-043). Claude Code comes first (D-005).
 - **Team network for the MVP:** a Tailscale private network (D-045).
 - **Agents outlive the app:** an agent is a Claude Code or Codex session; the app is only an interface to it. Quitting the app never stops agents (D-048).
-- **Build first:** Formation is built as its own app; extending existing products may come later (D-044, reading not yet confirmed).
+- **Build first:** OpenGrokBot is built as its own app; extending existing products may come later (D-044, reading not yet confirmed).
 
 ## Technology choices
 
@@ -79,7 +79,7 @@ Flags below follow the [Claude Code CLI reference](https://code.claude.com/docs/
 | Required policy hook | Inject a required `PreToolUse` hook through `--settings` that asks the core before every tool call (NFR-004). In acceptEdits, auto, and bypassPermissions, writes, commands, and network calls can skip the permission tool; the hook sees every call, and a hook deny wins (TASK-005). | NFR-004 |
 | Agent instructions and skills | The agent folder's `AGENTS.md` is canonical; `CLAUDE.md` contains one line importing it (`@AGENTS.md`), and skills live in `.claude/skills/`. Codex reads `AGENTS.md` natively. | FR-001, FR-004 |
 | Read a session conversation | Transcript files (`.jsonl`) under `$CLAUDE_CONFIG_DIR/projects/` (default `~/.claude/projects/`); `--resume` also accepts a transcript path. | FR-012 |
-| Detect sessions started elsewhere | Read detected sessions and work only in forks; never resume or write to the original (FR-006). Scan transcript folders for recent activity. Live-process detection (for example `~/.claude/sessions/<pid>.json`, used by Reason Network) is undocumented; treat as best effort and label states "unknown" when unsure. Skip sessions Formation created as forks: every fork writes a full transcript copy (`<fork-id>.jsonl`) into the same project folder (TASK-006). | FR-006 |
+| Detect sessions started elsewhere | Read detected sessions and work only in forks; never resume or write to the original (FR-006). Scan transcript folders for recent activity. Live-process detection (for example `~/.claude/sessions/<pid>.json`, used by Reason Network) is undocumented; treat as best effort and label states "unknown" when unsure. Skip sessions OpenGrokBot created as forks: every fork writes a full transcript copy (`<fork-id>.jsonl`) into the same project folder (TASK-006). | FR-006 |
 
 **Codex (second harness):** launch `codex app-server` and speak its JSON-RPC protocol (thread, turn, and approval requests), per the [Codex App Server docs](https://learn.chatgpt.com/docs/app-server) referenced in the product plan. Verify the protocol and approval hooks before building it.
 
@@ -174,7 +174,7 @@ Decided 2026-11-09 (TASK-017); identity checks are in the backend architecture's
 
 ## Security
 
-- Provider credentials stay in each harness's own storage; Formation never reads or sends them.
+- Provider credentials stay in each harness's own storage; OpenGrokBot never reads or sends them.
 - Peer access requires a tailnet connection plus a member record; the team creator manages the roster.
 - Side conversations run with all tools disabled; answers, excerpts, and routing reasons pass secret masking (API keys, tokens, private keys, passwords in common formats, and the owner's email addresses) before leaving the Mac (NFR-003).
 - The permission tool and the `PreToolUse` hook both consult the same policy; deny wins when they disagree.

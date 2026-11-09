@@ -6,11 +6,11 @@ This comparison uses official product pages, documentation, and public repositor
 
 ## Feature matrix
 
-**O** documented · **X** outside the supported product scope · **?** not verified · **Planned** Formation's intended capability, not implemented.
+**O** documented · **X** outside the supported product scope · **?** not verified · **Planned** OpenGrokBot's intended capability, not implemented.
 
 | Product | Claude and Codex | Teammate participation or messaging | Agent-callable CLI or MCP control | Per-collaborator execution approval delegation | Side questions isolated from the main session |
 |---|:---:|:---:|:---:|:---:|:---:|
-| Formation | Planned | Planned | Planned | Planned | Planned |
+| OpenGrokBot | Planned | Planned | Planned | Planned | Planned |
 | [Happier](https://github.com/happier-dev/happier) | O | O | O | [O](https://docs.happier.dev/accounts/session-sharing) | ? |
 | [Reason Network](https://github.com/reason-machines/reason-network) | O | O | O | ? | ? |
 | [Flowpad](https://flowpad.ai/) | O | O | ? | ? | ? |
@@ -25,15 +25,15 @@ This comparison uses official product pages, documentation, and public repositor
 
 Agent-callable control means an interface for querying or sending messages to sessions, not merely a CLI that installs or launches the product. Approval delegation means granting a particular collaborator approval authority, not simply approving one's own agent from another device.
 
-The matrix distinguishes conversation isolation from filesystem isolation. Generic session forks or subagents do not establish that a product offers Formation's proposed restricted side-question workflow.
+The matrix distinguishes conversation isolation from filesystem isolation. Generic session forks or subagents do not establish that a product offers OpenGrokBot's proposed restricted side-question workflow.
 
 ## Positioning map
 
-The following is a qualitative map of documented workflows, not a quantitative ranking. Coordinates only arrange labels within categories; they are not measured scores. Products may span more than one category. Formation's position is a target.
+The following is a qualitative map of documented workflows, not a quantitative ranking. Coordinates only arrange labels within categories; they are not measured scores. Products may span more than one category. OpenGrokBot's position is a target.
 
 ```mermaid
 quadrantChart
-    title Formation positioning
+    title OpenGrokBot positioning
     x-axis Own sessions --> Team sessions
     y-axis Human operation focus --> Agent-callable control
     quadrant-1 Team agent interfaces
@@ -45,7 +45,7 @@ quadrantChart
     Claude Together: [0.85, 0.76]
     Happier: [0.65, 0.63]
     Paperclip: [0.62, 0.80]
-    Formation planned: [0.80, 0.55]
+    OpenGrokBot planned: [0.80, 0.55]
     mco squad: [0.25, 0.80]
     Flowpad: [0.82, 0.32]
     Grok Bot: [0.72, 0.42]
@@ -56,7 +56,7 @@ quadrantChart
 
 | Positioning category | Products |
 |---|---|
-| Team workflows with agent-callable interfaces | Agent Relay, Claude Together, Happier, Paperclip, Reason Network; Formation's target. |
+| Team workflows with agent-callable interfaces | Agent Relay, Claude Together, Happier, Paperclip, Reason Network; OpenGrokBot's target. |
 | Personal agent-to-agent coordination | mco-org squad. |
 | Human team collaboration | Flowpad, current Happy Harness, and Grok Bot Shared Bots. |
 | Personal remote control emphasis | HAPI and Claude Remote Control. |
@@ -85,7 +85,7 @@ Harness coverage is broad: Claude Code, Codex, Hermes, opencode, pi, Cursor, Gem
 
 Connections are end-to-end encrypted and peer to peer through iroh, with a relay fallback that teams can self-host. Permission controls documented in the design are an inbound policy per machine (`accept`, `hold`, or `refuse`, overridable per person), membership limits, guards against agent-to-agent loops and group broadcasts, and an `ask_user` pop-up through which the owner approves or denies a request. Command-level grants and delegating approval authority to a collaborator were not found in the reviewed documentation.
 
-The design describes peer messages entering the recipient's existing session, labeled as peer input; a separate side conversation isolated from the main session was not described. This overlaps directly with Formation's core direction (asking a teammate's agent), with multi-harness detection, and with discovering the agents running on one machine. Treat it as a primary hands-on comparison and as a possible extension or integration base; its permissive license allows reuse.
+The design describes peer messages entering the recipient's existing session, labeled as peer input; a separate side conversation isolated from the main session was not described. This overlaps directly with OpenGrokBot's core direction (asking a teammate's agent), with multi-harness detection, and with discovering the agents running on one machine. Treat it as a primary hands-on comparison and as a possible extension or integration base; its permissive license allows reuse.
 
 ### Flowpad
 
@@ -101,7 +101,7 @@ The repository calls the project open source while its license section displays 
 - Landing page: [agentrelay.com](https://agentrelay.com/).
 - Sources: [repository](https://github.com/AgentWorkforce/relay), [introduction](https://agentrelay.com/docs/introduction).
 
-Provides agent messaging across machines and team-session context search. It overlaps with Formation's agent-to-agent query direction and may also be an integration candidate. This comparison refers specifically to AgentWorkforce/relay, not other similarly named projects.
+Provides agent messaging across machines and team-session context search. It overlaps with OpenGrokBot's agent-to-agent query direction and may also be an integration candidate. This comparison refers specifically to AgentWorkforce/relay, not other similarly named projects.
 
 ### Paperclip
 
@@ -118,7 +118,7 @@ Experimental Agent Chat is off by default and is enabled for the whole instance.
 
 The landing page and the README invite visitors to join a Paperclip Cloud waitlist, and the README roadmap lists cloud deployments as in progress. The documentation says Cloud Sync to a Paperclip Cloud upstream was removed in v2026.1012.0. A generally available hosted version was not verified.
 
-This is the strongest documented overlap on organization-level governance and approvals. Its approval choices resemble Formation's "allow once" and "keep allowing similar commands." Its center is delegating work down an organization hierarchy, not asking a teammate's existing local session a question without disturbing it. Not verified: whether its approvals cover coding agents' local shell and file tool calls, and whether Agent Chat is isolated from the agent's task sessions.
+This is the strongest documented overlap on organization-level governance and approvals. Its approval choices resemble OpenGrokBot's "allow once" and "keep allowing similar commands." Its center is delegating work down an organization hierarchy, not asking a teammate's existing local session a question without disturbing it. Not verified: whether its approvals cover coding agents' local shell and file tool calls, and whether Agent Chat is isolated from the agent's task sessions.
 
 ### Grok Bot
 
@@ -129,7 +129,7 @@ An AI-teammate service from SpaceX Super Intelligence; a secondary source descri
 
 A Shared Bot is shared with a whole team or with chosen people and groups, without making a copy. The owner and Managers can change its instructions, skills, memory, and apps; Collaborators can only chat. Each person's chat is private from the owner and Managers. The Bot can save what it learns for the whole team and says when it does. In a teammate's chat it uses the owner's apps and secrets, asks before using the teammate's own accounts, and usually runs on the teammate's Grok Bot computer. Approval cards, such as the one for using the teammate's own accounts or for reviewing an action in a Slack thread, go to the person the Bot is answering. Because approval follows the asker rather than authority the owner grants to a collaborator, the matrix leaves approval delegation unverified. Only cloud Bots can be shared; a Bot that runs on the user's own computer cannot.
 
-This is the closest documented match to Formation's experience of teammates asking one person's agent in their own private conversations. It differs in where a shared agent runs (the vendor's cloud, not the owner's machine), in scope (general business work rather than Claude Code and Codex coding sessions), in model (the announcement reads "Built with Grok"), and in licensing (a closed, paid service). Its approval model also differs: approval cards go to the person asking, while Formation proposes that the owner's local service makes the final decision. Support for Claude Code or Codex sessions was not documented. Not verified: whether team memory written from one chat changes the Bot's behavior in other people's chats.
+This is the closest documented match to OpenGrokBot's experience of teammates asking one person's agent in their own private conversations. It differs in where a shared agent runs (the vendor's cloud, not the owner's machine), in scope (general business work rather than Claude Code and Codex coding sessions), in model (the announcement reads "Built with Grok"), and in licensing (a closed, paid service). Its approval model also differs: approval cards go to the person asking, while OpenGrokBot proposes that the owner's local service makes the final decision. Support for Claude Code or Codex sessions was not documented. Not verified: whether team memory written from one chat changes the Bot's behavior in other people's chats.
 
 ### squad (mco-org)
 
@@ -137,7 +137,7 @@ This is the closest documented match to Formation's experience of teammates aski
 
 A Rust CLI under the MIT license. Claude Code, Codex CLI, Gemini CLI, and OpenCode terminals use it to message each other through shell commands and a SQLite workspace, with no daemon. A `/squad` slash command (`$squad` in Codex) assigns roles such as manager, worker, and inspector, and the manager splits a goal into tasks for workers.
 
-It overlaps with Formation's agent-to-agent direction but documents a local workspace in one project. Cross-machine or cross-person use, permissions, and approvals were not verified. It is unrelated to the other Squad-named projects listed below.
+It overlaps with OpenGrokBot's agent-to-agent direction but documents a local workspace in one project. Cross-machine or cross-person use, permissions, and approvals were not verified. It is unrelated to the other Squad-named projects listed below.
 
 ### Claude Together
 
@@ -174,11 +174,11 @@ These tools orchestrate several agents but do not share sessions between people.
 - [Squad](https://github.com/github/squad) (GitHub): human-led AI agent teams for a repository through GitHub Copilot. Specialist members persist as files in the repository. It installs as `@bradygaster/squad-cli`. It is built primarily around GitHub Copilot, and its `--client` option projects the same team into Claude Code, Codex, OpenCode, Cursor, and other hosts. It serves one operator's repository rather than sharing live sessions between people.
 - [Claude Squad](https://github.com/smtg-ai/claude-squad): an AGPL-3.0 terminal app for running several terminal agents, such as Claude Code, Codex, Gemini, Aider, OpenCode, and Amp, in parallel. Team sharing was not verified.
 
-Naming note: at least four agent tools use the Squad name, counting mco-org squad above. squads-cli and SquadCue also appeared in search results but were not reviewed. On November 9, 2026, the product's working title changed from Shared to Formation. A quick search that day found no agent orchestration tool named "Formation". That search was not a trademark, domain, or package-name check. A later rename to OpenGrokBot, with the checks it needs first, is tracked in [issue #11](https://github.com/callmejustdodo/Shared/issues/11).
+Naming note: at least four agent tools use the Squad name, counting mco-org squad above. squads-cli and SquadCue also appeared in search results but were not reviewed. On November 9, 2026, the product's working title changed from Shared to Formation. A quick search that day found no agent orchestration tool named "Formation". That search was not a trademark, domain, or package-name check. On the same day the team renamed the product to OpenGrokBot ([D-057](0_one_pager.md#planning-progress), [issue #11](https://github.com/callmejustdodo/OpenGrokBot/issues/11)). The risks recorded in that issue still apply: Grok is xAI's brand and Grok Bot is an AI product in the same field, Oracle maintains an open-source project named OpenGrok, and `GrokBot` is the user agent of xAI's web crawler. No trademark review had been recorded when the rename was adopted.
 
-## Formation's differentiation hypotheses
+## OpenGrokBot's differentiation hypotheses
 
-Formation's strongest proposed experience is: **ask a teammate's agent without disrupting their main task, and turn an answer into work only within the owner's policy.**
+OpenGrokBot's strongest proposed experience is: **ask a teammate's agent without disrupting their main task, and turn an answer into work only within the owner's policy.**
 
 Validate these together:
 
