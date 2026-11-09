@@ -27,6 +27,7 @@ pub mod identity;
 mod join;
 pub mod limit;
 pub mod link;
+mod peer;
 pub mod roster;
 mod service;
 
@@ -36,6 +37,7 @@ mod tests;
 pub use identity::authenticate;
 pub use limit::JoinLimit;
 pub use link::InvitationLink;
+pub use peer::{TeamJoinEndpoint, forward_roster};
 pub use roster::RosterChange;
 pub use service::{
     Clock, INVITATION_TTL, LocalIdentity, TailnetSelf, TeamConfig, TeamService, system_clock,
