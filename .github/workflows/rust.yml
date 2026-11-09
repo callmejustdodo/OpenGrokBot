@@ -24,3 +24,11 @@ jobs:
         run: cargo clippy --workspace -- -D warnings
       - name: Test
         run: cargo test --workspace
+      - name: TypeScript bindings are current
+        run: |
+          sh apps/desktop/scripts/generate-ipc.sh
+          git add --intent-to-add apps/desktop/src/ipc/generated
+          if ! git diff --exit-code --stat -- apps/desktop/src/ipc/generated; then
+            echo "::error::formation-proto changed; run pnpm -C apps/desktop ipc:generate and commit apps/desktop/src/ipc/generated"
+            exit 1
+          fi

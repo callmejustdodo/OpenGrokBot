@@ -23,6 +23,7 @@ cargo clippy --workspace -- -D warnings # Rust lint
 pnpm -C apps/desktop lint               # ESLint
 pnpm -C apps/desktop typecheck          # TypeScript
 pnpm -C apps/desktop test               # Vitest
+pnpm -C apps/desktop ipc:generate       # regenerate src/ipc/generated after changing formation-proto; commit the result
 pnpm -C apps/desktop tauri dev          # run the app in development
 ```
 

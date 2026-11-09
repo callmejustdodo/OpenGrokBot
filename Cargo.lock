@@ -863,11 +863,13 @@ dependencies = [
 name = "formation-desktop"
 version = "0.1.0"
 dependencies = [
+ "formation-proto",
  "libc",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
+ "ts-rs",
 ]
 
 [[package]]
