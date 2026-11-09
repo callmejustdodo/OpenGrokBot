@@ -200,7 +200,7 @@ function MyAgentPanel({ agentId }: { agentId: AgentId }) {
     <aside className="panel" aria-label={t("panel.agent", "Agent information")} data-kind="my-agent">
       <CollapseButton />
       <div className="p-head">
-        <AgentAvatar avatar={agent.avatar} size={56} />
+        <AgentAvatar avatar={agent.avatar} seed={agent.id} size={56} />
         <span>
           <b>{agent.name}</b>
           <small>{agent.role}</small>
@@ -279,7 +279,7 @@ function TeammateAgentPanel({ owner, agentId }: { owner: MemberId; agentId: Agen
     <aside className="panel" aria-label={t("panel.agent", "Agent information")} data-kind="teammate-agent">
       <CollapseButton />
       <div className="p-head">
-        <AgentAvatar avatar={agent.avatar} size={56} ownerInitial={ownerName.slice(0, 1).toUpperCase()} />
+        <AgentAvatar avatar={agent.avatar} seed={agent.agent_id} size={56} ownerInitial={ownerName.slice(0, 1).toUpperCase()} />
         <span>
           <b>{agent.name}</b>
           <small>{t("panel.ownersAgent", "{{owner}}'s agent", { owner: ownerName })}</small>
@@ -356,7 +356,7 @@ function PersonPanel({ memberId }: { memberId: MemberId }) {
             onClick={() => uiStore.getState().navigate({ kind: "teammate-agent", owner: memberId, agentId: a.agent_id })}
           >
             <span className="pr">
-              <AgentAvatar avatar={a.avatar} size={26} />
+              <AgentAvatar avatar={a.avatar} seed={a.agent_id} size={26} />
               <b>{a.name}</b>
               <span className="status" data-state={a.state}>
                 {stateLabel(t, a.state)}

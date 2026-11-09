@@ -54,7 +54,7 @@ function describeRow(t: TFunction, item: ChatListItem, mirror: MirrorState): Row
     return {
       attention,
       line: attention ? stateLabel(t, agent.state) : last ? itemLine(t, last) : "",
-      avatar: <AgentAvatar avatar={agent.avatar} state={agent.state} />,
+      avatar: <AgentAvatar avatar={agent.avatar} seed={agent.id} state={agent.state} />,
       name: agent.name,
       state: agent.state,
       target: { kind: "agent", agentId: agent.id },
@@ -68,7 +68,7 @@ function describeRow(t: TFunction, item: ChatListItem, mirror: MirrorState): Row
       attention: false,
       line: `${owner} · ${answer}`,
       avatar: item.agent ? (
-        <AgentAvatar avatar={item.agent.avatar} ownerInitial={owner.slice(0, 1).toUpperCase()} />
+        <AgentAvatar avatar={item.agent.avatar} seed={item.agent.agent_id} ownerInitial={owner.slice(0, 1).toUpperCase()} />
       ) : (
         <PersonAvatar name={owner} />
       ),

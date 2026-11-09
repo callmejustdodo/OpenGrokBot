@@ -1,6 +1,6 @@
 // An agent's avatar slot (D-042): the open-bot-avatar shape in its color, drawn
-// as a flat still like the mockup (one body color, two dark eyes); a rounded
-// square in the color when the shape is unknown. The badge is a state dot for my
+// as a flat still like the mockup (one body color, two dark eyes); an unknown
+// shape is drawn as a set shape chosen from the seed. The badge is a state dot for my
 // agents (drawn by CSS from `data-state`) or the owner's initial for teammates' agents.
 // A working agent's avatar moves gently and blinks (`data-motion="working"`, CSS in
 // styles/components.css); Reduce Motion stops it.
@@ -18,6 +18,8 @@ export type AgentAvatarProps = {
   ownerInitial?: string;
   /** Whether the agent is working, for an avatar without a state dot (the pill); defaults to `state === "working"`. */
   working?: boolean;
+  /** Picks a steady shape when `avatar.shape` is not one of open-bot-avatar's; pass the agent's ID or name. */
+  seed?: string;
 };
 
 /** The shape as an SVG, or null for an unknown shape. */
@@ -39,20 +41,53 @@ export function BotShapeSvg({ shape, color }: { shape: string; color: string }) 
   );
 }
 
-export default function AgentAvatar({ avatar, size = 40, state, ownerInitial, working = state === "working" }: AgentAvatarProps) {
-  const known = avatar.shape in BOT_SHAPES;
+const SHAPE_NAMES = Object.keys(BOT_SHAPES);
+
+/** Plain color names formationd may send (a detected agent gets "blue"), in the avatar palette. */
+const NAMED_COLORS: Record<string, string> = {
+  orange: "#ff6a1a",
+  yellow: "#f8a01c",
+  blue: "#3a6df0",
+  teal: "#14b3a5",
+  green: "#1fbf68",
+  purple: "#8a5cf0",
+  violet: "#8a5cf0",
+  pink: "#ec4899",
+  gray: "#7a7a7a",
+  grey: "#7a7a7a",
+};
+
+function hash(text: string): number {
+  let h = 0;
+  for (const ch of text) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return h;
+}
+
+/**
+ * The avatar to draw. A shape outside open-bot-avatar's set (formationd gives agents
+ * found elsewhere "round") becomes a set shape picked steadily from `seed`, so every
+ * agent shows a character rather than a blank square.
+ */
+function resolveAvatar(avatar: Avatar, seed = ""): Avatar {
+  const shape = avatar.shape in BOT_SHAPES ? avatar.shape : SHAPE_NAMES[hash(`${seed}|${avatar.shape}`) % SHAPE_NAMES.length];
+  const color = NAMED_COLORS[avatar.color.toLowerCase()] ?? avatar.color;
+  return { shape, color };
+}
+
+export default function AgentAvatar({ avatar, size = 40, state, ownerInitial, working = state === "working", seed }: AgentAvatarProps) {
+  const shown = resolveAvatar(avatar, seed);
   return (
     <span
-      className={known ? "ava" : "ava sq"}
+      className="ava"
       aria-hidden="true"
-      data-shape={avatar.shape}
-      data-color={avatar.color}
+      data-shape={shown.shape}
+      data-color={shown.color}
       data-size={size}
       data-state={state}
       data-motion={working ? "working" : undefined}
-      style={{ "--size": `${size}px`, "--c": avatar.color } as CSSProperties}
+      style={{ "--size": `${size}px`, "--c": shown.color } as CSSProperties}
     >
-      <BotShapeSvg shape={avatar.shape} color={avatar.color} />
+      <BotShapeSvg shape={shown.shape} color={shown.color} />
       {ownerInitial ? <span className="owner-initial">{ownerInitial}</span> : null}
     </span>
   );
