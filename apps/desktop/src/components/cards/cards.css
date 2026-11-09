@@ -1,10 +1,12 @@
 /* SC-005 request and permission cards: screen-specific rules from the
    approved mockup (documentations/mockups/index.html). The card shell
    (.icard), buttons and .row-actions come from the shared styles. */
-.tagpill { margin-left: auto; font-size: 11px; font-weight: 600; background: var(--sec); border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
-.code { font-family: var(--mono); font-size: 12.5px; background: var(--sec); border-radius: 10px; padding: 9px 12px; white-space: pre-wrap; word-break: break-word; }
+.tagpill { margin-left: auto; font-size: 11px; font-weight: 600; color: var(--text2); background: var(--sec); border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+.code { font-family: var(--mono); font-size: 12.5px; background: var(--sec); border: 1px solid var(--sep); border-radius: 12px; padding: 9px 12px; white-space: pre-wrap; word-break: break-word; }
 .icard pre.code { margin: 0; }
 .icard pre.code code { font: inherit; }
 .icard .row-actions { margin-top: 10px; }
 .icard p.small { margin: 8px 0 0; }
 .icard .decision { margin: 8px 0 0; color: var(--text); font-size: 13px; }
+/* v2 Sky Glass: white cards with a hairline border and soft shadow. */
+.icard { border-radius: 16px; border: 1px solid var(--sep); background: var(--card); box-shadow: var(--soft); }

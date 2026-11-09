@@ -1,15 +1,16 @@
 /* SC-002 Menu bar panel: screen-specific rules from the approved mockup
    (documentations/mockups/index.html). The panel fills its own window, so
    the mockup's absolute position under the menu bar is not copied. */
-.mb-panel { background: var(--win); min-height: 100%; overflow: hidden; padding-bottom: 6px; }
+.mb-panel { background: var(--popover-tint); -webkit-backdrop-filter: blur(30px) saturate(1.6); backdrop-filter: blur(30px) saturate(1.6); min-height: 100%; overflow: hidden; padding-bottom: 6px; border-radius: 20px; }
 .mb-panel .head { padding: 14px 16px 10px; }
-.mb-panel .head b { font-size: 14px; }
+.mb-panel .head b { font-size: 14px; font-weight: 700; }
+.mb-panel .head p { color: var(--text2); font-size: 12px; }
 .mb-panel .head p { margin: 0; }
 .mb-panel .sec { padding: 4px 8px 6px; }
 .mb-panel .sec > div:first-child, .mb-panel .sec > h2 { font-size: 12px; font-weight: 600; color: var(--text2); padding: 4px 8px; margin: 0; }
 .mb-panel .sec .list { list-style: none; margin: 0; padding: 0; background: transparent; box-shadow: none; border-radius: 0; }
 .mb-panel .sec.actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 14px; }
-.mb-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 6px 8px; border-radius: 10px; border: 0; background: transparent; text-align: left; cursor: pointer; }
-.mb-row:hover { background: var(--sel); }
+.mb-row { display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px 8px; border-radius: 12px; border: 0; background: transparent; text-align: left; cursor: pointer; }
+.mb-row:hover { background: var(--hover); }
 .mb-row .r { margin-left: auto; color: var(--text3); font-size: 12px; }
 .mb-row .ago { color: var(--text3); font-size: 12px; }
