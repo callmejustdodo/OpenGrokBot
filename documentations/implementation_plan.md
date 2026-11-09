@@ -120,7 +120,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: A
 
 ### TASK-042: B's fakes: stub WhoIs, fake policy, peers, and request queue
-- Status: pending
+- Status: complete
 - References: [integration contract](#how-the-parts-join-integration-contract)
 - Prerequisites: TASK-002
 - Change locations: `crates/formation-core/testkit/` (`stub-whois`, `FakePolicy`, `FakePermissionGate`, `FakePeers`, `FakeRequestQueue`, in-memory `CollabStore`)
