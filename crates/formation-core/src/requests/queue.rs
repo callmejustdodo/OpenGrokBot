@@ -21,6 +21,7 @@ use formation_proto::request::{
 };
 
 use super::status::{check_transition, status_name};
+use crate::policy::approvals::RequestWatcher;
 use crate::ports::{CollabStore, EventSink, Policy, RequestQueue, Result, RunProgress};
 
 /// Updates waiting for a slow subscriber before it starts missing them.
@@ -100,6 +101,27 @@ impl Requests {
         requester: MemberId,
         body: PeerRequestCreate,
     ) -> Result<WorkRequest> {
+        self.create_inner(requester, body, true).await
+    }
+
+    /// [`Requests::create`] for a caller the peer server has already checked
+    /// with [`Policy::check_request`]: the same checks except that one. The
+    /// policy counts each check against the member's per-minute limit, so
+    /// checking again here would count one request twice.
+    pub async fn create_authorized(
+        &self,
+        requester: MemberId,
+        body: PeerRequestCreate,
+    ) -> Result<WorkRequest> {
+        self.create_inner(requester, body, false).await
+    }
+
+    async fn create_inner(
+        &self,
+        requester: MemberId,
+        body: PeerRequestCreate,
+        check_policy: bool,
+    ) -> Result<WorkRequest> {
         require_text("prompt", &body.prompt)?;
         require_text("idempotency_key", &body.idempotency_key)?;
         if let Some(existing) = self.existing(requester, &body)? {
@@ -120,12 +142,14 @@ impl Requests {
             ));
         }
         check_chain_depth(body.chain.depth)?;
-        let caller = Caller::Member {
-            member_id: requester,
-            via_agent: body.via_agent.clone(),
-            chain: body.chain,
-        };
-        self.policy.check_request(&caller, body.agent_id).await?;
+        if check_policy {
+            let caller = Caller::Member {
+                member_id: requester,
+                via_agent: body.via_agent.clone(),
+                chain: body.chain,
+            };
+            self.policy.check_request(&caller, body.agent_id).await?;
+        }
 
         let owner = self
             .collab
@@ -164,6 +188,21 @@ impl Requests {
             .request(id)?
             .filter(|request| request.requester == requester)
             .ok_or_else(request_not_found)
+    }
+
+    /// Every request sent to this Mac's agents, as the owner sees it (unmasked),
+    /// for the peer server to choose what to send requesters again. Empty when
+    /// this Mac has no team yet.
+    pub fn owned(&self) -> Result<Vec<WorkRequest>> {
+        let Some(me) = self.collab.me()? else {
+            return Ok(Vec::new());
+        };
+        Ok(self
+            .collab
+            .requests()?
+            .into_iter()
+            .filter(|request| request.owner == me)
+            .collect())
     }
 
     /// Cancels before the run starts: `POST /v1/requests/{id}/cancel` from the
@@ -425,6 +464,17 @@ impl Requests {
             }
         }
         Ok(None)
+    }
+}
+
+/// Approvals change a request in the store directly; this sends each change to
+/// [`Requests::subscribe`] like the queue's own, so the requester sees it.
+/// Clients already got `request.update` from approvals, so it is not published
+/// on the event sink again.
+impl RequestWatcher for Requests {
+    fn request_changed(&self, request: &WorkRequest) {
+        // No receiver is fine: no teammate is connected right now.
+        let _ = self.updates.send(super::outgoing::for_requester(request));
     }
 }
 

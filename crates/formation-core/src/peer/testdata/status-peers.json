@@ -1,0 +1,89 @@
+{
+  "Version": "1.104.2-t0000000000-g0000000000",
+  "TUN": true,
+  "BackendState": "Running",
+  "HaveNodeKey": true,
+  "AuthURL": "",
+  "TailscaleIPs": [
+    "100.101.102.103",
+    "fd7a:115c:a1e0::1234:5678"
+  ],
+  "Self": {
+    "ID": "nEXAMPLE0001CNTRL",
+    "PublicKey": "nodekey:0000000000000000000000000000000000000000000000000000000000000001",
+    "HostName": "Alices-MacBook-Pro",
+    "DNSName": "alice-mbp.tail0000.ts.net.",
+    "OS": "macOS",
+    "UserID": 2000000000000002,
+    "TailscaleIPs": [
+      "100.101.102.103",
+      "fd7a:115c:a1e0::1234:5678"
+    ],
+    "Online": true,
+    "Active": false
+  },
+  "Health": [],
+  "MagicDNSSuffix": "tail0000.ts.net",
+  "CurrentTailnet": {
+    "Name": "example.com",
+    "MagicDNSSuffix": "tail0000.ts.net",
+    "MagicDNSEnabled": true
+  },
+  "CertDomains": null,
+  "Peer": {
+    "nodekey:0000000000000000000000000000000000000000000000000000000000000002": {
+      "ID": "nEXAMPLE0002CNTRL",
+      "PublicKey": "nodekey:0000000000000000000000000000000000000000000000000000000000000002",
+      "HostName": "Bobs-MacBook-Air",
+      "DNSName": "bob-mba.tail0000.ts.net.",
+      "OS": "macOS",
+      "UserID": 2000000000000003,
+      "TailscaleIPs": [
+        "fd7a:115c:a1e0::2222:3333",
+        "100.88.77.66"
+      ],
+      "Online": true,
+      "LastSeen": "0001-01-01T00:00:00Z",
+      "Active": true
+    },
+    "nodekey:0000000000000000000000000000000000000000000000000000000000000003": {
+      "ID": "nEXAMPLE0003CNTRL",
+      "PublicKey": "nodekey:0000000000000000000000000000000000000000000000000000000000000003",
+      "HostName": "build-server",
+      "DNSName": "build-server.tail0000.ts.net.",
+      "OS": "linux",
+      "UserID": 2000000000000004,
+      "TailscaleIPs": [
+        "100.99.98.97",
+        "fd7a:115c:a1e0::4444:5555"
+      ],
+      "Tags": [
+        "tag:server"
+      ],
+      "Online": false,
+      "LastSeen": "2026-10-30T09:00:00Z",
+      "Active": false
+    },
+    "nodekey:0000000000000000000000000000000000000000000000000000000000000004": {
+      "ID": "nEXAMPLE0004CNTRL",
+      "PublicKey": "nodekey:0000000000000000000000000000000000000000000000000000000000000004",
+      "HostName": "carol-v6only",
+      "DNSName": "carol-v6.tail0000.ts.net.",
+      "OS": "macOS",
+      "UserID": 2000000000000005,
+      "TailscaleIPs": [
+        "fd7a:115c:a1e0::6666:7777"
+      ],
+      "Online": false,
+      "Active": false
+    }
+  },
+  "User": {
+    "2000000000000002": {
+      "ID": 2000000000000002,
+      "LoginName": "alice@example.com",
+      "DisplayName": "Alice Example"
+    }
+  },
+  "ClientVersion": null
+}

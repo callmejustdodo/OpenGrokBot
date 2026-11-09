@@ -26,6 +26,10 @@
 //! Top-level scalar fields are SQL columns; nested values are JSON text (see
 //! `migrations/2001_collab.sql`). Timestamps have fixed nanosecond precision, as in
 //! A's store, so text order is time order.
+//!
+//! It is also the persistent [`OutboxStore`](crate::peer::outbox::OutboxStore)
+//! (`outbox.rs`), which follows `MemoryOutboxStore` instead: entries load in the
+//! order they were first put, and removing an absent entry is not an error.
 
 use std::sync::Arc;
 
@@ -49,17 +53,25 @@ use crate::ports::{
 };
 use crate::store::SqliteStore;
 
+mod outbox;
 #[cfg(test)]
 mod tests;
 
-/// B's schema: the team tables (2000) and sharing, questions, requests, queues,
-/// approvals, and rules (2001). Pass it beside A's `store::MIGRATIONS`.
+/// B's schema: the team tables (2000); sharing, questions, requests, queues,
+/// approvals, and rules (2001); and the asker's outbox (2002, for
+/// [`OutboxStore`](crate::peer::outbox::OutboxStore)). Pass it beside A's
+/// `store::MIGRATIONS`.
 pub const COLLAB_MIGRATIONS: &[Migration] = &[
     crate::team::MIGRATIONS[0],
     Migration {
         version: 2001,
         name: "collaboration",
         sql: include_str!("migrations/2001_collab.sql"),
+    },
+    Migration {
+        version: 2002,
+        name: "outbox",
+        sql: include_str!("migrations/2002_outbox.sql"),
     },
 ];
 

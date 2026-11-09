@@ -56,6 +56,10 @@
 //! - [`outbox`] keeps questions and work requests for a teammate whose Mac is
 //!   offline and sends them in order when it is back (FR-016).
 //! - [`presence`] turns connections opening and closing into presence events.
+//!
+//! #179 adds the real adapters formationd wires in: [`tailnet`] identifies
+//! callers through Tailscale WhoIs and finds each teammate's peer server from
+//! their node in Tailscale's peer list.
 
 pub mod api;
 pub mod client;
@@ -66,6 +70,7 @@ pub mod outbox;
 pub mod presence;
 pub(crate) mod process;
 pub mod server;
+pub mod tailnet;
 pub mod tailscale;
 
 pub use identity::{
@@ -73,7 +78,8 @@ pub use identity::{
     WhoIsSource,
 };
 pub use server::{is_tailscale_ip, is_tailscale_ipv4};
-pub use tailscale::{SelfNode, Tailscale, Via};
+pub use tailnet::{DirectoryConfig, NodeAddressSource, TailnetDirectory, TailscaleCallers};
+pub use tailscale::{NodeAddresses, SelfNode, Tailscale, Via};
 
 #[cfg(test)]
 mod loopback_test;
