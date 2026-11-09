@@ -6,7 +6,7 @@
 use std::ops::Range;
 
 use formation_proto::agent::{Activity, Agent, Attention, AttentionTarget, Schedule, ScheduleRun};
-use formation_proto::common::{ActivityId, AgentId, ScheduleId, Timestamp};
+use formation_proto::common::{ActivityId, AgentId, MemberId, ScheduleId, Timestamp};
 use formation_proto::harness::SessionInfo;
 use formation_proto::snapshot::Settings;
 
@@ -57,6 +57,13 @@ pub trait ScheduleRepo {
     fn put_schedule(&self, schedule: &Schedule) -> Result<()>;
     fn delete_schedule(&self, id: ScheduleId) -> Result<()>;
     fn put_schedule_run(&self, run: &ScheduleRun) -> Result<()>;
+    /// Runs for the schedule, newest first.
+    fn schedule_runs(
+        &self,
+        schedule_id: ScheduleId,
+        before: Option<Timestamp>,
+        limit: u32,
+    ) -> Result<Vec<ScheduleRun>>;
 }
 
 pub trait AttentionRepo {
@@ -69,9 +76,11 @@ pub trait AttentionRepo {
 
 pub trait ActivityRepo {
     fn record_activity(&self, activity: &Activity) -> Result<()>;
+    /// Filters by agent and member before applying the limit for `history_list`.
     fn activity(
         &self,
         agent_id: Option<AgentId>,
+        member_id: Option<MemberId>,
         before: Option<Timestamp>,
         limit: u32,
     ) -> Result<Vec<Activity>>;

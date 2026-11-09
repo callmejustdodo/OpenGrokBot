@@ -345,6 +345,8 @@ pub struct AgentUpdate {
     pub repositories: Option<Vec<PathBuf>>,
 }
 
+/// Detected agents (sessions started outside Formation) are read and fork only
+/// (#14); returns `harness_unsupported` for them.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct AgentStart {
@@ -423,6 +425,15 @@ pub struct ScheduleDelete {
     pub schedule_id: ScheduleId,
 }
 
+/// Schedule run history (SC-007), newest first.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct ScheduleRunList {
+    pub schedule_id: ScheduleId,
+    pub before: Option<Timestamp>,
+    pub limit: u32,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct HistoryList {
@@ -454,6 +465,7 @@ commands! {
     ScheduleCreate => "schedule_create" -> Schedule;
     ScheduleUpdate => "schedule_update" -> Schedule;
     ScheduleDelete => "schedule_delete" -> ();
+    ScheduleRunList => "schedule_run_list" -> Vec<ScheduleRun>;
     HistoryList => "history_list" -> Vec<Activity>;
     HistoryDelete => "history_delete" -> ();
 }
@@ -683,6 +695,11 @@ mod tests {
         assert_eq!(state, AgentState::Unknown);
         roundtrip(&HarnessUpdateEvent {
             harnesses: vec![harness_status()],
+        });
+        roundtrip(&ScheduleRunList {
+            schedule_id: ScheduleId::generate(),
+            before: Some(t0()),
+            limit: 10,
         });
         roundtrip(&ScheduleUpdate {
             schedule_id: ScheduleId::generate(),
