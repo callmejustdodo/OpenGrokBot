@@ -13,10 +13,11 @@ Formation is a proposed open-source macOS app and CLI for collaborating through 
 
 ## Checks
 
-The documentation check needs Node.js 18 or later and no packages. The Rust checks need a stable Rust toolchain with Clippy. The desktop checks need pnpm (the version is pinned in `apps/desktop/package.json`); run `pnpm -C apps/desktop install` first. CI runs them as the `documentation`, `rust` and `desktop` checks.
+The documentation check needs Node.js 18 or later and no packages. The Rust checks need a stable Rust toolchain with Clippy and rustfmt. The desktop checks need pnpm (the version is pinned in `apps/desktop/package.json`); run `pnpm -C apps/desktop install` first. CI runs them as the `documentation`, `rust` and `desktop` checks.
 
 ```sh
 node scripts/check-documentation.mjs    # local Markdown links and heading anchors resolve
+cargo fmt --all -- --check              # Rust formatting
 cargo test --workspace                  # Rust unit and integration tests, including the app's Rust side
 cargo clippy --workspace -- -D warnings # Rust lint
 pnpm -C apps/desktop lint               # ESLint
