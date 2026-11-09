@@ -136,8 +136,17 @@ impl Default for DirectoryConfig {
 /// each member joined from (`Member::tailscale_node`, checked on every peer
 /// call). The address is that node's tailnet IPv4 in Tailscale's status, with
 /// [`PEER_PORT`]. For the creator, the address in the team record (the
-/// invitation link's host and port) is the fallback when the node is not in
-/// the list, or Tailscale cannot be read.
+/// invitation link's host and port) is the fallback only while Tailscale's
+/// list cannot be read (no read has succeeded yet, or the last one failed).
+/// A list read successfully that leaves the creator's node out is believed:
+/// the node may have been tagged or reassigned, and the invitation's host
+/// most likely names that same node, which must not be sent a member's
+/// questions.
+///
+/// Only current members have an address. [`TeamRepo::member`] also finds
+/// removed members, so the lookup goes through the roster instead: the
+/// outbox keeps retrying a removed member's entries, and their Mac may still
+/// accept them until it hears of the removal.
 ///
 /// The [`PeerDirectory`] methods are synchronous and the peer client calls
 /// them from async tasks, on every call and reconnect. So the peer list is
@@ -182,7 +191,9 @@ impl TailnetDirectory {
         self.cache.start_read(&mut state, &self.config);
     }
 
-    fn tailnet_address(&self, node: &str) -> Option<Ipv4Addr> {
+    /// The node's address, and whether the list it came from can be trusted to
+    /// say a node is absent (a read succeeded, and the last read did not fail).
+    fn tailnet_address(&self, node: &str) -> (Option<Ipv4Addr>, bool) {
         let mut state = self.cache.lock();
         let fresh = state
             .read_at
@@ -190,7 +201,7 @@ impl TailnetDirectory {
         if let Some(ip) = state.nodes.get(node).copied()
             && fresh
         {
-            return Some(ip);
+            return (Some(ip), true);
         }
         let generation = state.generation;
         let reading = self.cache.start_read(&mut state, &self.config);
@@ -200,7 +211,8 @@ impl TailnetDirectory {
                 .wait_for_read(state, generation, self.config.wait);
         }
         // A stale address is still the best guess while the list cannot be read.
-        state.nodes.get(node).copied()
+        let listed = state.read_at.is_some() && !state.last_read_failed;
+        (state.nodes.get(node).copied(), listed)
     }
 
     fn creator_address(&self, member: &Member) -> Option<String> {
@@ -223,10 +235,17 @@ impl PeerDirectory for TailnetDirectory {
     }
 
     fn address(&self, member: MemberId) -> Option<String> {
-        let member = self.team.member(member).ok()??;
+        // Not `TeamRepo::member`, which also finds removed members.
+        let member = self
+            .team
+            .members()
+            .ok()?
+            .into_iter()
+            .find(|candidate| candidate.id == member)?;
         match self.tailnet_address(&member.tailscale_node) {
-            Some(ip) => Some(SocketAddr::from((ip, PEER_PORT)).to_string()),
-            None => self.creator_address(&member),
+            (Some(ip), _) => Some(SocketAddr::from((ip, PEER_PORT)).to_string()),
+            (None, false) => self.creator_address(&member),
+            (None, true) => None,
         }
     }
 }
@@ -243,6 +262,8 @@ struct CacheState {
     nodes: HashMap<String, Ipv4Addr>,
     /// When `nodes` was last read successfully.
     read_at: Option<Instant>,
+    /// Whether the last finished read failed.
+    last_read_failed: bool,
     /// When a read last started, successful or not.
     started_at: Option<Instant>,
     reading: bool,
@@ -275,6 +296,7 @@ impl NodeCache {
             .spawn(move || {
                 let result = cache.source.node_addresses();
                 let mut state = cache.lock();
+                state.last_read_failed = result.is_err();
                 if let Ok(nodes) = result {
                     state.nodes = nodes;
                     state.read_at = Some(Instant::now());
@@ -681,6 +703,49 @@ mod tests {
         w.source.set(&w.creator.tailscale_node, None);
         let fresh = TailnetDirectory::with_source(w.store.clone(), w.source.clone(), quick());
         assert_eq!(fresh.address(w.creator.id), None);
+    }
+
+    #[test]
+    fn a_list_that_leaves_out_the_creators_node_is_believed() {
+        let w = world(quick(), "dohyeon-mbp.tail0000.ts.net");
+        // Read successfully; the creator's node is not in it (tagged, say).
+        w.source.set(&w.bob.tailscale_node, Some(BOB_IP));
+        assert_eq!(w.directory.address(w.creator.id), None);
+        assert_eq!(w.source.reads(), 1);
+
+        // Once a read fails, the invitation's host is the best guess again.
+        let config = DirectoryConfig {
+            min_refresh_interval: Duration::ZERO,
+            max_age: Duration::ZERO,
+            ..quick()
+        };
+        let w = world(config, "dohyeon-mbp.tail0000.ts.net");
+        assert_eq!(w.directory.address(w.creator.id), None);
+        *w.source.fail.lock().unwrap() = true;
+        assert_eq!(
+            w.directory.address(w.creator.id),
+            Some("dohyeon-mbp.tail0000.ts.net:7413".into())
+        );
+    }
+
+    #[test]
+    fn removed_members_have_no_address() {
+        let w = world(quick(), "dohyeon-mbp.tail0000.ts.net");
+        w.source.set(&w.bob.tailscale_node, Some(BOB_IP));
+        w.source.set(&w.creator.tailscale_node, Some(CREATOR_IP));
+        assert!(w.directory.address(w.bob.id).is_some());
+        assert!(w.directory.address(w.creator.id).is_some());
+        w.store.remove_member(w.bob.id, now()).unwrap();
+        w.store.remove_member(w.creator.id, now()).unwrap();
+        assert_eq!(w.directory.address(w.bob.id), None);
+        assert_eq!(w.directory.address(w.creator.id), None);
+
+        // Nor does a removed creator fall back to the invitation's host.
+        let w = world(quick(), "dohyeon-mbp.tail0000.ts.net");
+        *w.source.fail.lock().unwrap() = true;
+        assert!(w.directory.address(w.creator.id).is_some());
+        w.store.remove_member(w.creator.id, now()).unwrap();
+        assert_eq!(w.directory.address(w.creator.id), None);
     }
 
     #[test]
