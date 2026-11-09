@@ -27,8 +27,8 @@ Each role is one person and their coding agent. A role changes only the paths it
 
 | Role | Area | Owns (paths) |
 | --- | --- | --- |
-| **A · Agent runtime** | formationd service, local storage, Claude Code (later Codex) harness supervisor, agent folders, schedules, detection, notifications | `crates/formationd/`, `crates/formation-core/src/{service,store,harness,agents,schedules,notify}/`, migrations `1000–1999` and the migration runner, proto files `common.rs`, `agent.rs`, `harness.rs`, and the `Harness`, `Store`, `Notifier` traits |
-| **B · Collaboration core** | Team and identity, Tailscale peer protocol, policy and approvals, the permission gate (Claude Code permission tool and `PreToolUse` hook), ask pipeline, work requests, CLI and MCP | `crates/formation-core/src/{team,peer,policy,permission,ask,requests}/`, `crates/formation-cli/`, migrations `2000–2999`, proto files `team.rs`, `peer.rs`, `policy.rs`, `ask.rs`, `request.rs`, and the `Policy`, `PermissionGate`, `Peers`, `RequestQueue` traits |
+| **A · Agent runtime** | formationd service, local storage, Claude Code (later Codex) harness supervisor, agent folders, schedules, detection, notifications | `crates/formationd/`, `crates/formation-core/src/{service,store,harness,agents,schedules,notify}/`, migrations `1000–1999` and the migration runner, proto files `common.rs`, `agent.rs`, `harness.rs`, and the `Harness`, `Store`, `Notifier`, `EventSink`, `CommandHandler` traits |
+| **B · Collaboration core** | Team and identity, Tailscale peer protocol, policy and approvals, the permission gate (Claude Code permission tool and `PreToolUse` hook), ask pipeline, work requests, CLI and MCP | `crates/formation-core/src/{team,peer,policy,permission,ask,requests}/`, `crates/formation-cli/`, migrations `2000–2999`, proto files `team.rs`, `peer.rs`, `policy.rs`, `ask.rs`, `request.rs`, and the `CollabStore`, `Policy`, `PermissionGate`, `Peers`, `RequestQueue` traits |
 | **C · App** | Tauri client, LaunchAgent registration from the app, tray, menus, windows, notifications bridge, IPC, store, view logic, `fake-formationd` | `apps/desktop/src-tauri/`, `apps/desktop/src/{ipc,store,views}/`, window entries, `tools/fake-formationd/`, proto files `snapshot.rs`, `events.rs` (the envelope; each event payload lives with its domain owner) |
 | **D · Design** | Design tokens, component styles, avatars, Korean and English copy, preview page, visual QA against M3 | `apps/desktop/src/styles/`, `apps/desktop/src/**/*.css`, `apps/desktop/src/i18n/`, `apps/desktop/src/preview/` |
 
@@ -37,8 +37,8 @@ Shared component `.tsx` files in `apps/desktop/src/components/` and `ui/` are co
 ## How the parts join (integration contract)
 
 1. **Contract written together at kickoff (TASK-002).** In the first 30 to 45 minutes, A, B, and C write `formation-proto` and the port traits in one pull request, each in the files their role owns. After it merges, changes are additive only; a breaking change needs approval from all four roles.
-2. **Ports and adapters.** `formation-core/src/ports.rs` re-exports the traits: `Harness`, `Store`, `Notifier` (A); `Policy`, `PermissionGate`, `Peers`, `RequestQueue` (B). A module never imports another module's internals; `formationd` wires the real adapters.
-3. **Each role builds the fakes it needs others to use.** A ships `fake-claude` (replays recorded `stream-json`), `FakeHarness`, and an in-memory `Store` (TASK-003). B ships `stub-whois`, `FakePolicy`, `FakePermissionGate`, `FakePeers`, and `FakeRequestQueue` (TASK-042). C ships `fake-formationd`, which serves the mockup's sample snapshot and events (TASK-043). Each real piece replaces its fake by configuration (`FORMATION_FAKE=…`), not by code edits.
+2. **Ports and adapters.** `formation-core/src/ports.rs` re-exports the traits, one file per port under `ports/`: `Harness`, `Store`, `Notifier`, `EventSink`, `CommandHandler` (A); `CollabStore`, `Policy`, `PermissionGate`, `Peers`, `RequestQueue` (B). Each role implements one `CommandHandler` for the commands its proto files define, and the service routes each method to it. A module never imports another module's internals; `formationd` wires the real adapters.
+3. **Each role builds the fakes it needs others to use.** A ships `fake-claude` (replays recorded `stream-json`), `FakeHarness`, an in-memory `Store`, and a recording `EventSink` (TASK-003). B ships `stub-whois`, `FakePolicy`, `FakePermissionGate`, `FakePeers`, `FakeRequestQueue`, and an in-memory `CollabStore` (TASK-042). C ships `fake-formationd`, which serves the mockup's sample snapshot and events (TASK-043). Each real piece replaces its fake by configuration (`FORMATION_FAKE=…`), not by code edits.
 4. **Dependencies point at interfaces.** Before an integration checkpoint, no task waits for another role's implementation; it uses the port and its fake. Real pieces meet only at IC-1, IC-2, and IC-3.
 5. **No shared files between roles.** Migrations use numbered ranges per role (A `1000–1999`, B `2000–2999`); proto is split into per-role files; i18n keys are grouped per view; CSS lives beside each component.
 6. **Branches and merges.** One branch and one pull request per task, named `feat/<area>-task-NNN` (for example `feat/harness-task-013`), squash-merged to `main` per `AGENTS.md`. `main` stays green: every pull request runs the checks in [Commands](#commands).
@@ -97,11 +97,11 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: A (about 15 minutes; B and C draft their proto files meanwhile)
 
 ### TASK-002: The contract exists as types and ports
-- Status: pending
+- Status: in progress
 - References: [UI ↔ formationd](4_techspec.md#ui--formationd), [peer protocol](4_techspec.md#peer-protocol-over-the-tailnet), [CLI and MCP](4_techspec.md#cli-formation-and-mcp-server), [error codes](6_backend_architecture.md#error-codes), [data model](4_techspec.md#data-model)
 - Prerequisites: TASK-001
-- Change locations: `crates/formation-proto/src/` (per-role files listed in [Roles and ownership](#roles-and-ownership)), `crates/formation-core/src/ports.rs`, generated `apps/desktop/src/ipc/generated.ts`
-- Work: each role writes its commands, events (payloads with per-stream sequence numbers), snapshot parts, peer payloads, CLI JSON, error codes, and port traits; C writes the snapshot and event envelope; choose `ts-rs` or `tauri-specta` for TypeScript generation.
+- Change locations: `crates/formation-proto/src/` (per-role files listed in [Roles and ownership](#roles-and-ownership)), `crates/formation-core/src/ports.rs` and `ports/`, TypeScript generated by `ts-rs` for `apps/desktop/src/ipc/`
+- Work: each role writes its commands, events (payloads with per-stream sequence numbers), snapshot parts, peer payloads, CLI JSON, error codes, and port traits; C writes the snapshot and event envelope; generate TypeScript with `ts-rs` (chosen in #18).
 - Interfaces: produces every name used by later tasks.
 - Acceptance criteria: one pull request co-authored by A, B, and C; types compile; TypeScript is generated in the build; all three approve.
 - Verification: `cargo test -p formation-proto` (serialization round-trips); `pnpm -C apps/desktop typecheck`.
@@ -113,8 +113,8 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Status: pending
 - References: [integration contract](#how-the-parts-join-integration-contract)
 - Prerequisites: TASK-002
-- Change locations: `crates/formation-core/testkit/` (`fake-claude` replay binary, `FakeHarness`, in-memory `Store`)
-- Work: `fake-claude` replays recorded `stream-json` (seeded with a hand-written transcript until TASK-004 records real ones); `FakeHarness` exposes session IDs, transcript paths, and scripted turns; the in-memory `Store` implements every repository in the port.
+- Change locations: `crates/formation-core/testkit/` (`fake-claude` replay binary, `FakeHarness`, in-memory `Store`, recording `EventSink`)
+- Work: `fake-claude` replays recorded `stream-json` (seeded with a hand-written transcript until TASK-004 records real ones); `FakeHarness` exposes session IDs, transcript paths, and scripted turns; the in-memory `Store` implements A's repositories; the recording `EventSink` keeps published events for assertions.
 - Acceptance criteria: B can run ask and team code against `FakeHarness` and the in-memory store without A's real modules.
 - Verification: `cargo test -p formation-core --features testkit`.
 - Owner: A
@@ -123,7 +123,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Status: pending
 - References: [integration contract](#how-the-parts-join-integration-contract)
 - Prerequisites: TASK-002
-- Change locations: `crates/formation-core/testkit/` (`stub-whois`, `FakePolicy`, `FakePermissionGate`, `FakePeers`, `FakeRequestQueue`)
+- Change locations: `crates/formation-core/testkit/` (`stub-whois`, `FakePolicy`, `FakePermissionGate`, `FakePeers`, `FakeRequestQueue`, in-memory `CollabStore`)
 - Work: fakes with scriptable answers (allow, deny, unsure routing, queued requests).
 - Acceptance criteria: A can run the request executor and C's fake service can simulate approvals without B's real modules.
 - Verification: `cargo test -p formation-core --features testkit`.
@@ -217,7 +217,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - References: [data model](4_techspec.md#data-model), [storage](6_backend_architecture.md#storage-and-data-ownership)
 - Prerequisites: TASK-002
 - Change locations: `crates/formation-core/src/store/`, migration runner, A's migrations `1000–1999` (agents, sessions, schedules)
-- Work: SQLite in WAL mode at the documented path; migration runner that applies both ranges; repositories behind the `Store` port. B writes its own migrations `2000–2999` and repositories in its modules (TASK-017, TASK-019, TASK-023, TASK-025) using the runner.
+- Work: SQLite in WAL mode at the documented path; migration runner that applies both ranges; A's repositories behind the `Store` port. B writes its own migrations `2000–2999` and its repositories behind the `CollabStore` port in its modules (TASK-017, TASK-019, TASK-023, TASK-025) using the runner.
 - Acceptance criteria: a fresh start creates the schema; re-running is a no-op; adding B's migration files needs no change to A's files.
 - Verification: `cargo test -p formation-core store`.
 - Owner: A
@@ -279,7 +279,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 ### TASK-017: Team creation and joining
 - Status: pending
 - References: FR-008, US-008, US-020, SC-001, SC-013, D-046, TASK-007 results
-- Prerequisites: TASK-007, TASK-042 (uses the in-memory store from TASK-003 until TASK-011 merges)
+- Prerequisites: TASK-007, TASK-042 (uses the in-memory `CollabStore` from TASK-042 until TASK-011 merges)
 - Change locations: `crates/formation-core/src/team/`, B's migrations
 - Work: create team; expiring invitation code; join over Tailscale with GitHub login (MVP: from `gh api user`); roster; WhoIs-to-member mapping; removal.
 - Acceptance criteria: US-008 and US-020 criteria.
