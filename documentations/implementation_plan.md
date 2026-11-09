@@ -130,7 +130,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: B
 
 ### TASK-043: C's fake-formationd serves the mockup's world
-- Status: in progress
+- Status: complete
 - References: [data flow](5_frontend_architecture.md#data-flow), mockup M3 sample data
 - Prerequisites: TASK-002
 - Change locations: `tools/fake-formationd/` with fixtures
@@ -287,7 +287,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: B (can start during Phase 2)
 
 ### TASK-018: Peer protocol with outbox
-- Status: pending
+- Status: complete
 - References: [peer protocol](4_techspec.md#peer-protocol-over-the-tailnet), FR-016
 - Prerequisites: TASK-017
 - Change locations: `crates/formation-core/src/peer/`
