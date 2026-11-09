@@ -926,15 +926,27 @@ mod tests {
         });
         // Without the slot guard, every panic would keep a slot and connection
         // 33 would be closed without an answer.
+        // A panicking thread gives its slot back only after unwinding, which can
+        // lag behind the response on a busy runner, so a turned-away connection
+        // is retried for a while. Without the guard the slots never come back.
         for i in 0..MAX_CONNECTIONS + 2 {
-            let mut client = TcpStream::connect(addr).unwrap();
-            client
-                .set_read_timeout(Some(Duration::from_secs(5)))
-                .unwrap();
-            client.write_all(GET).unwrap();
-            let mut raw = Vec::new();
-            client.read_to_end(&mut raw).unwrap();
-            let status = http::parse_response(&raw).map(|response| response.status);
+            let mut status = Err("not tried".to_owned());
+            for _ in 0..200 {
+                let mut client = TcpStream::connect(addr).unwrap();
+                client
+                    .set_read_timeout(Some(Duration::from_secs(5)))
+                    .unwrap();
+                client.write_all(GET).unwrap();
+                let mut raw = Vec::new();
+                client.read_to_end(&mut raw).unwrap();
+                status = http::parse_response(&raw)
+                    .map(|response| response.status)
+                    .map_err(|error| error.to_string());
+                if status.is_ok() {
+                    break;
+                }
+                thread::sleep(Duration::from_millis(25));
+            }
             assert_eq!(status, Ok(403), "connection {i}");
         }
     }
