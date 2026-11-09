@@ -36,7 +36,8 @@ impl ClaudeSupervisor {
         let mut child = command
             .envs(&config.env)
             .env("CLAUDE_CONFIG_DIR", &config.config_dir)
-            .env("FORMATION_RUN_ID", fork.run_id.to_string())
+            .env(RUN_ID_ENV, fork.run_id.to_string())
+            .env(AGENT_ID_ENV, agent.id.to_string())
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
