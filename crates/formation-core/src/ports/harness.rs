@@ -3,7 +3,7 @@
 use async_trait::async_trait;
 use tokio::sync::broadcast;
 
-use formation_proto::agent::{Agent, AgentState, HarnessKind, HarnessStatus, StopMode};
+use formation_proto::agent::{Agent, HarnessKind, HarnessStatus, StopMode};
 use formation_proto::common::{AgentId, ItemId, RunId, SessionId};
 use formation_proto::harness::{
     AgentStreamEvent, ConversationPageResult, SessionInfo, TurnOutcome,
@@ -11,20 +11,6 @@ use formation_proto::harness::{
 use formation_proto::request::QueueItem;
 
 use super::Result;
-
-/// What a harness reports while it runs, for the UI. Receivers may lag and miss
-/// events (`broadcast`); nothing that must not be lost travels here.
-#[derive(Debug, Clone)]
-pub enum HarnessEvent {
-    SessionStarted(SessionInfo),
-    State {
-        agent_id: AgentId,
-        state: AgentState,
-        reason: Option<String>,
-        exit_code: Option<i32>,
-    },
-    Stream(AgentStreamEvent),
-}
 
 /// How a turn ended.
 #[derive(Debug, Clone, PartialEq)]
@@ -74,7 +60,8 @@ pub trait Harness: Send + Sync {
     async fn status(&self) -> HarnessStatus;
 
     /// Starts the agent's main session in its folder, resuming `resume` when given.
-    /// Does nothing when the session already runs.
+    /// Does nothing when the session already runs. Detected agents (sessions started
+    /// outside Formation) are read and fork only (#14); returns `harness_unsupported`.
     async fn start(&self, agent: &Agent, resume: Option<SessionId>) -> Result<SessionInfo>;
 
     /// Runs one turn with this queued message and returns when it ends. The executor
@@ -96,7 +83,8 @@ pub trait Harness: Send + Sync {
 
     /// Delivers an owner message into the running turn, effective at the next tool
     /// boundary (TASK-004: a default-priority message). `harness_unsupported` for a
-    /// harness that cannot steer.
+    /// harness that cannot steer or for a detected agent, which is read and fork only
+    /// (#14). Returns `conflict` when no turn is running.
     async fn steer(&self, agent_id: AgentId, item: QueueItem) -> Result<()>;
 
     /// Stops the running turn and keeps the session and process (TASK-004: the
@@ -121,5 +109,8 @@ pub trait Harness: Send + Sync {
         limit: u32,
     ) -> Result<ConversationPageResult>;
 
-    fn subscribe(&self) -> broadcast::Receiver<HarnessEvent>;
+    /// Stream events for the UI; receivers may lag and miss events (`broadcast`).
+    /// The adapter publishes numbered `agent.state` events through `EventSink` so
+    /// clients detect gaps, and stores sessions with `SessionRepo`.
+    fn subscribe(&self) -> broadcast::Receiver<AgentStreamEvent>;
 }

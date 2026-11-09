@@ -30,7 +30,7 @@ mod store;
 
 pub use commands::{CommandCall, CommandHandler};
 pub use events::EventSink;
-pub use harness::{ForkResult, ForkRun, ForkTools, Harness, HarnessEvent, RunInfo, TurnResult};
+pub use harness::{ForkResult, ForkRun, ForkTools, Harness, RunInfo, TurnResult};
 pub use notifier::Notifier;
 pub use peers::Peers;
 pub use permission::{PermissionGate, PermissionRequest};
