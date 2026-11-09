@@ -1,6 +1,6 @@
 //! Long-lived main-session processes. Each actor owns stdin and its FIFO queue.
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::{HashMap, HashSet, VecDeque},
     path::PathBuf,
     process::Stdio,
     sync::{Arc, Mutex},
@@ -85,6 +85,10 @@ struct Pending {
 }
 enum Control {
     Turn(Pending),
+    Steer(QueueItem, oneshot::Sender<Result<()>>),
+    SteerQueued(MessageId, oneshot::Sender<Result<()>>),
+    Edit(MessageId, String, oneshot::Sender<Result<QueueItem>>),
+    Withdraw(MessageId, oneshot::Sender<Result<()>>),
     Interrupt(oneshot::Sender<Result<()>>),
     Stop(StopMode, oneshot::Sender<Result<()>>),
 }
@@ -321,11 +325,28 @@ impl Harness for ClaudeSupervisor {
             "fork execution belongs to TASK-024",
         ))
     }
-    async fn steer(&self, _: AgentId, _: QueueItem) -> Result<()> {
-        Err(error(
-            ErrorCode::HarnessUnsupported,
-            "steering belongs to TASK-039",
-        ))
+    async fn steer(&self, id: AgentId, item: QueueItem) -> Result<()> {
+        let agent = self.agent(id)?;
+        if agent.harness != HarnessKind::ClaudeCode || agent.detected.is_some() {
+            return Err(error(
+                ErrorCode::HarnessUnsupported,
+                "detected agents are read and fork only",
+            ));
+        }
+        if item.agent_id != id {
+            return Err(error(
+                ErrorCode::InvalidParams,
+                "queue item belongs to another agent",
+            ));
+        }
+        if item.source != QueueSource::Owner {
+            return Err(error(ErrorCode::Denied, "only owner messages can steer"));
+        }
+        let (done, rx) = oneshot::channel();
+        self.sender(id)?
+            .send(Control::Steer(item, done))
+            .map_err(internal)?;
+        rx.await.map_err(internal)?
     }
     async fn interrupt(&self, id: AgentId) -> Result<()> {
         let (tx, rx) = oneshot::channel();
@@ -423,7 +444,36 @@ impl Harness for ClaudeSupervisor {
     }
 }
 
+fn queue_error(message_id: MessageId, started: &HashSet<MessageId>) -> ApiError {
+    if started.contains(&message_id) {
+        error(ErrorCode::Conflict, "message already started")
+    } else {
+        error(ErrorCode::NotFound, "queued message not found")
+    }
+}
+
 impl ClaudeSupervisor {
+    async fn send_steer(
+        &self,
+        id: AgentId,
+        stdin: &mut ChildStdin,
+        item: &QueueItem,
+    ) -> Result<()> {
+        write(stdin, protocol::encode_user_message(&item.text, None)).await?;
+        self.stream(
+            id,
+            StreamDelta::ItemCompleted {
+                item: ConversationItem::UserMessage {
+                    id: ItemId(item.id.to_string()),
+                    at: now(),
+                    author: Author::Owner,
+                    text: item.text.clone(),
+                },
+            },
+        );
+        Ok(())
+    }
+
     async fn supervise(
         &self,
         id: AgentId,
@@ -434,6 +484,8 @@ impl ClaudeSupervisor {
     ) {
         let mut queue = VecDeque::<Pending>::new();
         let mut active: Option<Pending> = None;
+        let mut steered = Vec::<Pending>::new();
+        let mut started = HashSet::new();
         let mut stopping = false;
         let mut stops = Vec::new();
         let mut interrupted = false;
@@ -448,6 +500,7 @@ impl ClaudeSupervisor {
                     break None;
                 }
                 if let Some(p) = queue.pop_front() {
+                    started.insert(p.item.id);
                     self.queue(id, &queue);
                     let info = RunInfo {
                         run_id: p.run_id,
@@ -501,6 +554,72 @@ impl ClaudeSupervisor {
                     Some(Control::Turn(p)) => {
                         if stopping {let _=p.done.send(Err(error(ErrorCode::Conflict,"agent is stopping")));}
                         else {queue.push_back(p);self.queue(id,&queue);}
+                    }
+                    Some(Control::Steer(item, done)) => {
+                        let result = if stopping {
+                            Err(error(ErrorCode::Conflict, "agent is stopping"))
+                        } else if active.is_none() {
+                            let (completion, _) = oneshot::channel();
+                            queue.push_back(Pending {run_id: RunId::generate(), item, done: completion});
+                            self.queue(id, &queue);
+                            Ok(())
+                        } else {
+                            let result = self.send_steer(id, &mut stdin, &item).await;
+                            if result.is_ok() {started.insert(item.id);}
+                            result
+                        };
+                        let fatal = result.as_ref().err().filter(|e| e.code == ErrorCode::Internal).cloned();
+                        let _ = done.send(result);
+                        if fatal.is_some() {break fatal;}
+                    }
+                    Some(Control::SteerQueued(message_id, done)) => {
+                        let result = if stopping {
+                            Err(error(ErrorCode::Conflict, "agent is stopping"))
+                        } else if let Some(index) = queue.iter().position(|p| p.item.id == message_id) {
+                            if queue[index].item.source != QueueSource::Owner {
+                                Err(error(ErrorCode::Denied, "only owner messages can steer"))
+                            } else if active.is_none() {
+                                // The queued message will dispatch normally when idle.
+                                Ok(())
+                            } else {
+                                match self.send_steer(id, &mut stdin, &queue[index].item).await {
+                                    Ok(()) => {
+                                        started.insert(message_id);
+                                        steered.push(queue.remove(index).unwrap());
+                                        self.queue(id, &queue);
+                                        Ok(())
+                                    }
+                                    Err(e) => Err(e),
+                                }
+                            }
+                        } else {
+                            Err(queue_error(message_id, &started))
+                        };
+                        let fatal = result.as_ref().err().filter(|e| e.code == ErrorCode::Internal).cloned();
+                        let _ = done.send(result);
+                        if fatal.is_some() {break fatal;}
+                    }
+                    Some(Control::Edit(message_id, text, done)) => {
+                        let result = if let Some(p) = queue.iter_mut().find(|p| p.item.id == message_id) {
+                            p.item.text = text;
+                            let item = p.item.clone();
+                            self.queue(id, &queue);
+                            Ok(item)
+                        } else {
+                            Err(queue_error(message_id, &started))
+                        };
+                        let _ = done.send(result);
+                    }
+                    Some(Control::Withdraw(message_id, done)) => {
+                        let result = if let Some(index) = queue.iter().position(|p| p.item.id == message_id) {
+                            let p = queue.remove(index).unwrap();
+                            let _ = p.done.send(Err(error(ErrorCode::Conflict, "message withdrawn")));
+                            self.queue(id, &queue);
+                            Ok(())
+                        } else {
+                            Err(queue_error(message_id, &started))
+                        };
+                        let _ = done.send(result);
                     }
                     Some(Control::Interrupt(done)) => {
                         let result = if active.is_some() {interrupted=true;write(&mut stdin,protocol::encode_interrupt(&RunId::generate().to_string())).await} else {Err(error(ErrorCode::Conflict,"no running turn"))};
@@ -562,7 +681,9 @@ impl ClaudeSupervisor {
                                 self.stream(id,StreamDelta::TurnEnded{message_id:p.item.id,outcome});
                                 self.inner.agents.lock().unwrap().get_mut(&id).unwrap().run=None;
                                 self.state(id,if outcome==TurnOutcome::Failed {AgentState::Error} else {AgentState::Idle},result.terminal_reason,None);
-                                let _=p.done.send(Ok(TurnResult{outcome,result:result.result}));
+                                let turn_result = TurnResult{outcome,result:result.result};
+                                let _=p.done.send(Ok(turn_result.clone()));
+                                for p in steered.drain(..) {let _ = p.done.send(Ok(turn_result.clone()));}
                             }
                         }
                         _=>{}
@@ -590,6 +711,9 @@ impl ClaudeSupervisor {
             );
             let _ = p.done.send(Err(cancelled.clone()));
         }
+        for p in steered.drain(..) {
+            let _ = p.done.send(Err(cancelled.clone()));
+        }
         for p in queue.drain(..) {
             let _ = p.done.send(Err(cancelled.clone()));
         }
@@ -599,7 +723,13 @@ impl ClaudeSupervisor {
                     let _ = p.done.send(Err(cancelled.clone()));
                 }
                 Control::Stop(_, done) => stops.push(done),
-                Control::Interrupt(done) => {
+                Control::Edit(_, _, done) => {
+                    let _ = done.send(Err(cancelled.clone()));
+                }
+                Control::Steer(_, done)
+                | Control::SteerQueued(_, done)
+                | Control::Withdraw(_, done)
+                | Control::Interrupt(done) => {
                     let _ = done.send(Err(cancelled.clone()));
                 }
             }
@@ -643,6 +773,9 @@ impl CommandHandler for ClaudeSupervisor {
             "agent_start",
             "agent_stop",
             "agent_message_send",
+            "agent_message_steer",
+            "agent_message_edit",
+            "agent_message_withdraw",
             "agent_turn_interrupt",
             "conversation_page",
         ]
@@ -688,6 +821,42 @@ impl CommandHandler for ClaudeSupervisor {
                 // Enqueue before returning; execution continues independently of the socket call.
                 let _completion = self.enqueue(p.agent_id, RunId::generate(), item.clone())?;
                 value(item)
+            }
+            "agent_message_steer" => {
+                let p: AgentMessageSteer = params(call.params)?;
+                let agent = self.agent(p.agent_id)?;
+                if agent.harness != HarnessKind::ClaudeCode || agent.detected.is_some() {
+                    return Err(error(
+                        ErrorCode::HarnessUnsupported,
+                        "detected agents are read and fork only",
+                    ));
+                }
+                let (done, rx) = oneshot::channel();
+                self.sender(p.agent_id)?
+                    .send(Control::SteerQueued(p.message_id, done))
+                    .map_err(internal)?;
+                rx.await.map_err(internal)??;
+                value(())
+            }
+            "agent_message_edit" => {
+                let p: AgentMessageEdit = params(call.params)?;
+                if p.text.trim().is_empty() {
+                    return Err(error(ErrorCode::InvalidParams, "message must not be empty"));
+                }
+                let (done, rx) = oneshot::channel();
+                self.sender(p.agent_id)?
+                    .send(Control::Edit(p.message_id, p.text, done))
+                    .map_err(internal)?;
+                value(rx.await.map_err(internal)??)
+            }
+            "agent_message_withdraw" => {
+                let p: AgentMessageWithdraw = params(call.params)?;
+                let (done, rx) = oneshot::channel();
+                self.sender(p.agent_id)?
+                    .send(Control::Withdraw(p.message_id, done))
+                    .map_err(internal)?;
+                rx.await.map_err(internal)??;
+                value(())
             }
             "agent_turn_interrupt" => {
                 let p: AgentTurnInterrupt = params(call.params)?;
