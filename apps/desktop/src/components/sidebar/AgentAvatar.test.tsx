@@ -30,3 +30,25 @@ describe("AgentAvatar motion (D-042)", () => {
     expect(ava(<AgentAvatar avatar={avatar} state="working" />).querySelectorAll(".eye")).toHaveLength(2);
   });
 });
+
+describe("AgentAvatar unknown shapes", () => {
+  it("draws a set character for a shape formationd sends outside open-bot-avatar", () => {
+    const el = ava(<AgentAvatar avatar={{ shape: "round", color: "blue" }} seed="agent-1" />);
+    expect(el).not.toHaveClass("sq");
+    expect(el.querySelector("svg path")).not.toBeNull();
+    expect(el).toHaveAttribute("data-color", "#3a6df0");
+  });
+
+  it("picks the same shape for the same agent every time", () => {
+    const a = ava(<AgentAvatar avatar={{ shape: "round", color: "blue" }} seed="agent-1" />).getAttribute("data-shape");
+    const b = ava(<AgentAvatar avatar={{ shape: "round", color: "blue" }} seed="agent-1" />).getAttribute("data-shape");
+    expect(a).toBe(b);
+    expect(a).not.toBe("round");
+  });
+
+  it("keeps a known shape and color as they are", () => {
+    const el = ava(<AgentAvatar avatar={avatar} />);
+    expect(el).toHaveAttribute("data-shape", "rocket");
+    expect(el).toHaveAttribute("data-color", "#5B8DEF");
+  });
+});
