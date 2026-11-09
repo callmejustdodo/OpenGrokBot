@@ -4,6 +4,7 @@
 // The collapse button hides it; the conversation header's panel button brings it back.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import i18n from "../../i18n";
 import "./info-panel.css";
 import type { AgentId } from "../../ipc/generated/AgentId";
 import type { MemberId } from "../../ipc/generated/MemberId";
@@ -16,7 +17,7 @@ import AgentAvatar, { PersonAvatar } from "../sidebar/AgentAvatar";
 import { harnessLabel, stateLabel } from "../sidebar/labels";
 
 function when(at: string | null): string {
-  return at ? new Date(at).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "";
+  return at ? new Date(at).toLocaleString(i18n.language, { dateStyle: "medium", timeStyle: "short" }) : "";
 }
 
 function CollapseButton() {

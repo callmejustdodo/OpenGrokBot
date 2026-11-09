@@ -4,6 +4,7 @@
 import type { TFunction } from "i18next";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import i18n from "../../i18n";
 import PermissionCard from "../../components/cards/PermissionCard";
 import RequestCard from "../../components/cards/RequestCard";
 import { stepLine } from "../../components/sidebar/labels";
@@ -136,7 +137,7 @@ export default function Messages({ items }: { items: readonly ConversationItem[]
           {separator ? (
             <div className="sep-t">
               <time dateTime={separator}>
-                {new Date(separator).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}
+                {new Date(separator).toLocaleString(i18n.language, { dateStyle: "medium", timeStyle: "short" })}
               </time>
             </div>
           ) : null}
