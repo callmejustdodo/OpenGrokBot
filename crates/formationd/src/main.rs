@@ -8,7 +8,7 @@ use std::sync::Arc;
 use formation_core::agents::{Agents, ClaudeReadiness, HarnessReadiness};
 use formation_core::harness::claude::{ClaudeConfig, ClaudeSupervisor};
 use formation_core::harness::detect::{Detect, DetectPaths};
-use formation_core::notify::{AttentionNotifier, monitor};
+use formation_core::notify::{AttentionNotifier, monitor, reconcile};
 use formation_core::ports::{
     CollabStore, CommandHandler, Harness, Notifier, Peers, PermissionGate, Policy, RequestQueue,
     Store,
@@ -186,8 +186,12 @@ async fn main() -> Result<(), Error> {
     let mut events = service.bus.subscribe();
     let bus = service.bus.clone();
     let notifier = service.notifier.clone();
+    let store = service.store.clone();
     let notification_task = tokio::spawn(async move {
         loop {
+            if let Err(error) = reconcile(store.as_ref(), notifier.as_ref()).await {
+                eprintln!("attention reconcile failed: {error}");
+            }
             match monitor(events, notifier.clone()).await {
                 Ok(()) => break,
                 Err(error) => eprintln!("attention monitor restarting: {error}"),
