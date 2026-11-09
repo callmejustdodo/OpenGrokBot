@@ -3,6 +3,7 @@
 .sched { list-style: none; display: flex; flex-direction: column; }
 .sched-open { border: 0; background: transparent; padding: 0; text-align: left; cursor: pointer; }
 .sched-open b { color: var(--text); font-weight: 600; }
+.sched-open:hover b { color: var(--brand, var(--focus)); }
 .sched small { display: block; color: var(--text2); }
 .sched .run[data-run="failed"] { color: var(--red); }
 .sched .run[data-run="missed"] { color: var(--orange); }
