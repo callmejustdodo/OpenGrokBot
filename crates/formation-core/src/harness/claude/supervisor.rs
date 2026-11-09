@@ -287,6 +287,23 @@ impl ClaudeSupervisor {
             }));
         Ok(())
     }
+    /// Records or clears an authentication failure and, when that changes the
+    /// status, publishes `harness.update` without blocking the caller.
+    fn auth_problem(&self, problem: Option<String>) {
+        if !ClaudeReadiness::set_auth_problem(&self.inner.config.binary, problem) {
+            return;
+        }
+        let supervisor = self.clone();
+        tokio::spawn(async move {
+            let status = supervisor.status().await;
+            supervisor
+                .inner
+                .sink
+                .publish(Event::HarnessUpdate(HarnessUpdateEvent {
+                    harnesses: vec![status],
+                }));
+        });
+    }
     /// Runs a teammate's request in a fork, listed on the agent while it runs.
     async fn run_request(
         &self,
@@ -905,6 +922,14 @@ impl ClaudeSupervisor {
                                 {let mut agents=self.inner.agents.lock().unwrap();let r=agents.get_mut(&id).unwrap();r.transcript_seq=r.seq;}
                                 self.inner.agents.lock().unwrap().get_mut(&id).unwrap().run=None;
                                 self.state(id,if outcome==TurnOutcome::Failed {AgentState::Error} else {AgentState::Idle},result.terminal_reason,None);
+                                // Claude reports an expired sign-in only as the turn's error text.
+                                match outcome {
+                                    TurnOutcome::Completed => self.auth_problem(None),
+                                    TurnOutcome::Failed => if let Some(text)=result.result.as_deref().filter(|t| t.contains("Failed to authenticate")) {
+                                        self.auth_problem(Some(format!("Sign in to Claude Code again with claude auth login ({text})")));
+                                    },
+                                    TurnOutcome::Interrupted => {}
+                                }
                                 let turn_result = TurnResult{outcome,result:result.result};
                                 let _=p.done.send(Ok(turn_result.clone()));
                                 for p in steered.drain(..) {let _ = p.done.send(Ok(turn_result.clone()));}
