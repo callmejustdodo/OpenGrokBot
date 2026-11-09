@@ -8,7 +8,7 @@ use ts_rs::TS;
 
 use crate::agent::{Agent, Attention, HarnessStatus, Schedule};
 use crate::ask::Question;
-use crate::common::{Seq, Timestamp, commands};
+use crate::common::{RequestId, Seq, Timestamp, commands};
 use crate::harness::Conversation;
 use crate::peer::SharedAgentView;
 use crate::policy::{Approval, Rule, ShareSettings};
@@ -39,6 +39,45 @@ pub struct Snapshot {
     pub rules: Vec<Rule>,
     pub harnesses: Vec<HarnessStatus>,
     pub settings: Settings,
+    /// The formationd that took this snapshot. The app compares `protocol` with its
+    /// own [`PROTOCOL_VERSION`] on connect.
+    pub daemon: DaemonInfo,
+    /// Whether this Mac can reach the tailnet; kept current by `network.update`.
+    pub network: NetworkStatus,
+}
+
+/// The contract version. Raise on any breaking contract change, so an app and a
+/// formationd built from different contracts can tell (the app asks to restart
+/// formationd).
+pub const PROTOCOL_VERSION: u32 = 1;
+
+/// The running formationd.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct DaemonInfo {
+    /// formationd's package version, such as `0.1.0`.
+    pub version: String,
+    /// The [`PROTOCOL_VERSION`] formationd was built with.
+    pub protocol: u32,
+}
+
+impl DaemonInfo {
+    /// This build's formationd: the given package version and [`PROTOCOL_VERSION`].
+    pub fn current(version: &str) -> Self {
+        Self {
+            version: version.to_owned(),
+            protocol: PROTOCOL_VERSION,
+        }
+    }
+}
+
+/// This Mac's network, as far as collaboration needs it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct NetworkStatus {
+    /// `false` when Tailscale is off or this Mac is not on the tailnet; teammates
+    /// are then unreachable (SC-002 offline).
+    pub tailnet: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -104,6 +143,20 @@ pub struct SettingsUpdateEvent {
     pub settings: Settings,
 }
 
+/// `network.update`: the tailnet became reachable or unreachable.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct NetworkUpdateEvent {
+    pub network: NetworkStatus,
+}
+
+/// `request.removed`: a request left the snapshot's `requests`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct RequestRemovedEvent {
+    pub request_id: RequestId,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -133,10 +186,14 @@ mod tests {
                 ..Settings::default()
             },
             team: Some(team),
+            daemon: DaemonInfo::current("0.1.0"),
+            network: NetworkStatus { tailnet: true },
         };
         let json = roundtrip(&snapshot);
         assert_eq!(json["seq"], 42);
         assert_eq!(json["settings"]["language"], "ko");
+        assert_eq!(json["daemon"]["protocol"], PROTOCOL_VERSION);
+        assert_eq!(json["network"]["tailnet"], true);
     }
 
     #[test]
@@ -156,6 +213,8 @@ mod tests {
             rules: vec![],
             harnesses: vec![],
             settings: Settings::default(),
+            daemon: DaemonInfo::current("0.1.0"),
+            network: NetworkStatus { tailnet: false },
         };
         assert!(roundtrip(&snapshot)["team"].is_null());
     }

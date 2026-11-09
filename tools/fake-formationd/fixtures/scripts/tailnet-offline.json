@@ -1,0 +1,8 @@
+{
+  "description": "This Mac drops off the tailnet: the menu bar panel shows offline (SC-002)",
+  "steps": [
+    {
+      "event": { "type": "network.update", "payload": { "network": { "tailnet": false } } }
+    }
+  ]
+}

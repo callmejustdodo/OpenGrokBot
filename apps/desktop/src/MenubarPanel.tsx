@@ -1,7 +1,7 @@
 // The menu bar panel (SC-002): a one-line summary, what needs me, my agents
 // with their state, and ways into the app. States: default (something needs
-// me), all-clear, and offline (formationd unreachable, or every teammate
-// offline; local agents are still listed). Rows show how long ago each item
+// me), all-clear, and offline (formationd unreachable, this Mac off the
+// tailnet, or every teammate offline; local agents are still listed). Rows show how long ago each item
 // came in, and the window tells the tray icon whether to show its dot.
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect } from "react";
@@ -52,6 +52,8 @@ export default function MenubarPanel() {
   let summary: string;
   if (offline === "formationd") {
     summary = t("menubar.offline.formationd", "Can't reach formationd · retrying. Agents keep running.");
+  } else if (offline === "tailnet") {
+    summary = t("menubar.offline.tailnet", "Not on the tailnet · local agents keep running");
   } else if (offline === "team") {
     summary = t("menubar.offline.team", "Can't reach the team · local agents keep running");
   } else if (needs.length > 0) {

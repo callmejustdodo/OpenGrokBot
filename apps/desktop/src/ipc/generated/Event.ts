@@ -5,9 +5,11 @@ import type { AgentStreamEvent } from "./AgentStreamEvent";
 import type { AgentUpdateEvent } from "./AgentUpdateEvent";
 import type { ApprovalEvent } from "./ApprovalEvent";
 import type { HarnessUpdateEvent } from "./HarnessUpdateEvent";
+import type { NetworkUpdateEvent } from "./NetworkUpdateEvent";
 import type { NotifyEvent } from "./NotifyEvent";
 import type { PresenceEvent } from "./PresenceEvent";
 import type { QuestionUpdateEvent } from "./QuestionUpdateEvent";
+import type { RequestRemovedEvent } from "./RequestRemovedEvent";
 import type { RequestUpdateEvent } from "./RequestUpdateEvent";
 import type { RuleUpdateEvent } from "./RuleUpdateEvent";
 import type { ScheduleUpdateEvent } from "./ScheduleUpdateEvent";
@@ -19,4 +21,4 @@ import type { TeamUpdateEvent } from "./TeamUpdateEvent";
  * Every event, as `{ "type": "<name>", "payload": { … } }`. Each slice of the
  * [`Snapshot`](crate::snapshot::Snapshot) has an event that keeps it current.
  */
-export type Event = { "type": "agent.state", "payload": AgentStateEvent } | { "type": "agent.stream", "payload": AgentStreamEvent } | { "type": "agent.queue", "payload": AgentQueueEvent } | { "type": "agent.update", "payload": AgentUpdateEvent } | { "type": "schedule.update", "payload": ScheduleUpdateEvent } | { "type": "notify", "payload": NotifyEvent } | { "type": "harness.update", "payload": HarnessUpdateEvent } | { "type": "approval.raised", "payload": ApprovalEvent } | { "type": "approval.update", "payload": ApprovalEvent } | { "type": "question.update", "payload": QuestionUpdateEvent } | { "type": "request.update", "payload": RequestUpdateEvent } | { "type": "share.update", "payload": ShareUpdateEvent } | { "type": "rule.update", "payload": RuleUpdateEvent } | { "type": "team.update", "payload": TeamUpdateEvent } | { "type": "peer.presence", "payload": PresenceEvent } | { "type": "settings.update", "payload": SettingsUpdateEvent };
+export type Event = { "type": "agent.state", "payload": AgentStateEvent } | { "type": "agent.stream", "payload": AgentStreamEvent } | { "type": "agent.queue", "payload": AgentQueueEvent } | { "type": "agent.update", "payload": AgentUpdateEvent } | { "type": "schedule.update", "payload": ScheduleUpdateEvent } | { "type": "notify", "payload": NotifyEvent } | { "type": "harness.update", "payload": HarnessUpdateEvent } | { "type": "approval.raised", "payload": ApprovalEvent } | { "type": "approval.update", "payload": ApprovalEvent } | { "type": "question.update", "payload": QuestionUpdateEvent } | { "type": "request.update", "payload": RequestUpdateEvent } | { "type": "share.update", "payload": ShareUpdateEvent } | { "type": "rule.update", "payload": RuleUpdateEvent } | { "type": "team.update", "payload": TeamUpdateEvent } | { "type": "peer.presence", "payload": PresenceEvent } | { "type": "settings.update", "payload": SettingsUpdateEvent } | { "type": "network.update", "payload": NetworkUpdateEvent } | { "type": "request.removed", "payload": RequestRemovedEvent };

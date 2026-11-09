@@ -206,6 +206,10 @@
     "title": "에이전트 연결",
     "works": "돼요"
   },
+  "connection": {
+    "protocolMismatch": "formationd는 계약 버전 {{daemon}}을 쓰지만 이 앱은 버전 {{app}}이 필요해요. formationd를 다시 시작해 업데이트하세요.",
+    "restartNeeded": "formationd를 다시 시작해야 해요"
+  },
   "conversation": {
     "detectedPlaceholder": "OpenGrokBot에서 이 세션에 메시지를 보낼 수 없어요",
     "error": {
@@ -423,6 +427,7 @@
     "needsYou": "나에게 필요한 일",
     "offline": {
       "formationd": "formationd에 연결할 수 없어요 · 다시 시도하는 중. 에이전트는 계속 실행돼요.",
+      "tailnet": "tailnet에 연결되어 있지 않아요 · 내 에이전트는 계속 실행 중",
       "team": "팀에 연결할 수 없어요 · 내 에이전트는 계속 실행 중"
     },
     "open": "OpenGrokBot 열기",

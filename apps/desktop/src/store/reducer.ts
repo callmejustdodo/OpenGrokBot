@@ -8,10 +8,12 @@ import type { Approval } from "../ipc/generated/Approval";
 import type { Attention } from "../ipc/generated/Attention";
 import type { Conversation } from "../ipc/generated/Conversation";
 import type { ConversationItem } from "../ipc/generated/ConversationItem";
+import type { DaemonInfo } from "../ipc/generated/DaemonInfo";
 import type { ConversationPageResult } from "../ipc/generated/ConversationPageResult";
 import type { EventEnvelope } from "../ipc/generated/EventEnvelope";
 import type { HarnessStatus } from "../ipc/generated/HarnessStatus";
 import type { MemberId } from "../ipc/generated/MemberId";
+import type { NetworkStatus } from "../ipc/generated/NetworkStatus";
 import type { Question } from "../ipc/generated/Question";
 import type { Rule } from "../ipc/generated/Rule";
 import type { Schedule } from "../ipc/generated/Schedule";
@@ -55,6 +57,10 @@ export type MirrorState = {
   rules: ById<Rule>;
   harnesses: readonly HarnessStatus[];
   settings: Settings;
+  /** The formationd that answered the snapshot, with its contract version. */
+  daemon: DaemonInfo;
+  /** Whether this Mac is on the tailnet; `network.update` keeps it current. */
+  network: NetworkStatus;
   /** Agents whose conversation missed an `agent.stream` delta and must be reloaded with `conversation_page`. */
   staleConversations: ReadonlySet<AgentId>;
 };
@@ -131,6 +137,8 @@ export function fromSnapshot(snapshot: Snapshot): MirrorState {
     rules: byId(snapshot.rules, (r) => r.id),
     harnesses: snapshot.harnesses,
     settings: snapshot.settings,
+    daemon: snapshot.daemon,
+    network: snapshot.network,
     staleConversations: new Set(),
   };
 }
@@ -277,6 +285,8 @@ function applyEvent(state: MirrorState, envelope: EventEnvelope): MirrorState {
       const request = event.payload.request;
       return { ...state, requests: { ...state.requests, [request.id]: request } };
     }
+    case "request.removed":
+      return { ...state, requests: without(state.requests, event.payload.request_id) };
     case "share.update": {
       const share = event.payload.share;
       return { ...state, shares: { ...state.shares, [share.agent_id]: share } };
@@ -297,6 +307,8 @@ function applyEvent(state: MirrorState, envelope: EventEnvelope): MirrorState {
     }
     case "settings.update":
       return { ...state, settings: event.payload.settings };
+    case "network.update":
+      return { ...state, network: event.payload.network };
   }
 }
 

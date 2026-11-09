@@ -16,7 +16,7 @@ use crate::harness::{AgentQueueEvent, AgentStreamEvent};
 use crate::peer::PresenceEvent;
 use crate::policy::{ApprovalEvent, RuleUpdateEvent, ShareUpdateEvent};
 use crate::request::RequestUpdateEvent;
-use crate::snapshot::SettingsUpdateEvent;
+use crate::snapshot::{NetworkUpdateEvent, RequestRemovedEvent, SettingsUpdateEvent};
 use crate::team::TeamUpdateEvent;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
@@ -70,6 +70,11 @@ pub enum Event {
     // C: app
     #[serde(rename = "settings.update")]
     SettingsUpdate(SettingsUpdateEvent),
+    #[serde(rename = "network.update")]
+    NetworkUpdate(NetworkUpdateEvent),
+    /// A request left the snapshot; drop it from `requests`.
+    #[serde(rename = "request.removed")]
+    RequestRemoved(RequestRemovedEvent),
 }
 
 impl Event {
@@ -91,6 +96,8 @@ impl Event {
             Self::TeamUpdate(_) => "team.update",
             Self::PeerPresence(_) => "peer.presence",
             Self::SettingsUpdate(_) => "settings.update",
+            Self::NetworkUpdate(_) => "network.update",
+            Self::RequestRemoved(_) => "request.removed",
         }
     }
 }
@@ -172,6 +179,12 @@ mod tests {
             Event::SettingsUpdate(SettingsUpdateEvent {
                 settings: crate::snapshot::Settings::default(),
             }),
+            Event::NetworkUpdate(NetworkUpdateEvent {
+                network: crate::snapshot::NetworkStatus { tailnet: false },
+            }),
+            Event::RequestRemoved(RequestRemovedEvent {
+                request_id: crate::common::RequestId::generate(),
+            }),
         ]
     }
 
@@ -194,7 +207,7 @@ mod tests {
     fn event_names_are_unique() {
         let mut names: Vec<&str> = every_event().iter().map(Event::name).collect();
         // One sample per variant (question.update has two).
-        assert_eq!(names.len(), 17);
+        assert_eq!(names.len(), 19);
         names.dedup();
         let count = names.len();
         names.sort_unstable();
