@@ -1,0 +1,27 @@
+{
+  "description": "Minsu's approval has 40 minutes left",
+  "steps": [
+    {
+      "event": { "type": "approval.update", "payload": { "approval": {
+        "id": "01930000-0000-7000-8000-000000000501",
+        "agent_id": "01930000-0000-7000-8000-000000000101",
+        "request_id": "01930000-0000-7000-8000-000000000401",
+        "requester": "01930000-0000-7000-8000-000000000002",
+        "requester_agent": "auth",
+        "purpose": "Run tests while handling the request to add token expiry tests",
+        "call": { "tool_use_id": "toolu_fixture_501", "tool_name": "Bash", "input": { "command": "npm test -- auth/token.spec.ts", "cwd": "~/Codes/shared-api" } },
+        "summary": "npm test -- auth/token.spec.ts",
+        "proposed_rule": {
+          "scope": { "kind": "command", "program": "npm", "arg_pattern": "test -- auth/*", "folder": "~/Codes/shared-api" },
+          "expires_at": "2026-11-16T01:53:00Z",
+          "max_uses": null
+        },
+        "status": "pending",
+        "choice": null,
+        "created_at": "2026-11-08T02:33:00Z",
+        "decided_at": null,
+        "expires_at": "2026-11-09T02:33:00Z"
+      } } }
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "description": "After agent_message_steer or agent_message_withdraw: the queued message leaves the queue",
+  "steps": [
+    {
+      "event": { "type": "agent.queue", "payload": { "agent_id": "{{params.agent_id}}", "items": [] } }
+    }
+  ]
+}

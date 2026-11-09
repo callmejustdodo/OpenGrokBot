@@ -1,0 +1,50 @@
+{
+  "description": "Minsu's approval got no answer for 24 hours: it expires, the request fails, and the Inbox item resolves",
+  "steps": [
+    {
+      "event": { "type": "approval.update", "payload": { "approval": {
+        "id": "01930000-0000-7000-8000-000000000501",
+        "agent_id": "01930000-0000-7000-8000-000000000101",
+        "request_id": "01930000-0000-7000-8000-000000000401",
+        "requester": "01930000-0000-7000-8000-000000000002",
+        "requester_agent": "auth",
+        "purpose": "Run tests while handling the request to add token expiry tests",
+        "call": { "tool_use_id": "toolu_fixture_501", "tool_name": "Bash", "input": { "command": "npm test -- auth/token.spec.ts", "cwd": "~/Codes/shared-api" } },
+        "summary": "npm test -- auth/token.spec.ts",
+        "proposed_rule": null,
+        "status": "expired",
+        "choice": null,
+        "created_at": "2026-11-08T01:50:00Z",
+        "decided_at": null,
+        "expires_at": "2026-11-09T01:50:00Z"
+      } } }
+    },
+    {
+      "event": { "type": "request.update", "payload": { "request": {
+        "id": "01930000-0000-7000-8000-000000000401",
+        "requester": "01930000-0000-7000-8000-000000000002",
+        "requester_agent": "auth",
+        "chain": { "id": "01930000-0000-7000-8000-000000000c01", "depth": 1 },
+        "owner": "01930000-0000-7000-8000-000000000001",
+        "agent_id": "01930000-0000-7000-8000-000000000101",
+        "prompt": "Add token expiry tests, both just before and just after expiry.",
+        "idempotency_key": "minsu-auth-expiry-tests",
+        "status": "expired",
+        "result": null,
+        "error": { "code": "approval_expired", "message": "No answer for 24 hours; Minsu was told." },
+        "created_at": "2026-11-08T01:50:00Z",
+        "updated_at": "2026-11-09T01:50:00Z"
+      } } }
+    },
+    {
+      "event": { "type": "notify", "payload": { "alert": false, "item": {
+        "id": "01930000-0000-7000-8000-000000000604",
+        "kind": "approval",
+        "target": { "kind": "approval", "approval_id": "01930000-0000-7000-8000-000000000501" },
+        "subject": "Minsu → Backend · npm test -- auth/token.spec.ts",
+        "at": "2026-11-08T01:50:30Z",
+        "resolved_at": "2026-11-09T01:50:00Z"
+      } } }
+    }
+  ]
+}

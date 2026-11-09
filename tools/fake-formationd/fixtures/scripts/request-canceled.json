@@ -1,0 +1,14 @@
+{
+  "description": "After request_cancel: my request to Minsu's Auth agent is canceled before it starts",
+  "steps": [
+    {
+      "event": { "type": "request.update", "payload": { "request": {
+        "id": "{{params.request_id}}", "requester": "01930000-0000-7000-8000-000000000001", "requester_agent": null,
+        "chain": { "id": "01930000-0000-7000-8000-000000000c02", "depth": 0 }, "owner": "01930000-0000-7000-8000-000000000002",
+        "agent_id": "01930000-0000-7000-8000-000000000201", "prompt": "Add token expiry tests, both just before and just after expiry.",
+        "idempotency_key": "dohyeon-auth-expiry-tests", "status": "canceled", "result": null, "error": null,
+        "created_at": "2026-11-09T01:50:00Z", "updated_at": "{{now}}"
+      } } }
+    }
+  ]
+}

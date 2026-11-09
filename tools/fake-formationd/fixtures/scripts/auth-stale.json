@@ -1,0 +1,31 @@
+{
+  "description": "The latest answer from Minsu's Auth agent is based on a conversation from yesterday and may be out of date",
+  "steps": [
+    {
+      "event": { "type": "question.update", "payload": { "change": "upsert", "question": {
+        "id": "01930000-0000-7000-8000-000000000302",
+        "thread_id": "01930000-0000-7000-8000-000000000301",
+        "asker": "01930000-0000-7000-8000-000000000001",
+        "target": { "kind": "agent", "member_id": "01930000-0000-7000-8000-000000000002", "agent_id": "01930000-0000-7000-8000-000000000201" },
+        "text": "How does the token refresh work?",
+        "status": "answered",
+        "candidates": [],
+        "agent_id": "01930000-0000-7000-8000-000000000201",
+        "answer": {
+          "id": "01930000-0000-7000-8000-000000000312",
+          "agent_id": "01930000-0000-7000-8000-000000000201",
+          "text": "Not decided yet. The login endpoints are being cleaned up first.",
+          "excerpts": [
+            { "role": "assistant", "text": "Starting with the endpoints.", "at": "2026-11-08T09:20:00Z" }
+          ],
+          "as_of": "2026-11-08T09:20:00Z",
+          "possibly_stale": true,
+          "answered_at": "2026-11-09T01:42:30Z"
+        },
+        "error": null,
+        "created_at": "2026-11-09T01:42:10Z",
+        "updated_at": "2026-11-09T01:42:30Z"
+      } } }
+    }
+  ]
+}

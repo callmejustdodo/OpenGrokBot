@@ -1,0 +1,21 @@
+{
+  "description": "I chose to ask Minsu directly: the question goes to Minsu's Inbox",
+  "steps": [
+    {
+      "event": { "type": "question.update", "payload": { "change": "upsert", "question": {
+        "id": "01930000-0000-7000-8000-000000000303",
+        "thread_id": "01930000-0000-7000-8000-000000000303",
+        "asker": "01930000-0000-7000-8000-000000000001",
+        "target": { "kind": "person", "member_id": "01930000-0000-7000-8000-000000000002" },
+        "text": "What's the deploy schedule this week?",
+        "status": "sent_to_owner",
+        "candidates": [],
+        "agent_id": null,
+        "answer": null,
+        "error": null,
+        "created_at": "2026-11-09T01:20:00Z",
+        "updated_at": "2026-11-09T01:21:00Z"
+      } } }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "description": "I send \"Run the tests too\" while Backend works: it waits in the queue behind Minsu's request",
+  "steps": [
+    {
+      "event": { "type": "agent.queue", "payload": {
+        "agent_id": "01930000-0000-7000-8000-000000000101",
+        "items": [
+          {
+            "id": "01930000-0000-7000-8000-000000000a01",
+            "agent_id": "01930000-0000-7000-8000-000000000101",
+            "source": { "kind": "request", "request_id": "01930000-0000-7000-8000-000000000401", "requester": "01930000-0000-7000-8000-000000000002" },
+            "text": "Add token expiry tests, both just before and just after expiry.",
+            "queued_at": "2026-11-09T01:52:00Z"
+          },
+          {
+            "id": "01930000-0000-7000-8000-000000000a02",
+            "agent_id": "01930000-0000-7000-8000-000000000101",
+            "source": { "kind": "owner" },
+            "text": "Run the tests too",
+            "queued_at": "2026-11-09T01:53:00Z"
+          }
+        ]
+      } }
+    }
+  ]
+}

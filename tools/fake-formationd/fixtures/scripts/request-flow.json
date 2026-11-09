@@ -1,0 +1,56 @@
+{
+  "description": "After request_create: received, awaiting the owner's approval, queued, running, then completed with a result",
+  "steps": [
+    {
+      "event": { "type": "request.update", "payload": { "request": {
+        "id": "{{id:r}}", "requester": "01930000-0000-7000-8000-000000000001", "requester_agent": null,
+        "chain": { "id": "{{id:chain}}", "depth": 0 }, "owner": "{{params.owner}}", "agent_id": "{{params.agent_id}}",
+        "prompt": "{{params.prompt}}", "idempotency_key": "{{params.idempotency_key}}", "status": "received",
+        "result": null, "error": null, "created_at": "{{now}}", "updated_at": "{{now}}"
+      } } }
+    },
+    {
+      "after_ms": 1500,
+      "event": { "type": "request.update", "payload": { "request": {
+        "id": "{{id:r}}", "requester": "01930000-0000-7000-8000-000000000001", "requester_agent": null,
+        "chain": { "id": "{{id:chain}}", "depth": 0 }, "owner": "{{params.owner}}", "agent_id": "{{params.agent_id}}",
+        "prompt": "{{params.prompt}}", "idempotency_key": "{{params.idempotency_key}}", "status": "awaiting_approval",
+        "result": null, "error": null, "created_at": "{{now}}", "updated_at": "{{now}}"
+      } } }
+    },
+    {
+      "after_ms": 1500,
+      "event": { "type": "request.update", "payload": { "request": {
+        "id": "{{id:r}}", "requester": "01930000-0000-7000-8000-000000000001", "requester_agent": null,
+        "chain": { "id": "{{id:chain}}", "depth": 0 }, "owner": "{{params.owner}}", "agent_id": "{{params.agent_id}}",
+        "prompt": "{{params.prompt}}", "idempotency_key": "{{params.idempotency_key}}", "status": "queued",
+        "result": null, "error": null, "created_at": "{{now}}", "updated_at": "{{now}}"
+      } } }
+    },
+    {
+      "after_ms": 1500,
+      "event": { "type": "request.update", "payload": { "request": {
+        "id": "{{id:r}}", "requester": "01930000-0000-7000-8000-000000000001", "requester_agent": null,
+        "chain": { "id": "{{id:chain}}", "depth": 0 }, "owner": "{{params.owner}}", "agent_id": "{{params.agent_id}}",
+        "prompt": "{{params.prompt}}", "idempotency_key": "{{params.idempotency_key}}", "status": "running",
+        "result": null, "error": null, "created_at": "{{now}}", "updated_at": "{{now}}"
+      } } }
+    },
+    {
+      "after_ms": 4000,
+      "event": { "type": "request.update", "payload": { "request": {
+        "id": "{{id:r}}", "requester": "01930000-0000-7000-8000-000000000001", "requester_agent": null,
+        "chain": { "id": "{{id:chain}}", "depth": 0 }, "owner": "{{params.owner}}", "agent_id": "{{params.agent_id}}",
+        "prompt": "{{params.prompt}}", "idempotency_key": "{{params.idempotency_key}}", "status": "completed",
+        "result": "Added two tests to auth/token.spec.ts, just before and just after expiry; both pass.",
+        "error": null, "created_at": "{{now}}", "updated_at": "{{now}}"
+      } } }
+    },
+    {
+      "event": { "type": "notify", "payload": { "alert": true, "item": {
+        "id": "{{id:attention}}", "kind": "request_finished", "target": { "kind": "request", "request_id": "{{id:r}}" },
+        "subject": "Your work request finished", "at": "{{now}}", "resolved_at": null
+      } } }
+    }
+  ]
+}

@@ -1,0 +1,250 @@
+{
+  "agent_message_send": [
+    {
+      "result": { "id": "{{id:msg}}", "agent_id": "{{params.agent_id}}", "source": { "kind": "owner" }, "text": "{{params.text}}", "queued_at": "{{now}}" },
+      "play": "send-reply",
+      "example": { "agent_id": "01930000-0000-7000-8000-000000000101", "text": "Run the tests too" }
+    }
+  ],
+  "agent_message_steer": [
+    {
+      "result": null,
+      "play": "queue-cleared",
+      "example": { "agent_id": "01930000-0000-7000-8000-000000000101", "message_id": "01930000-0000-7000-8000-000000000a02" }
+    }
+  ],
+  "agent_message_withdraw": [
+    {
+      "result": null,
+      "play": "queue-cleared",
+      "example": { "agent_id": "01930000-0000-7000-8000-000000000101", "message_id": "01930000-0000-7000-8000-000000000a02" }
+    }
+  ],
+  "agent_message_edit": [
+    {
+      "result": { "id": "{{params.message_id}}", "agent_id": "{{params.agent_id}}", "source": { "kind": "owner" }, "text": "{{params.text}}", "queued_at": "{{now}}" },
+      "play": "queue-edited",
+      "example": { "agent_id": "01930000-0000-7000-8000-000000000101", "message_id": "01930000-0000-7000-8000-000000000a02", "text": "Run the auth tests too" }
+    }
+  ],
+  "ask": [
+    {
+      "when": { "target/kind": "person" },
+      "result": {
+        "id": "{{id:q}}", "thread_id": "{{id:q}}", "asker": "01930000-0000-7000-8000-000000000001", "target": "{{params.target}}",
+        "text": "{{params.text}}", "status": "received", "candidates": [], "agent_id": null,
+        "answer": null, "error": null, "created_at": "{{now}}", "updated_at": "{{now}}"
+      },
+      "play": "ask-unsure",
+      "example": { "target": { "kind": "person", "member_id": "01930000-0000-7000-8000-000000000002" }, "text": "What's the deploy schedule this week?", "thread_id": null, "from_run": null }
+    },
+    {
+      "result": {
+        "id": "{{id:q}}", "thread_id": "{{id:q}}", "asker": "01930000-0000-7000-8000-000000000001", "target": "{{params.target}}",
+        "text": "{{params.text}}", "status": "received", "candidates": [], "agent_id": "{{params.target.agent_id}}",
+        "answer": null, "error": null, "created_at": "{{now}}", "updated_at": "{{now}}"
+      },
+      "play": "ask-answer",
+      "example": { "target": { "kind": "agent", "member_id": "01930000-0000-7000-8000-000000000002", "agent_id": "01930000-0000-7000-8000-000000000201" }, "text": "How far is the login work?", "thread_id": null, "from_run": null }
+    }
+  ],
+  "question_route_choose": [
+    {
+      "when": { "choice/kind": "owner" },
+      "result": {
+        "id": "{{params.question_id}}", "thread_id": "{{params.question_id}}", "asker": "01930000-0000-7000-8000-000000000001",
+        "target": { "kind": "person", "member_id": "01930000-0000-7000-8000-000000000002" },
+        "text": "What's the deploy schedule this week?", "status": "sent_to_owner", "candidates": [], "agent_id": null,
+        "answer": null, "error": null, "created_at": "2026-11-09T01:20:00Z", "updated_at": "{{now}}"
+      },
+      "play": "route-owner",
+      "example": { "question_id": "01930000-0000-7000-8000-000000000303", "choice": { "kind": "owner" } }
+    },
+    {
+      "result": {
+        "id": "{{params.question_id}}", "thread_id": "{{params.question_id}}", "asker": "01930000-0000-7000-8000-000000000001",
+        "target": { "kind": "person", "member_id": "01930000-0000-7000-8000-000000000002" },
+        "text": "What's the deploy schedule this week?", "status": "answering", "candidates": [], "agent_id": "{{params.choice.agent_id}}",
+        "answer": null, "error": null, "created_at": "2026-11-09T01:20:00Z", "updated_at": "{{now}}"
+      },
+      "play": "route-answer",
+      "example": { "question_id": "01930000-0000-7000-8000-000000000303", "choice": { "kind": "agent", "agent_id": "01930000-0000-7000-8000-000000000201" } }
+    }
+  ],
+  "question_cancel": [
+    {
+      "result": {
+        "id": "{{params.question_id}}", "thread_id": "{{params.question_id}}", "asker": "01930000-0000-7000-8000-000000000001",
+        "target": { "kind": "agent", "member_id": "01930000-0000-7000-8000-000000000003", "agent_id": "01930000-0000-7000-8000-000000000204" },
+        "text": "Are the design mockups updated?", "status": "canceled", "candidates": [], "agent_id": "01930000-0000-7000-8000-000000000204",
+        "answer": null, "error": null, "created_at": "2026-11-09T00:58:00Z", "updated_at": "{{now}}"
+      },
+      "play": "question-canceled",
+      "example": { "question_id": "01930000-0000-7000-8000-000000000304" }
+    }
+  ],
+  "request_create": [
+    {
+      "result": {
+        "id": "{{id:r}}", "requester": "01930000-0000-7000-8000-000000000001", "requester_agent": null,
+        "chain": { "id": "{{id:chain}}", "depth": 0 }, "owner": "{{params.owner}}", "agent_id": "{{params.agent_id}}",
+        "prompt": "{{params.prompt}}", "idempotency_key": "{{params.idempotency_key}}", "status": "received",
+        "result": null, "error": null, "created_at": "{{now}}", "updated_at": "{{now}}"
+      },
+      "play": "request-flow",
+      "example": {
+        "owner": "01930000-0000-7000-8000-000000000002",
+        "agent_id": "01930000-0000-7000-8000-000000000201",
+        "prompt": "Add token expiry tests, both just before and just after expiry.",
+        "idempotency_key": "dohyeon-auth-expiry-tests",
+        "from_question": "01930000-0000-7000-8000-000000000301",
+        "from_run": null
+      }
+    }
+  ],
+  "request_cancel": [
+    {
+      "result": {
+        "id": "{{params.request_id}}", "requester": "01930000-0000-7000-8000-000000000001", "requester_agent": null,
+        "chain": { "id": "01930000-0000-7000-8000-000000000c02", "depth": 0 }, "owner": "01930000-0000-7000-8000-000000000002",
+        "agent_id": "01930000-0000-7000-8000-000000000201", "prompt": "Add token expiry tests, both just before and just after expiry.",
+        "idempotency_key": "dohyeon-auth-expiry-tests", "status": "canceled", "result": null, "error": null,
+        "created_at": "2026-11-09T01:50:00Z", "updated_at": "{{now}}"
+      },
+      "play": "request-canceled",
+      "example": { "request_id": "01930000-0000-7000-8000-000000000402" }
+    }
+  ],
+  "approval_decide": [
+    {
+      "when": { "approval_id": "01930000-0000-7000-8000-000000000502", "choice": "deny" },
+      "result": {
+        "id": "01930000-0000-7000-8000-000000000502", "agent_id": "01930000-0000-7000-8000-000000000101",
+        "request_id": null, "requester": null, "requester_agent": null, "purpose": "Delete the build folder and rebuild",
+        "call": { "tool_use_id": "toolu_fixture_502", "tool_name": "Bash", "input": { "command": "rm -rf dist/ && npm run build" } },
+        "summary": "rm -rf dist/ && npm run build", "proposed_rule": null, "status": "denied", "choice": "deny",
+        "created_at": "2026-11-09T01:53:00Z", "decided_at": "{{now}}", "expires_at": "2026-11-10T01:53:00Z"
+      },
+      "play": "permission-denied",
+      "example": { "approval_id": "01930000-0000-7000-8000-000000000502", "choice": "deny", "rule": null }
+    },
+    {
+      "when": { "approval_id": "01930000-0000-7000-8000-000000000502" },
+      "result": {
+        "id": "01930000-0000-7000-8000-000000000502", "agent_id": "01930000-0000-7000-8000-000000000101",
+        "request_id": null, "requester": null, "requester_agent": null, "purpose": "Delete the build folder and rebuild",
+        "call": { "tool_use_id": "toolu_fixture_502", "tool_name": "Bash", "input": { "command": "rm -rf dist/ && npm run build" } },
+        "summary": "rm -rf dist/ && npm run build", "proposed_rule": null, "status": "allowed", "choice": "{{params.choice}}",
+        "created_at": "2026-11-09T01:53:00Z", "decided_at": "{{now}}", "expires_at": "2026-11-10T01:53:00Z"
+      },
+      "play": "permission-allowed",
+      "example": { "approval_id": "01930000-0000-7000-8000-000000000502", "choice": "allow_once", "rule": null }
+    },
+    {
+      "when": { "choice": "deny" },
+      "result": {
+        "id": "01930000-0000-7000-8000-000000000501", "agent_id": "01930000-0000-7000-8000-000000000101",
+        "request_id": "01930000-0000-7000-8000-000000000401", "requester": "01930000-0000-7000-8000-000000000002", "requester_agent": "auth",
+        "purpose": "Run tests while handling the request to add token expiry tests",
+        "call": { "tool_use_id": "toolu_fixture_501", "tool_name": "Bash", "input": { "command": "npm test -- auth/token.spec.ts", "cwd": "~/Codes/shared-api" } },
+        "summary": "npm test -- auth/token.spec.ts", "proposed_rule": null, "status": "denied", "choice": "deny",
+        "created_at": "2026-11-09T01:50:00Z", "decided_at": "{{now}}", "expires_at": "2026-11-10T01:50:00Z"
+      },
+      "play": "approval-denied",
+      "example": { "approval_id": "01930000-0000-7000-8000-000000000501", "choice": "deny", "rule": null }
+    },
+    {
+      "when": { "choice": "keep_allowing_similar" },
+      "result": {
+        "id": "01930000-0000-7000-8000-000000000501", "agent_id": "01930000-0000-7000-8000-000000000101",
+        "request_id": "01930000-0000-7000-8000-000000000401", "requester": "01930000-0000-7000-8000-000000000002", "requester_agent": "auth",
+        "purpose": "Run tests while handling the request to add token expiry tests",
+        "call": { "tool_use_id": "toolu_fixture_501", "tool_name": "Bash", "input": { "command": "npm test -- auth/token.spec.ts", "cwd": "~/Codes/shared-api" } },
+        "summary": "npm test -- auth/token.spec.ts", "proposed_rule": null, "status": "allowed", "choice": "keep_allowing_similar",
+        "created_at": "2026-11-09T01:50:00Z", "decided_at": "{{now}}", "expires_at": "2026-11-10T01:50:00Z"
+      },
+      "play": "approval-allowed-rule",
+      "example": {
+        "approval_id": "01930000-0000-7000-8000-000000000501",
+        "choice": "keep_allowing_similar",
+        "rule": {
+          "scope": { "kind": "command", "program": "npm", "arg_pattern": "test -- auth/*", "folder": "~/Codes/shared-api" },
+          "expires_at": "2026-11-16T01:53:00Z",
+          "max_uses": null
+        }
+      }
+    },
+    {
+      "result": {
+        "id": "01930000-0000-7000-8000-000000000501", "agent_id": "01930000-0000-7000-8000-000000000101",
+        "request_id": "01930000-0000-7000-8000-000000000401", "requester": "01930000-0000-7000-8000-000000000002", "requester_agent": "auth",
+        "purpose": "Run tests while handling the request to add token expiry tests",
+        "call": { "tool_use_id": "toolu_fixture_501", "tool_name": "Bash", "input": { "command": "npm test -- auth/token.spec.ts", "cwd": "~/Codes/shared-api" } },
+        "summary": "npm test -- auth/token.spec.ts", "proposed_rule": null, "status": "allowed", "choice": "{{params.choice}}",
+        "created_at": "2026-11-09T01:50:00Z", "decided_at": "{{now}}", "expires_at": "2026-11-10T01:50:00Z"
+      },
+      "play": "approval-allowed",
+      "example": { "approval_id": "01930000-0000-7000-8000-000000000501", "choice": "allow_once", "rule": null }
+    }
+  ],
+  "agents_detect": [
+    {
+      "delay_ms": 2500,
+      "result": [
+        {
+          "key": "claude_code:~/Codes/shared-web",
+          "harness": "claude_code",
+          "name": "claude · shared-web",
+          "path": "~/Codes/shared-web",
+          "session_id": "session-01930000-0000-7000-8000-000000000106",
+          "last_activity_at": "2026-11-08T07:10:00Z",
+          "capabilities": {
+            "state": { "supported": true, "reason": null },
+            "read_conversation": { "supported": true, "reason": null },
+            "answer_teammates": { "supported": true, "reason": null },
+            "receive_requests": { "supported": false, "reason": "Started in Terminal, so Formation can't send it messages" }
+          },
+          "connected_agent": "01930000-0000-7000-8000-000000000106"
+        },
+        {
+          "key": "hermes:~/.hermes/profiles/default",
+          "harness": "hermes",
+          "name": "Hermes",
+          "path": "~/.hermes/profiles/default",
+          "session_id": null,
+          "last_activity_at": "2026-11-08T05:00:00Z",
+          "capabilities": {
+            "state": { "supported": true, "reason": null },
+            "read_conversation": { "supported": true, "reason": null },
+            "answer_teammates": { "supported": false, "reason": "Hermes sessions can't be forked yet" },
+            "receive_requests": { "supported": false, "reason": "Hermes sessions can't be forked yet" }
+          },
+          "connected_agent": null
+        },
+        {
+          "key": "open_claw:~/.openclaw",
+          "harness": "open_claw",
+          "name": "OpenClaw",
+          "path": "~/.openclaw",
+          "session_id": null,
+          "last_activity_at": null,
+          "capabilities": {
+            "state": { "supported": false, "reason": "OpenClaw reports no session state" },
+            "read_conversation": { "supported": false, "reason": "OpenClaw transcripts aren't readable" },
+            "answer_teammates": { "supported": false, "reason": "OpenClaw transcripts aren't readable" },
+            "receive_requests": { "supported": false, "reason": "OpenClaw transcripts aren't readable" }
+          },
+          "connected_agent": null
+        }
+      ],
+      "example": {}
+    }
+  ],
+  "settings_update": [
+    {
+      "result": "{{params.settings}}",
+      "play": "settings-changed",
+      "example": { "settings": { "language": "en", "notifications": { "enabled": true, "muted_until": null } } }
+    }
+  ]
+}
