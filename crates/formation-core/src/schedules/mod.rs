@@ -18,6 +18,7 @@ use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
 use tokio::sync::Mutex;
 
+use crate::history;
 use crate::ports::{
     CommandCall, CommandHandler, EventSink, ForkRun, ForkTools, Harness, Notifier, Result, Store,
 };
@@ -166,7 +167,17 @@ impl Schedules {
                 _ => None,
             };
             let schedule_id = schedule.id;
+            let agent_id = agent.id;
+            let prompt = schedule.prompt.clone();
             self.stored(move |store, events| {
+                history::record(
+                    store,
+                    ActivityKind::ScheduleRan,
+                    Some(agent_id),
+                    Some(AttentionTarget::Schedule { schedule_id }),
+                    finished,
+                    prompt,
+                )?;
                 if let Some(mut current) = store.schedule(schedule_id)? {
                     // Commands remain available during the turn; preserve edits and deletion.
                     if !current.paused && current.next_run_at.is_some_and(|due| due <= finished) {
