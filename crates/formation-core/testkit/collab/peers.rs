@@ -117,6 +117,7 @@ pub struct FakePeers {
 struct PeersState {
     teammates: HashMap<MemberId, Teammate>,
     roster: Vec<Member>,
+    roster_version: u64,
     invitations: Vec<Invite>,
     outbox: Vec<OutboxItem>,
     calls: Vec<PeersCall>,
@@ -196,7 +197,9 @@ impl FakePeers {
     pub fn set_roster(&self, members: Vec<Member>) {
         let mut state = lock(&self.state);
         state.roster = members.clone();
-        self.publish(&state, PeerEvent::Roster { members });
+        state.roster_version += 1;
+        let version = state.roster_version;
+        self.publish(&state, PeerEvent::Roster { members, version });
     }
 
     /// Takes the teammate's Mac offline or back online and publishes their
@@ -650,16 +653,21 @@ impl Peers for FakePeers {
             last_seen_at: Some(at),
         };
         state.roster.push(member.clone());
+        state.roster_version += 1;
+        let version = state.roster_version;
         let members = state.roster.clone();
         self.publish(
             &state,
             PeerEvent::Roster {
                 members: members.clone(),
+                version,
             },
         );
         Ok(PeerJoinAccepted {
             member_id: member.id,
             members,
+            team_id: None,
+            version,
         })
     }
 

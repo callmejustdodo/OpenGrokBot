@@ -16,7 +16,7 @@ use super::Result;
 
 #[async_trait]
 pub trait Peers: Send + Sync {
-    /// Joins the team at the creator's tailnet address (carried in the invitation code).
+    /// Joins the team at the creator's tailnet address (carried in the invitation link).
     async fn join(&self, creator_address: &str, join: PeerJoin) -> Result<PeerJoinAccepted>;
 
     async fn roster(&self, member: MemberId) -> Result<Vec<Member>>;
