@@ -173,7 +173,7 @@ export default function Sidebar() {
   const currentTop = view.kind === "member" ? "team" : view.kind;
 
   return (
-    <aside className="side" aria-label={t("sidebar.label", "Sidebar")} data-state={empty ? "empty" : detecting ? "detecting" : "default"}>
+    <aside className="side" role="navigation" aria-label={t("sidebar.label", "Sidebar")} data-state={empty ? "empty" : detecting ? "detecting" : "default"}>
       <div className="side-top" data-tauri-drag-region>
         {top.map((icon) => (
           <button

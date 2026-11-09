@@ -26,3 +26,7 @@
 .mb-panel .sec.actions { gap: 8px; padding: 10px 20px 12px; }
 .mb-panel .sec.actions .btn { border-radius: 999px; }
 .mb-panel .sec.actions .btn.primary { background: var(--brand-grad, var(--brand, var(--focus))); color: #fff; box-shadow: 0 4px 12px color-mix(in srgb, var(--brand, var(--focus)) 35%, transparent); }
+/* Reduce Transparency (NFR-009): an opaque panel. */
+@media (prefers-reduced-transparency: reduce) {
+  .mb-panel { background: var(--card); }
+}
