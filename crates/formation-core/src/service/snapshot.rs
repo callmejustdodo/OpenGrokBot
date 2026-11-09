@@ -82,7 +82,7 @@ impl SnapshotBuilder {
             .collab
             .me()?
             .map(|me| {
-                Ok(Team {
+                Ok::<_, formation_proto::common::ApiError>(Team {
                     me,
                     members: self.collab.members()?,
                     invitation: None,
