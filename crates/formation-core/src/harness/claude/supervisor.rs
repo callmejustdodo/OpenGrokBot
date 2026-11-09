@@ -654,6 +654,32 @@ impl Harness for ClaudeSupervisor {
     }
 }
 
+/// The `agent.state` reason, and so the inbox subject, of a failed turn: Claude's
+/// own text on one line, then the terminal reason in parentheses (#185). A usage
+/// limit says so; Claude's text carries its reset time.
+fn failure_reason(result: &protocol::ResultEvent) -> String {
+    let code = result.terminal_reason.as_deref().unwrap_or(&result.subtype);
+    let text = result
+        .result
+        .as_deref()
+        .and_then(|t| t.lines().map(str::trim).find(|l| !l.is_empty()))
+        .map(|l| match l.char_indices().nth(200) {
+            Some((i, _)) => format!("{}…", &l[..i]),
+            None => l.to_owned(),
+        });
+    let lower = text.as_deref().unwrap_or_default().to_lowercase();
+    let usage_limit = result.api_error_status.as_ref().and_then(Value::as_u64) == Some(429)
+        || ["usage limit", "limit reached", "hit your limit", "resets"]
+            .iter()
+            .any(|k| lower.contains(k));
+    match (usage_limit, text) {
+        (true, Some(text)) => format!("Claude usage limit: {text} ({code})"),
+        (true, None) => format!("Claude usage limit ({code})"),
+        (false, Some(text)) => format!("{text} ({code})"),
+        (false, None) => code.to_owned(),
+    }
+}
+
 fn queue_error(message_id: MessageId, started: &HashSet<MessageId>) -> ApiError {
     if started.contains(&message_id) {
         error(ErrorCode::Conflict, "message already started")
@@ -937,7 +963,11 @@ impl ClaudeSupervisor {
                                 self.stream(id,StreamDelta::TurnEnded{message_id:p.item.id,outcome});
                                 {let mut agents=self.inner.agents.lock().unwrap();let r=agents.get_mut(&id).unwrap();r.transcript_seq=r.seq;}
                                 self.inner.agents.lock().unwrap().get_mut(&id).unwrap().run=None;
-                                self.state(id,if outcome==TurnOutcome::Failed {AgentState::Error} else {AgentState::Idle},result.terminal_reason,None);
+                                if outcome==TurnOutcome::Failed {
+                                    self.state(id,AgentState::Error,Some(failure_reason(&result)),None);
+                                } else {
+                                    self.state(id,AgentState::Idle,result.terminal_reason,None);
+                                }
                                 // Claude reports an expired sign-in only as the turn's error text.
                                 match outcome {
                                     TurnOutcome::Completed => self.auth_problem(None),
@@ -1176,3 +1206,45 @@ impl CommandHandler for ClaudeSupervisor {
 
 #[path = "fork.rs"]
 mod fork;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn result(text: Option<&str>, status: Value) -> protocol::ResultEvent {
+        protocol::ResultEvent {
+            session_id: "s".into(),
+            subtype: "success".into(),
+            is_error: true,
+            result: text.map(str::to_owned),
+            terminal_reason: Some("api_error".into()),
+            api_error_status: Some(status),
+            total_cost_usd: None,
+            usage: None,
+        }
+    }
+
+    #[test]
+    fn failure_reason_names_a_usage_limit_with_claude_text() {
+        assert_eq!(
+            failure_reason(&result(
+                Some("5-hour limit reached · resets 3:40pm (Asia/Seoul)"),
+                Value::Null
+            )),
+            "Claude usage limit: 5-hour limit reached · resets 3:40pm (Asia/Seoul) (api_error)"
+        );
+        assert_eq!(
+            failure_reason(&result(None, json!(429))),
+            "Claude usage limit (api_error)"
+        );
+    }
+
+    #[test]
+    fn failure_reason_keeps_other_errors_on_one_line() {
+        assert_eq!(
+            failure_reason(&result(Some("\nAPI Error: 500\nbody"), Value::Null)),
+            "API Error: 500 (api_error)"
+        );
+        assert_eq!(failure_reason(&result(None, Value::Null)), "api_error");
+    }
+}
