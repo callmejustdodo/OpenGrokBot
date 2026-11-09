@@ -100,7 +100,7 @@ impl SocketServer {
 
 type Subscription = (Seq, broadcast::Receiver<EventEnvelope>);
 
-pub(super) async fn connection(
+pub async fn connection(
     stream: UnixStream,
     router: Arc<Router>,
     snapshots: Arc<SnapshotBuilder>,
