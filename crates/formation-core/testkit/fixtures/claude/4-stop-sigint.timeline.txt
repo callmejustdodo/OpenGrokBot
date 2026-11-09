@@ -1,0 +1,31 @@
+      0ms stdin#1   user "Use the Bash tool in the foreground (no run_in_background) to run exactly `sleep 20`. After it finishes, reply with exactly: FIRST-DONE"
+    326ms stdout#1   system hook_started
+    326ms stdout#2   system hook_started
+    326ms stdout#3   system hook_started
+    549ms stdout#4   system hook_response
+    549ms stdout#5   system hook_response
+   1108ms stdout#6   system hook_response
+   1193ms stdout#7   system init
+   1195ms stdout#8   system status
+   2502ms stdout#9   user "Use the Bash tool in the foreground (no run_in_background) t"
+   2502ms stdout#10  stream_event message_start
+   2502ms stdout#11  stream_event content_block_start
+   2502ms stdout#12  stream_event content_block_delta
+   2827ms stdout#13  stream_event content_block_delta
+   2827ms stdout#14  stream_event content_block_delta
+   2827ms stdout#15  stream_event content_block_delta
+   2945ms stdout#16  stream_event content_block_delta
+   2993ms stdout#17  stream_event content_block_delta
+   3085ms stdout#18  stream_event content_block_delta
+   3088ms stdout#19  assistant tool_use:"Bash"
+   3092ms stdout#20  stream_event content_block_stop
+   3097ms stdout#21  stream_event message_delta
+   3097ms stdout#22  stream_event message_stop
+   3098ms stdout#23  rate_limit_event
+   6471ms stdout#24  system task_started
+   6476ms signal    SIGINT
+   6481ms stdout#25  system task_notification
+   6488ms stdout#26  user tool_result
+   6489ms stdout#27  user "[Request interrupted by user for tool use]"
+   6491ms stdout#28  result error_during_execution
+   7080ms exit      exit status: 0

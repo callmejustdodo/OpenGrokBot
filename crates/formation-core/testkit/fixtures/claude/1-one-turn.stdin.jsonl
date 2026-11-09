@@ -1,0 +1,1 @@
+{"type":"user","message":{"role":"user","content":"Use the Bash tool to run exactly `sleep 1`. After it finishes, reply with exactly: ONE-DONE"},"parent_tool_use_id":null}

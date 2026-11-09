@@ -1,0 +1,21 @@
+      0ms stdin#1   user "What is the codeword? Reply with only the codeword."
+    232ms stdout#1   system hook_started
+    232ms stdout#2   system hook_started
+    232ms stdout#3   system hook_started
+    296ms stdout#4   system hook_response
+    298ms stdout#5   system hook_response
+    732ms stdout#6   system hook_response
+    795ms stdout#7   system init
+    797ms stdout#8   system status
+   1631ms stdout#9   user "What is the codeword? Reply with only the codeword."
+   1631ms stdout#10  stream_event message_start
+   1631ms stdout#11  stream_event content_block_start
+   1632ms stdout#12  stream_event content_block_delta
+   1660ms stdout#13  stream_event content_block_delta
+   1662ms stdout#14  assistant "PINEAPPLE-42"
+   1662ms stdout#15  stream_event content_block_stop
+   1666ms stdout#16  stream_event message_delta
+   1666ms stdout#17  stream_event message_stop
+   1667ms stdout#18  rate_limit_event
+   1670ms stdout#19  result success "PINEAPPLE-42"
+   2574ms exit      exit status: 0
