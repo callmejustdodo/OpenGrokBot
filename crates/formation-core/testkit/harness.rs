@@ -105,6 +105,14 @@ impl FakeHarness {
     pub fn sender(&self) -> broadcast::Sender<AgentStreamEvent> {
         self.stream.clone()
     }
+    /// Scripts an agent created after the harness, such as one made through
+    /// `agent_create`.
+    pub fn add_agent(&self, agent: ScriptedAgent) {
+        self.agents
+            .lock()
+            .unwrap()
+            .insert(agent.session.agent_id, agent);
+    }
     pub fn set_run(&self, run: RunInfo) {
         self.runs.lock().unwrap().insert(run.run_id, run);
     }
