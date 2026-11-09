@@ -120,7 +120,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: A
 
 ### TASK-042: B's fakes: stub WhoIs, fake policy, peers, and request queue
-- Status: pending
+- Status: complete
 - References: [integration contract](#how-the-parts-join-integration-contract)
 - Prerequisites: TASK-002
 - Change locations: `crates/formation-core/testkit/` (`stub-whois`, `FakePolicy`, `FakePermissionGate`, `FakePeers`, `FakeRequestQueue`, in-memory `CollabStore`)
@@ -171,7 +171,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: B
 
 ### TASK-007: Two Macs reach each other with verified identity
-- Status: pending
+- Status: complete
 - References: [identity](6_backend_architecture.md#identity-and-team), D-045, D-046
 - Prerequisites: TASK-001
 - Change locations: `crates/formation-core/src/peer/` (spike)
@@ -277,7 +277,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 ### Phase 3 · Ask a teammate's agent (IC-2)
 
 ### TASK-017: Team creation and joining
-- Status: pending
+- Status: complete
 - References: FR-008, US-008, US-020, SC-001, SC-013, D-046, TASK-007 results
 - Prerequisites: TASK-007, TASK-042 (uses the in-memory `CollabStore` from TASK-042 until TASK-011 merges)
 - Change locations: `crates/formation-core/src/team/`, B's migrations

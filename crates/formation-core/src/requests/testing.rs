@@ -76,6 +76,12 @@ impl TeamRepo for MemoryCollab {
         self.data.lock().unwrap().me = Some(id);
         Ok(())
     }
+    fn team(&self) -> Result<Option<crate::ports::TeamRecord>> {
+        Ok(None)
+    }
+    fn put_team(&self, _team: Option<&crate::ports::TeamRecord>) -> Result<()> {
+        Ok(())
+    }
     fn members(&self) -> Result<Vec<Member>> {
         unimplemented!("{UNUSED}")
     }

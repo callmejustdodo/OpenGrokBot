@@ -8,6 +8,10 @@ export type Member = { id: MemberId,
  */
 github_login: string, display_name: string, 
 /**
- * Must match Tailscale WhoIs on every peer request.
+ * Must match Tailscale WhoIs on every peer request, with `tailscale_node`.
  */
-tailscale_login: string, tailscale_node: string, role: MemberRole, joined_at: string, online: boolean, last_seen_at: string | null, };
+tailscale_login: string, 
+/**
+ * The node's Tailscale `StableID` (see [`WhoIs::node`]).
+ */
+tailscale_node: string, role: MemberRole, joined_at: string, online: boolean, last_seen_at: string | null, };
