@@ -1,6 +1,6 @@
 # Formation — Implementation plan
 
-Rev 2 · 2026-11-09 · For the coding agents of a team of three developers and one designer. Decision IDs refer to the [planning progress](0_one_pager.md#planning-progress) record. Rev 2 removes the waits between roles: the contract is written together at kickoff, each role builds the fakes it needs, tasks depend on interfaces instead of another role's implementation, and work is rebalanced (D-054).
+Rev 3 · 2026-11-09 · For the coding agents of a team of three developers and one designer. Decision IDs refer to the [planning progress](0_one_pager.md#planning-progress) record. Rev 2 removes the waits between roles: the contract is written together at kickoff, each role builds the fakes it needs, tasks depend on interfaces instead of another role's implementation, and work is rebalanced (D-054). Rev 3 adds agent presence, FR-023, as TASK-045 to TASK-047 in Phase 5 (D-055).
 
 ## Goal
 
@@ -79,7 +79,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 | 2 · Chat with my agent | TASK-010 to TASK-016 | **IC-1** |
 | 3 · Ask a teammate's agent | TASK-017 to TASK-022 | **IC-2** |
 | 4 · Work requests and approvals | TASK-023 to TASK-027, TASK-044 | **IC-3 = today's milestone** |
-| 5 · Complete the first version | TASK-028 to TASK-040 | **IC-4** |
+| 5 · Complete the first version | TASK-028 to TASK-040, TASK-045 to TASK-047 | **IC-4** |
 | 6 · Codex | TASK-041 | **IC-5** |
 
 ## Tasks
@@ -419,10 +419,13 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 | TASK-038 | History page and Inbox "questions sent to me" (answer, hand to agent) | C | SC-010, SC-017, US-010 | TASK-014 (fake data until TASK-037) |
 | TASK-039 | Steer now (or the stop-then-send fallback), edit and withdraw queued messages | A, then C for UI | FR-022, TASK-004 results | TASK-013 |
 | TASK-040 | Preview page complete, Korean and English pass, live avatars, VoiceOver pass | D with C | NFR-009, D-033, D-042, D-050 | TASK-026 |
+| TASK-045 | Agent presence in the core: `POST /v1/viewing` with 30-second refresh and 60-second expiry, "asking" from open questions, `viewing_set`, and the `agent.viewers` event (additive changes to B's proto files) | B | FR-023, US-025, [peer protocol](4_techspec.md#peer-protocol-over-the-tailnet) | TASK-018, TASK-019 |
+| TASK-046 | Presence in the app: `viewers` in the snapshot (C's proto file), avatar stack and popover on chat list rows, the asking-conversation notice, `viewing_set` on open and close | C | FR-023, US-025, SC-003, SC-015 | TASK-014, TASK-020 (fake data until TASK-045) |
+| TASK-047 | Styles and copy for presence: avatar stack, "+N", popover, notice, VoiceOver labels, preview entries | D | FR-023, SC-003, SC-015 | TASK-021 |
 
 Each Phase 5 task uses the same fields as the tasks above when it starts: change locations from the [ownership table](#roles-and-ownership), acceptance criteria from its stories, verification by tests plus the matching M3 states. UI tasks start against `fake-formationd` and switch to real data when the backend task merges.
 
-**IC-4 · First version complete:** every story US-001 to US-024 passes its Given/When/Then on two Macs; every M3 state exists in the app and the preview page.
+**IC-4 · First version complete:** every story US-001 to US-025 passes its Given/When/Then on two Macs; every M3 state exists in the app and the preview page.
 
 ### Phase 6 · Codex (IC-5)
 
@@ -462,6 +465,7 @@ Each Phase 5 task uses the same fields as the tasks above when it starts: change
 | FR-020 Activity record | US-012 | SC-017 | `store` | 037, 038 | IC-4 |
 | FR-021 Channel-ready design | — (design requirement) | — | Agent folder model leaves room for channels | 012 | Review of the folder layout |
 | FR-022 Chat with my agent | US-024 | SC-005 | `harness::claude`, `permission` | 004, 013, 015, 024, 039, 044 | IC-1, IC-3 |
+| FR-023 See who is on an agent | US-025 | SC-003 (teammates on an agent), SC-015 notice; not in M3 | `peer` presence, `agent.viewers` | 045, 046, 047 | Presence expiry tests; IC-4 two-Mac check |
 | NFR-001 Answer time | US-013 | SC-015 | `ask` | 006, 019 | Timings from TASK-006; IC-2 |
 | NFR-002 No interruption | US-013 | — | Fork with no tools | 006, 019 | Transcript comparison |
 | NFR-003 Sensitive content | US-009 | SC-008 preview | Masking | 019 | Unit tests |
