@@ -18,9 +18,11 @@
   --glass: rgba(255,255,255,.72); --glass-border: rgba(255,255,255,.9);
   --glass-shadow: 0 8px 30px rgba(47,80,140,.10), 0 0 0 1px rgba(227,232,239,.8);
   --radius-panel: 20px;
+  --glass-side: rgba(240,244,250,.78); --glass-card: rgba(255,255,255,.72); --glass-line: rgba(214,223,236,.9);
+  --bub-glow: 0 6px 18px rgba(47,107,245,.28); --sheet-bg: rgba(255,255,255,.94);
   --focus: #2f6bf5;
   --green: #28cd41; --orange: #ff9500; --yellow: #e0b000; --red: #ff3b30; --gray: #8e8e93;
-  --scrim: rgba(27,34,48,.18); --shadow: 0 24px 70px rgba(47,80,140,.20), 0 0 0 1px rgba(227,232,239,.9);
+  --scrim: rgba(27,34,48,.22); --shadow: 0 24px 70px rgba(47,80,140,.20), 0 0 0 1px rgba(227,232,239,.9);
   --soft: 0 2px 12px rgba(47,80,140,.07), 0 0 0 1px #e3e8ef;
   /* Sidebar tint over the window's sidebar vibrancy; the panel window's tint over popover vibrancy. */
   --side-tint: color-mix(in srgb, var(--side) 55%, transparent);
@@ -39,6 +41,8 @@
   --brand-grad: linear-gradient(135deg, #5b9bff 0%, #2f6bf5 100%);
   --backdrop: linear-gradient(160deg, #0d1424 0%, #121a2b 50%, #0f1830 100%);
   --glass: rgba(28,34,48,.72); --glass-border: rgba(255,255,255,.08);
+  --glass-side: rgba(22,27,39,.78); --glass-card: rgba(255,255,255,.05); --glass-line: rgba(255,255,255,.08);
+  --bub-glow: 0 6px 18px rgba(61,123,255,.3); --sheet-bg: rgba(30,36,50,.94);
   --glass-shadow: 0 8px 30px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.07);
   --sec: #232a38; --card: #1c2230; --field: #1f2533;
   --text: #eef2f8; --text2: #a3adbd; --text3: #6b7587; --sep: rgba(255,255,255,.09);
@@ -55,6 +59,8 @@
     --brand-grad: linear-gradient(135deg, #5b9bff 0%, #2f6bf5 100%);
     --backdrop: linear-gradient(160deg, #0d1424 0%, #121a2b 50%, #0f1830 100%);
     --glass: rgba(28,34,48,.72); --glass-border: rgba(255,255,255,.08);
+  --glass-side: rgba(22,27,39,.78); --glass-card: rgba(255,255,255,.05); --glass-line: rgba(255,255,255,.08);
+  --bub-glow: 0 6px 18px rgba(61,123,255,.3); --sheet-bg: rgba(30,36,50,.94);
     --glass-shadow: 0 8px 30px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.07);
     --sec: #232a38; --card: #1c2230; --field: #1f2533;
     --text: #eef2f8; --text2: #a3adbd; --text3: #6b7587; --sep: rgba(255,255,255,.09);

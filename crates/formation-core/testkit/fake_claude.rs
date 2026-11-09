@@ -36,6 +36,17 @@ fn write_line(out: &mut impl Write, line: &Value) -> io::Result<()> {
     out.flush()
 }
 
+/// A turn whose OAuth session expired: Claude answers with the error text and an
+/// error result, which the agent shows as `error` with reason `api_error`.
+fn auth_failure(session: &str) -> VecDeque<Value> {
+    let text = "Failed to authenticate: OAuth session expired and could not be refreshed";
+    let id = formation_proto::common::RunId::generate().to_string();
+    VecDeque::from([
+        json!({"type":"assistant","session_id":session,"parent_tool_use_id":null,"uuid":id,"timestamp":"2026-11-09T00:00:00Z","message":{"id":format!("msg_{id}"),"type":"message","role":"assistant","content":[{"type":"text","text":text}]}}),
+        json!({"type":"result","session_id":session,"subtype":"success","is_error":true,"terminal_reason":"api_error","result":text}),
+    ])
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let argv: Vec<_> = env::args().skip(1).collect();
     if argv == ["--version"] {
@@ -90,6 +101,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     let accept_steer = env::var_os("FAKE_CLAUDE_ACCEPT_STEER").is_some();
     let ignore_interrupt = env::var_os("FAKE_CLAUDE_IGNORE_INTERRUPT").is_some();
+    // The first N turns fail to authenticate as in the IC-1 run, before any recorded turn.
+    let mut auth_failures =
+        env::var("FAKE_CLAUDE_AUTH_FAILURES").map_or(Ok(0), |v| v.parse::<usize>())?;
     let delay = env::var("FAKE_CLAUDE_LINE_DELAY_MS").map_or(Ok(0), |v| v.parse::<u64>())?;
     let transcript = fs::read_to_string(env::var("FAKE_CLAUDE_TRANSCRIPT")?)?;
     let mut turns = VecDeque::new();
@@ -124,7 +138,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     loop {
         if active.is_none() && queued > 0 {
             queued -= 1;
-            active = turns.pop_front();
+            active = if auth_failures > 0 {
+                auth_failures -= 1;
+                Some(auth_failure(&session))
+            } else {
+                turns.pop_front()
+            };
             next_line = Instant::now();
         }
         if eof && active.is_none() && queued == 0 {

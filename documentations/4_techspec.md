@@ -95,6 +95,7 @@ Launch `codex app-server` in the agent's folder and speak JSON-RPC over its stdi
 | Stop | `turn/interrupt` with `threadId` and `turnId` returns `{}`, and `turn/completed` with status `interrupted` arrived 4 ms later. The streaming `agentMessage` got no `item/completed`. | FR-003 |
 | Owner's approvals | With `approvalPolicy: "untrusted"`, `approvalsReviewer: "user"` and `sandbox: "read-only"`, a shell command arrives as the server request `item/commandExecution/requestApproval` (`threadId`, `turnId`, `itemId`, `command`, `cwd`, `availableDecisions`) while the thread is `waitingOnApproval`. Answering `{"decision":"accept"}` ran it once; `{"decision":"decline"}` ended the item as `declined`, nothing ran, and the turn went on to complete. `serverRequest/resolved` follows each answer. `decline` worked although `availableDecisions` listed only `accept`, `acceptWithExecpolicyAmendment` and `cancel`. Server request IDs are their own sequence from 0. | FR-022 |
 | Restart and continue | Start a new process, `initialize`, then `thread/resume` with `threadId`: the same ID and rollout path, and `thread.turns` lists the earlier turns with their statuses (including the interrupted one). The next turn answered from the earlier conversation. | FR-003 |
+| Owner's Codex settings | The owner's `$CODEX_HOME` applies to the session: its `AGENTS.md` (`instructionSources`), hooks (`hook/started`), MCP servers and default model. The owner's config here sets `approvals_reviewer` to an automatic reviewer, so Formation passes `approvalsReviewer: "user"` explicitly; behavior without it was not tested. | FR-004 |
 | Owner's Codex settings | The owner's `$CODEX_HOME` applies to the session: its `AGENTS.md` (`instructionSources`), hooks (`hook/started`), MCP servers and default model. The owner's config here sets `approvals_reviewer` to an automatic reviewer, so OpenGrokBot passes `approvalsReviewer: "user"` explicitly; behavior without it was not tested. | FR-004 |
 
 Not yet proven: file-edit approvals (`item/fileChange/requestApproval`), `acceptForSession` and `cancel`, other sandbox and approval settings, the experimental API (`experimentalApi: true`), a second client joining a running thread, models other than the owner's default, and reading the rollout file.
@@ -112,11 +113,11 @@ Not yet proven: file-edit approvals (`item/fileChange/requestApproval`), `accept
 
 ## Data model
 
-Stored in SQLite on each member's Mac. Times are UTC in storage and shown in local time. IDs are UUIDv7 strings.
+Stored in SQLite on each member's Mac. Times are UTC in storage and shown in local time. IDs are UUIDv7 strings. The member, invitation, team, sharing, question, request, queue, approval and rule tables are B's migrations 2000–2999 (`crates/formation-core/src/collab_store/`); nested values that are never queried are JSON text.
 
 | Entity | Key fields | Rules |
 | --- | --- | --- |
-| `member` | id, github_login, display_name, tailscale_login, tailscale_node (the node's `StableID`), joined_at, role (`creator` or `member`), removed_at | Unique `github_login` and `tailscale_login` among current members; removal ends access at once (FR-008). |
+| `member` | id, github_login, display_name, tailscale_login, tailscale_node (the node's `StableID`), joined_at, role (`creator` or `member`), online (last value written; live presence is the peer module's), last_seen_at, removed_at | Unique `github_login` and `tailscale_login` among current members; removal ends access at once (FR-008). |
 | `invitation` | id, code, link, created_by, expires_at, used_by, used_at | Single use; expires 24 hours after it is made; single team. |
 | `team` | id, creator_host, creator_port, roster_version, open invitation; this Mac's own member | One per Mac; see [team and roster](#team-and-roster). |
 | `agent` | id, slug, name, role, harness (`claude_code`, `codex`, `detected`), folder_path, avatar_shape, avatar_color, created_at, deleted_at | Unique slug per Mac; detected agents record their harness and source path. |
@@ -124,11 +125,12 @@ Stored in SQLite on each member's Mac. Times are UTC in storage and shown in loc
 | `session` | id (harness session ID), agent_id, started_at, last_activity_at, state | One main session per running agent. |
 | `schedule` | id, agent_id, prompt, rule (daily, weekdays, weekly, every N hours), time, paused | Missed runs run once on wake (FR-005). |
 | `schedule_run` | id, schedule_id, planned_at, started_at, finished_at, result (`completed`, `failed`, `missed_ran`) | |
-| `question` | id, asker_member_id, owner_member_id, target_kind (`person`, `agent`), target_agent_id, text, status, routing_choice, created_at | Status: received, answering, unsure, waiting_offline, sent_to_owner, answered, canceled, failed. |
-| `answer` | id, question_id, agent_id, text, excerpts (JSON), as_of, possibly_stale, fork_session_id | Excerpts empty when visibility is `answer`. |
-| `work_request` | id, requester_member_id, requester_agent, chain_id, chain_depth, target_agent_id, prompt, idempotency_key, status, created_at, updated_at | Unique (requester, idempotency_key); status per FR-014. |
-| `approval` | id, work_request_id (nullable for the owner's own work), tool, input (JSON), purpose, status, decided_choice, decided_at, expires_at | Expires after 24 hours (FR-015). |
-| `rule` | id, requester_member_id, agent_id, program, arg_pattern, folder, expires_at, max_uses, uses, revoked_at | Never matches command chaining or another folder (FR-015). |
+| `question` | id, thread_id, asker, target (JSON: person or agent), text, status, candidates (JSON), agent_id, answer (JSON: id, agent_id, text, excerpts, as_of, possibly_stale, answered_at), error, created_at, updated_at | Status: received, answering, unsure, waiting_offline, sent_to_owner, answered, canceled, failed. Answer excerpts are empty when visibility is `answer`. |
+| `question_fork_session` | thread_id, session_id | The forked session answering a thread; owner's Mac only, never sent to peers. |
+| `work_request` | id, requester, requester_agent, chain (JSON: id, depth), owner, agent_id, prompt, idempotency_key, status, result, error, created_at, updated_at | Unique (requester, idempotency_key); status per FR-014. |
+| `queue_item` | id, agent_id, source (JSON: owner, request, or schedule), text, queued_at | Each agent's queue in arrival order, kept so a restart re-queues it. |
+| `approval` | id, agent_id, request_id (nullable for the owner's own work), requester, requester_agent, purpose, call (JSON: tool and input), summary, proposed_rule (JSON), status, choice, created_at, decided_at, expires_at | Expires after 24 hours (FR-015). |
+| `rule` | id, requester, agent_id, scope (JSON: all, or program, arg_pattern, folder), expires_at, max_uses, uses, created_at, revoked_at | Never matches command chaining or another folder (FR-015). |
 | `activity` | id, kind, actor, agent_id, ref_id, at, summary | Local record (FR-020). |
 
 **Invariants:** a private agent never appears in any peer response; approval decisions are made only by the owner's core; a request with a repeated idempotency key returns the original; each agent's main session accepts one turn at a time, in arrival order.

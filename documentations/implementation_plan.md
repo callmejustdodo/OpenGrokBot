@@ -28,7 +28,7 @@ Each role is one person and their coding agent. A role changes only the paths it
 | Role | Area | Owns (paths) |
 | --- | --- | --- |
 | **A · Agent runtime** | formationd service, local storage, Claude Code (later Codex) harness supervisor, agent folders, schedules, detection, notifications | `crates/formationd/`, `crates/formation-core/src/{service,store,harness,agents,schedules,notify}/`, migrations `1000–1999` and the migration runner, proto files `common.rs`, `agent.rs`, `harness.rs`, and the `Harness`, `Store`, `Notifier`, `EventSink`, `CommandHandler` traits |
-| **B · Collaboration core** | Team and identity, Tailscale peer protocol, policy and approvals, the permission gate (Claude Code permission tool and `PreToolUse` hook), ask pipeline, work requests, CLI and MCP | `crates/formation-core/src/{team,peer,policy,permission,ask,requests}/`, `crates/formation-cli/`, migrations `2000–2999`, proto files `team.rs`, `peer.rs`, `policy.rs`, `ask.rs`, `request.rs`, and the `CollabStore`, `Policy`, `PermissionGate`, `Peers`, `RequestQueue` traits |
+| **B · Collaboration core** | Team and identity, Tailscale peer protocol, policy and approvals, the permission gate (Claude Code permission tool and `PreToolUse` hook), ask pipeline, work requests, CLI and MCP | `crates/formation-core/src/{team,peer,policy,permission,ask,requests,collab_store}/`, `crates/formation-cli/`, migrations `2000–2999`, proto files `team.rs`, `peer.rs`, `policy.rs`, `ask.rs`, `request.rs`, and the `CollabStore`, `Policy`, `PermissionGate`, `Peers`, `RequestQueue` traits |
 | **C · App** | Tauri client, LaunchAgent registration from the app, tray, menus, windows, notifications bridge, IPC, store, view logic, `fake-formationd` | `apps/desktop/src-tauri/`, `apps/desktop/src/{ipc,store,views}/`, window entries, `tools/fake-formationd/`, proto files `snapshot.rs`, `events.rs` (the envelope; each event payload lives with its domain owner) |
 | **D · Design** | Design tokens, component styles, avatars, Korean and English copy, preview page, visual QA against M3 | `apps/desktop/src/styles/`, `apps/desktop/src/**/*.css`, `apps/desktop/src/i18n/`, `apps/desktop/src/preview/` |
 
@@ -181,13 +181,13 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: B
 
 ### TASK-008: The Tauri shell shows the tray, the window, and fake data
-- Status: in progress
+- Status: complete
 - References: [windows](5_frontend_architecture.md#windows), SC-002, SC-003
 - Prerequisites: TASK-043
 - Change locations: `apps/desktop/src-tauri/`, `apps/desktop/src/main.tsx`, `menubar.tsx`
 - Work: tray icon (check for a duplicate icon on macOS 13 and the latest macOS), main window with traffic lights and sidebar vibrancy, menu bar panel under the tray icon, connection to `fake-formationd` over the local socket.
 - Acceptance criteria: one tray icon; the panel opens under it; the main window shows fixture data.
-- Verification: run on macOS 13 and the latest macOS.
+- Verification: run on macOS 13 and the latest macOS. Not done at completion, by the owner's decision: the macOS 13 run, and an on-screen check of the tray, menu bar panel, traffic lights and vibrancy; the latest macOS run checked the windows, the fake connection and the window content (off-screen render).
 - Owner: C
 
 ### TASK-009: The app registers formationd as a LaunchAgent that outlives it
@@ -430,7 +430,7 @@ Each Phase 5 task uses the same fields as the tasks above when it starts: change
 
 ### TASK-041: Codex agents through app-server
 - Status: pending
-- References: D-002, [Codex note](4_techspec.md#claude-code-integration-first-harness), Reason Network `src/codex.rs`
+- References: D-002, [Codex note](4_techspec.md#codex-integration-second-harness), Reason Network `src/codex.rs`
 - Prerequisites: IC-4
 - Change locations: `crates/formation-core/src/harness/codex/`
 - Work: prove `codex app-server` turns, interrupts, and approvals; implement the `Harness` port for Codex; route approvals through `PermissionGate`.

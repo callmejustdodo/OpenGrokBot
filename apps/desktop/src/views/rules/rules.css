@@ -20,3 +20,15 @@
 /* v2 Sky Glass: rule lists are white rounded cards. */
 .page .list { border-radius: 16px; border: 1px solid var(--sep); background: var(--card); box-shadow: var(--soft); }
 .input:focus, .select:focus { outline: none; border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 18%, transparent); }
+/* v2 fidelity (SC-012): small title with an inline lead, borderless lifted
+   cards, ~60px rows. */
+.page { padding: 24px 30px; }
+.page h1 { font-size: 20px; }
+.page .h1row { margin-bottom: 16px; }
+.page .list { border: 0; border-radius: 14px; box-shadow: 0 4px 18px rgba(47,80,140,.08), 0 0 0 1px color-mix(in srgb, var(--sep) 60%, transparent); }
+.list.always { margin-bottom: 12px; }
+.page .list .row { padding: 13px 16px; min-height: 58px; }
+.input, .select { border-radius: 12px; }
+
+/* Keep a rule's expiry and use count on one line. */
+.row .when { white-space: nowrap; }
