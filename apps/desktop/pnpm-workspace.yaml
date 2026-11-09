@@ -1,0 +1,5 @@
+# pnpm settings for the desktop app (a single package, not a workspace).
+overrides:
+  # GHSA-g3hv-75wg-m249: every minimatch release before 11.0.1 is affected, and
+  # ESLint and typescript-eslint still ask for ^10. Remove once they move to 11.
+  minimatch: ^11.0.1
