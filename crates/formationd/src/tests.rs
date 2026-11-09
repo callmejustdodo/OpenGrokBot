@@ -1,6 +1,9 @@
 use super::*;
 use formation_core::service::connection;
-use formation_proto::common::AgentId;
+use formation_proto::common::{AgentId, ApprovalId, RunId};
+use formation_proto::policy::{
+    ApprovalChoice, ApprovalDecide, PermissionDecide, PermissionPrompt, PermissionSource, ToolCall,
+};
 use serde_json::{Value, json};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::UnixStream;
@@ -78,6 +81,45 @@ async fn check_wiring(fakes: &str, fake_peers: bool) {
             assert_eq!(snapshot["harnesses"][0]["version"], "fake");
         } else {
             assert_eq!(response["result"], json!([]));
+        }
+    }
+    let prompt = PermissionPrompt {
+        agent_id: AgentId::generate(),
+        run_id: RunId::generate(),
+        session_id: None,
+        source: PermissionSource::PermissionTool,
+        call: ToolCall {
+            tool_use_id: Some("tool".into()),
+            tool_name: "Bash".into(),
+            input: json!({"command": "true"}),
+        },
+    };
+    let decide = ApprovalDecide {
+        approval_id: ApprovalId::generate(),
+        choice: ApprovalChoice::AllowOnce,
+        rule: None,
+    };
+    for (id, method, params) in [
+        (5, "permission_decide", json!(PermissionDecide { prompt })),
+        (6, "approval_decide", json!(decide)),
+    ] {
+        let mut request = serde_json::to_vec(
+            &json!({"jsonrpc": "2.0", "id": id, "method": method, "params": params}),
+        )
+        .unwrap();
+        request.push(b'\n');
+        client.get_mut().write_all(&request).await.unwrap();
+        let mut line = String::new();
+        timeout(Duration::from_secs(5), client.read_line(&mut line))
+            .await
+            .unwrap()
+            .unwrap();
+        let response: Value = serde_json::from_str(&line).unwrap();
+        assert_eq!(response["id"], id);
+        assert_ne!(response["error"]["code"], -32601, "{method}: {response}");
+        if method == "permission_decide" {
+            // An unknown run is denied, not left to Claude Code.
+            assert_eq!(response["result"]["behavior"], "deny", "{response}");
         }
     }
     drop(client);
