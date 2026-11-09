@@ -123,7 +123,11 @@ fn agent() -> Agent {
     .unwrap()
 }
 fn builder(bus: Arc<EventBus>, fail: bool) -> SnapshotBuilder {
-    let stub = Arc::new(Stub { bus, fail });
+    let stub = Arc::new(Stub {
+        bus,
+        fail,
+        offline: false,
+    });
     SnapshotBuilder::new(stub.clone(), stub.clone(), stub.clone(), stub)
 }
 
@@ -501,4 +505,113 @@ async fn service_socket_pair_drains_burst_without_artificial_lag() {
         assert_eq!(receive(&mut lines).await["params"]["seq"], seq);
     }
     task.abort();
+}
+
+fn session() -> SessionInfo {
+    SessionInfo {
+        agent_id: agent_id(),
+        session_id: SessionId("main".into()),
+        transcript_path: "/tmp/api/main.jsonl".into(),
+        cwd: "/tmp/api".into(),
+        started_at: agent().created_at,
+        last_activity_at: None,
+    }
+}
+
+#[tokio::test]
+async fn service_snapshot_keeps_local_state_when_teammate_is_offline() {
+    let bus = Arc::new(EventBus::new(16));
+    let stub = Arc::new(Stub {
+        bus: bus.clone(),
+        fail: false,
+        offline: true,
+    });
+    let snapshots = SnapshotBuilder::new(stub.clone(), stub.clone(), stub.clone(), stub);
+    let (snapshot, mut receiver) = snapshots.capture(&bus).await.unwrap();
+    assert_eq!(snapshot.agents, vec![agent()]);
+    assert_eq!(snapshot.team.unwrap().members.len(), 2);
+    assert_eq!(snapshot.shares, vec![ShareSettings::private(agent_id())]);
+    assert_eq!(snapshot.conversations.len(), 1);
+    assert!(snapshot.teammate_agents.is_empty());
+    assert!(snapshot.harnesses[0].installed);
+    assert_eq!(
+        snapshot.settings.language,
+        Some(formation_proto::snapshot::Language::Ko)
+    );
+    assert_eq!(receiver.try_recv().unwrap().seq, Seq(1));
+}
+
+#[tokio::test]
+async fn service_snapshot_keeps_sessionless_agent_with_unscripted_fake_harness() {
+    use crate::testkit::{FakeHarness, MemoryStore};
+
+    let bus = Arc::new(EventBus::new(16));
+    let stub = Arc::new(Stub {
+        bus: bus.clone(),
+        fail: false,
+        offline: false,
+    });
+    let store = Arc::new(MemoryStore::default());
+    store.insert_agent(&agent()).unwrap();
+    let harness = Arc::new(FakeHarness::new(
+        HarnessKind::ClaudeCode,
+        stub.status().await,
+        [],
+    ));
+    let snapshots = SnapshotBuilder::new(store, stub.clone(), harness, stub);
+    let (snapshot, _) = snapshots.capture(&bus).await.unwrap();
+    assert_eq!(snapshot.agents, vec![agent()]);
+    assert_eq!(snapshot.conversations.len(), 1);
+    assert_eq!(snapshot.conversations[0].session_id, None);
+    assert!(snapshot.conversations[0].items.is_empty());
+    assert!(!snapshot.conversations[0].has_more);
+    assert_eq!(snapshot.conversations[0].stream_seq, 0);
+}
+
+#[tokio::test]
+async fn service_snapshot_omits_failed_conversation_and_keeps_healthy_agent() {
+    use crate::testkit::{FakeHarness, MemoryStore, ScriptedAgent, ScriptedPage};
+
+    let bus = Arc::new(EventBus::new(16));
+    let stub = Arc::new(Stub {
+        bus: bus.clone(),
+        fail: false,
+        offline: false,
+    });
+    let store = Arc::new(MemoryStore::default());
+    store.insert_agent(&agent()).unwrap();
+    store.put_main_session(&session()).unwrap();
+    let mut healthy_agent = agent();
+    healthy_agent.id = AgentId(uuid::Uuid::from_u128(4));
+    healthy_agent.slug = "healthy".into();
+    store.insert_agent(&healthy_agent).unwrap();
+    let mut healthy_session = session();
+    healthy_session.agent_id = healthy_agent.id;
+    healthy_session.session_id = SessionId("healthy".into());
+    store.put_main_session(&healthy_session).unwrap();
+    let mut scripted = ScriptedAgent::new(healthy_session, []);
+    scripted.pages.push(ScriptedPage {
+        session_id: None,
+        before: None,
+        limit: 100,
+        page: ConversationPageResult {
+            items: vec![],
+            has_more: true,
+            stream_seq: 9,
+        },
+    });
+    let harness = Arc::new(FakeHarness::new(
+        HarnessKind::ClaudeCode,
+        stub.status().await,
+        [scripted],
+    ));
+    let snapshots = SnapshotBuilder::new(store, stub.clone(), harness, stub);
+    let (snapshot, _) = snapshots.capture(&bus).await.unwrap();
+    assert_eq!(snapshot.agents.len(), 2);
+    assert_eq!(snapshot.conversations.len(), 1);
+    assert_eq!(snapshot.conversations[0].agent_id, healthy_agent.id);
+    assert_eq!(snapshot.conversations[0].stream_seq, 9);
+    assert!(snapshot.conversations[0].has_more);
+    assert_eq!(snapshot.shares, vec![ShareSettings::private(agent_id())]);
+    assert!(snapshot.harnesses[0].installed);
 }

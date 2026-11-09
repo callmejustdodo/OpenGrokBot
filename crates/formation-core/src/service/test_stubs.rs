@@ -2,7 +2,7 @@ use crate::ports::*;
 use formation_proto::{agent::*, ask::*, harness::*, peer::*, policy::*, request::*, team::*};
 
 
-struct Stub { bus: Arc<EventBus>, fail: bool }
+struct Stub { bus: Arc<EventBus>, fail: bool, offline: bool }
 
 impl AgentRepo for Stub {
     fn agents(&self) -> Result<Vec<Agent>> { if self.fail { return Err(ApiError::new(ErrorCode::Internal, "store failed")); } self.bus.publish(event()); Ok(vec![agent()]) }
@@ -16,7 +16,7 @@ impl AgentRepo for Stub {
 impl SessionRepo for Stub {
     fn fork_session(&self, _run_id: RunId) -> Result<Option<SessionInfo>> { unreachable!("unused port method") }
     fn put_fork_session(&self, _run_id: RunId, _session: &SessionInfo) -> Result<()> { unreachable!("unused port method") }
-    fn main_session(&self, _agent_id: AgentId) -> Result<Option<SessionInfo>> { Ok(None) }
+    fn main_session(&self, _agent_id: AgentId) -> Result<Option<SessionInfo>> { Ok(Some(session())) }
     fn put_main_session(&self, _session: &SessionInfo) -> Result<()> { unreachable!("unused port method") }
 }
 
@@ -116,7 +116,7 @@ impl Harness for Stub {
 impl Peers for Stub {
     async fn join(&self, _creator_address: &str, _join: PeerJoin) -> Result<PeerJoinAccepted> { unreachable!("unused port method") }
     async fn roster(&self, _member: MemberId) -> Result<Vec<Member>> { unreachable!("unused port method") }
-    async fn agents(&self, _member: MemberId) -> Result<Vec<SharedAgentView>> { assert_eq!(_member, teammate_id()); Ok(vec![]) }
+    async fn agents(&self, _member: MemberId) -> Result<Vec<SharedAgentView>> { assert_eq!(_member, teammate_id()); if self.offline { return Err(ApiError::new(ErrorCode::PeerOffline, "offline")); } Ok(vec![]) }
     async fn ask(&self, _member: MemberId, _ask: PeerAsk) -> Result<PeerAskAccepted> { unreachable!("unused port method") }
     async fn question_action( &self, _member: MemberId, _question_id: QuestionId, _action: PeerQuestionAction, ) -> Result<Question> { unreachable!("unused port method") }
     async fn create_request( &self, _member: MemberId, _request: PeerRequestCreate, ) -> Result<WorkRequest> { unreachable!("unused port method") }

@@ -50,21 +50,26 @@ impl SnapshotBuilder {
                 .await
                 .map_err(|error| ApiError::new(ErrorCode::Internal, error.to_string()))??;
         for mut conversation in conversations {
-            let page = self
-                .harness
-                .conversation(conversation.agent_id, None, None, 100)
-                .await?;
-            conversation.items = page.items;
-            conversation.has_more = page.has_more;
-            conversation.stream_seq = page.stream_seq;
+            if conversation.session_id.is_some() {
+                let Ok(page) = self
+                    .harness
+                    .conversation(conversation.agent_id, None, None, 100)
+                    .await
+                else {
+                    continue;
+                };
+                conversation.items = page.items;
+                conversation.has_more = page.has_more;
+                conversation.stream_seq = page.stream_seq;
+            }
             snapshot.conversations.push(conversation);
         }
         if let Some(team) = &snapshot.team {
             for member in &team.members {
-                if member.id != team.me {
-                    snapshot
-                        .teammate_agents
-                        .extend(self.peers.agents(member.id).await?);
+                if member.id != team.me
+                    && let Ok(agents) = self.peers.agents(member.id).await
+                {
+                    snapshot.teammate_agents.extend(agents);
                 }
             }
         }
