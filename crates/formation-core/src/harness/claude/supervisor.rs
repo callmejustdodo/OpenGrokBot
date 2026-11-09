@@ -311,6 +311,31 @@ impl ClaudeSupervisor {
                 }));
         });
     }
+    /// A connected Claude Code session is its own main session: Formation reads its
+    /// transcript and forks it, and never resumes or writes to it.
+    fn detected_session(&self, id: AgentId) -> Result<Option<SessionInfo>> {
+        let Some(agent) = self.inner.store.agent(id)? else {
+            return Ok(None);
+        };
+        let Some(source) = agent
+            .detected
+            .filter(|d| d.harness == DetectedHarness::ClaudeCode)
+        else {
+            return Ok(None);
+        };
+        // Detection connects a transcript only when its file stem is its session ID.
+        let Some(session_id) = source.path.file_stem().and_then(|s| s.to_str()) else {
+            return Ok(None);
+        };
+        Ok(Some(SessionInfo {
+            agent_id: id,
+            session_id: SessionId(session_id.into()),
+            transcript_path: source.path.clone(),
+            cwd: agent.folder_path,
+            started_at: agent.created_at,
+            last_activity_at: agent.last_activity_at,
+        }))
+    }
     /// Runs a teammate's request in a fork, listed on the agent while it runs.
     async fn run_request(
         &self,
@@ -509,7 +534,13 @@ impl Harness for ClaudeSupervisor {
     }
     async fn run_fork(&self, id: AgentId, fork: ForkRun) -> Result<ForkResult> {
         let agent = self.agent(id)?;
-        if agent.harness != HarnessKind::ClaudeCode {
+        // A connected Claude Code session forks too: `--fork-session` never writes to it.
+        let detected_claude = agent.harness == HarnessKind::Detected
+            && agent
+                .detected
+                .as_ref()
+                .is_some_and(|d| d.harness == DetectedHarness::ClaudeCode);
+        if agent.harness != HarnessKind::ClaudeCode && !detected_claude {
             return Err(error(
                 ErrorCode::HarnessUnsupported,
                 "not a Claude Code agent",
@@ -576,7 +607,7 @@ impl Harness for ClaudeSupervisor {
     }
     async fn session_info(&self, id: AgentId) -> Result<Option<SessionInfo>> {
         let Some(mut session) = self.inner.store.main_session(id)? else {
-            return Ok(None);
+            return self.detected_session(id);
         };
         if let Some(path) = transcript::find_transcript(
             &self.inner.config.config_dir,

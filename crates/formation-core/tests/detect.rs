@@ -258,9 +258,8 @@ async fn detects_recent_codex_sessions_skips_known_ones_and_connects_read_only()
     assert_eq!(d.path, original);
     assert_eq!(d.session_id.as_ref().unwrap().0, "codex-session");
     assert_eq!(d.last_activity_at, Some(now));
-    let reason = Some("Codex support arrives with TASK-041".to_string());
-    assert!(!d.capabilities.read_conversation.supported);
-    assert_eq!(d.capabilities.read_conversation.reason, reason);
+    assert!(d.capabilities.read_conversation.supported);
+    assert!(!d.capabilities.answer_teammates.supported);
     assert!(!d.capabilities.state.supported);
     let connected: Agent =
         serde_json::from_value(f.call("agent_connect", json!({"key":d.key})).await).unwrap();

@@ -105,7 +105,8 @@ impl<S: TeamRepo + Send + Sync + ?Sized> TeamService<S> {
 
     /// Roster changes made or applied on this Mac, for the peer server: on the
     /// creator's Mac it closes removed members' connections, then pushes
-    /// [`RosterChange::to_peer_event`] to every member.
+    /// [`RosterChange::to_peer_event`] to every member. On a member's Mac this
+    /// includes the roster it received when it joined.
     pub fn subscribe_roster(&self) -> broadcast::Receiver<RosterChange> {
         self.roster_tx.subscribe()
     }

@@ -10,8 +10,16 @@
 //!   [`scorer`] is the real one, a short isolated Claude Code call.
 //! - [`answer`] post-processes a forked answer: excerpts, `as_of`,
 //!   `possibly_stale`, visibility, and masking ([`mask`]).
+//! - [`endpoints`] serves teammates' `POST /v1/ask` and question actions with
+//!   the pipeline ([`OwnerAsks`]), answering in the background and publishing
+//!   every change to the asker.
 //!
 //! Sharing and visibility settings live in [`crate::policy::sharing`].
+//!
+//! [`commands`] serves the asker's side on the local socket (`ask`,
+//! `question_*`, `share_update`, `share_preview`, `teammate_agents`): questions
+//! go to the owner's Mac through the [`Peers`](crate::ports::Peers) port and this
+//! Mac keeps a copy of each that follows the owner's updates.
 //!
 //! The TASK-006 spike answered a question in a fork of the agent's Claude Code
 //! session and showed that the original session's transcript is byte-identical
@@ -106,6 +114,8 @@
 //!   call ([`scorer`]), which resumes no session, uses this runner.
 
 pub mod answer;
+pub mod commands;
+pub mod endpoints;
 pub(crate) mod excerpts;
 pub mod fork;
 pub mod mask;
@@ -115,12 +125,16 @@ pub mod scorer;
 pub mod stream;
 pub mod transcript;
 
+pub use commands::{AskCommands, ShareHook};
+pub use endpoints::OwnerAsks;
 pub use fork::{ANSWER_SYSTEM_PROMPT, AskError, ForkAnswer, ForkRequest, QUESTION_LEAD_IN};
 pub use stream::{StreamEvent, StreamResult, StreamSummary};
 pub use transcript::{
     claude_config_dir, find_transcript, project_dir, project_dir_name, transcript_path,
 };
 
+#[cfg(test)]
+mod commands_tests;
 #[cfg(test)]
 mod spike_test;
 

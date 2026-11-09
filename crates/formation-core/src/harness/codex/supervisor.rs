@@ -190,6 +190,81 @@ fn conversation_item(item: &Value, at: Timestamp) -> Option<ConversationItem> {
     }
 }
 
+/// The conversation in a Codex rollout file: its `item_completed` events, whose items
+/// are the app-server's thread items with PascalCase types and snake_case fields.
+fn rollout_items(text: &str) -> Vec<ConversationItem> {
+    text.lines()
+        .filter_map(|line| serde_json::from_str::<Value>(line).ok())
+        .filter(|record| {
+            record["type"] == "event_msg" && record["payload"]["type"] == "item_completed"
+        })
+        .filter_map(|record| {
+            let at = record["timestamp"].as_str()?.parse::<Timestamp>().ok()?;
+            rollout_item(&record["payload"]["item"], at)
+        })
+        .collect()
+}
+
+fn rollout_item(item: &Value, at: Timestamp) -> Option<ConversationItem> {
+    let text = |kind: &str| {
+        item["content"]
+            .as_array()
+            .map(|parts| {
+                parts
+                    .iter()
+                    .filter(|p| p["type"] == kind)
+                    .filter_map(|p| p["text"].as_str())
+                    .collect::<String>()
+            })
+            .unwrap_or_default()
+    };
+    // Steps are rewritten into the app-server's shape for `conversation_item`.
+    let item = match item["type"].as_str()? {
+        "UserMessage" => {
+            return Some(ConversationItem::UserMessage {
+                id: ItemId(item["id"].as_str()?.to_owned()),
+                at,
+                author: Author::Owner,
+                text: text("text"),
+            });
+        }
+        "AgentMessage" => json!({"type": "agentMessage", "id": item["id"], "text": text("Text")}),
+        "CommandExecution" => {
+            let command = match item["command"].as_array() {
+                Some(argv) => match argv.as_slice() {
+                    [_, flag, script] if matches!(flag.as_str(), Some("-lc" | "-c")) => {
+                        script.as_str().unwrap_or_default().to_owned()
+                    }
+                    argv => argv
+                        .iter()
+                        .filter_map(Value::as_str)
+                        .collect::<Vec<_>>()
+                        .join(" "),
+                },
+                None => item["command"].as_str().unwrap_or_default().to_owned(),
+            };
+            json!({"type": "commandExecution", "id": item["id"], "status": item["status"],
+                "command": command, "aggregatedOutput": item["aggregated_output"]})
+        }
+        "FileChange" => {
+            let changes: Vec<Value> = item["changes"]
+                .as_object()
+                .map(|changes| {
+                    changes
+                        .iter()
+                        .map(|(path, c)| json!({"path": path, "diff": c["unified_diff"]}))
+                        .collect()
+                })
+                .unwrap_or_default();
+            json!({"type": "fileChange", "id": item["id"], "status": item["status"], "changes": changes})
+        }
+        "McpToolCall" => json!({"type": "mcpToolCall", "id": item["id"], "status": item["status"],
+            "tool": item["tool"], "server": item["server"]}),
+        _ => return None,
+    };
+    conversation_item(&item, at)
+}
+
 /// The tool call the permission gate sees for a Codex approval request.
 fn tool_call(method: &str, params: &Value, started: &HashMap<String, Value>) -> ToolCall {
     let item_id = params["itemId"].as_str().unwrap_or_default().to_owned();
@@ -376,13 +451,50 @@ impl CodexSupervisor {
     }
     fn codex_agent(&self, id: AgentId) -> Result<Agent> {
         let agent = self.agent(id)?;
-        if agent.harness != HarnessKind::Codex || agent.detected.is_some() {
+        if agent.detected.is_some() {
+            return Err(error(
+                ErrorCode::HarnessUnsupported,
+                "detected Codex agents are read-only",
+            ));
+        }
+        if agent.harness != HarnessKind::Codex {
             return Err(error(
                 ErrorCode::HarnessUnsupported,
                 "only Formation Codex agents run here",
             ));
         }
         Ok(agent)
+    }
+    /// A connected Codex session is read from its rollout file, never resumed.
+    fn detected_session(&self, id: AgentId) -> Result<Option<SessionInfo>> {
+        let Some(agent) = self.inner.store.agent(id)? else {
+            return Ok(None);
+        };
+        let Some(source) = agent
+            .detected
+            .filter(|d| d.harness == DetectedHarness::Codex)
+        else {
+            return Ok(None);
+        };
+        // The first record is `session_meta`, which names the thread.
+        let text = std::fs::read_to_string(&source.path).map_err(internal)?;
+        let Some(session_id) = text
+            .lines()
+            .next()
+            .and_then(|line| serde_json::from_str::<Value>(line).ok())
+            .filter(|record| record["type"] == "session_meta")
+            .and_then(|record| record["payload"]["id"].as_str().map(str::to_owned))
+        else {
+            return Ok(None);
+        };
+        Ok(Some(SessionInfo {
+            agent_id: id,
+            session_id: SessionId(session_id),
+            transcript_path: source.path.clone(),
+            cwd: agent.folder_path,
+            started_at: agent.created_at,
+            last_activity_at: agent.last_activity_at,
+        }))
     }
     fn user_message(&self, id: AgentId, item: &QueueItem) {
         self.stream(
@@ -614,7 +726,10 @@ impl Harness for CodexSupervisor {
         rx.await.map_err(internal)?
     }
     async fn session_info(&self, id: AgentId) -> Result<Option<SessionInfo>> {
-        self.inner.store.main_session(id)
+        match self.inner.store.main_session(id)? {
+            Some(session) => Ok(Some(session)),
+            None => self.detected_session(id),
+        }
     }
     async fn run(&self, id: RunId) -> Option<RunInfo> {
         self.inner
@@ -634,24 +749,31 @@ impl Harness for CodexSupervisor {
         if limit == 0 {
             return Err(error(ErrorCode::InvalidParams, "limit must be positive"));
         }
-        let session = self
-            .inner
-            .store
-            .main_session(id)?
-            .ok_or_else(|| error(ErrorCode::NotFound, "no main session"))?;
+        let (session, detected) = match self.inner.store.main_session(id)? {
+            Some(session) => (session, false),
+            None => (
+                self.detected_session(id)?
+                    .ok_or_else(|| error(ErrorCode::NotFound, "no main session"))?,
+                true,
+            ),
+        };
         if session_id.is_some_and(|sid| sid != session.session_id) {
             return Err(error(
                 ErrorCode::HarnessUnsupported,
                 "only the main session is supported",
             ));
         }
-        let (mut items, stream_seq) = self
-            .inner
-            .agents
-            .lock()
-            .unwrap()
-            .get(&id)
-            .map_or((Vec::new(), 0), |r| (r.items.clone(), r.seq));
+        let (mut items, stream_seq) = if detected {
+            let text = std::fs::read_to_string(&session.transcript_path).map_err(internal)?;
+            (rollout_items(&text), 0)
+        } else {
+            self.inner
+                .agents
+                .lock()
+                .unwrap()
+                .get(&id)
+                .map_or((Vec::new(), 0), |r| (r.items.clone(), r.seq))
+        };
         let end = match before {
             Some(before) => items
                 .iter()

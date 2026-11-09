@@ -24,7 +24,7 @@
 
 mod caller;
 mod error;
-mod events;
+pub(crate) mod events;
 mod handlers;
 mod routes;
 
@@ -45,6 +45,9 @@ use crate::ports::{Policy, Result, TeamRepo};
 
 pub use caller::{BlockingIdentity, CallerIdentity, not_member};
 pub use error::{PeerError, status_for};
+/// For other modules' tests that read what they publish on the hub.
+#[cfg(test)]
+pub(crate) use events::HubMessage;
 pub use events::{Audience, PeerEventHub};
 pub use handlers::{AskEndpoints, JoinEndpoint, RequestEndpoints};
 
