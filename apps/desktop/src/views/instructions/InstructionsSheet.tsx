@@ -1,3 +1,4 @@
+import "./instructions.css";
 // SC-006 instructions and skills sheet: reads the agent's files on open, edits
 // AGENTS.md, and saves with ⌘S against the revision it read. States: default
 // (saved), unsaved, changed-on-disk (the agent's `files_revision` moved while I
