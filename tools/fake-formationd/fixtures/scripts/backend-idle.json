@@ -1,0 +1,33 @@
+{
+  "description": "Backend finishes its turn: the last step completes, a reply arrives, and it goes idle",
+  "steps": [
+    {
+      "event": { "type": "agent.stream", "payload": {
+        "agent_id": "01930000-0000-7000-8000-000000000101",
+        "session_id": "session-01930000-0000-7000-8000-000000000101",
+        "stream_seq": 0,
+        "delta": { "kind": "item_completed", "item": { "kind": "step", "id": "backend-6", "at": "2026-11-09T01:31:00Z", "step": { "kind": "edit", "tool_name": "Edit", "target": "auth/token.ts", "detail": null, "status": "done" } } }
+      } }
+    },
+    {
+      "after_ms": 600,
+      "event": { "type": "agent.stream", "payload": {
+        "agent_id": "01930000-0000-7000-8000-000000000101",
+        "session_id": "session-01930000-0000-7000-8000-000000000101",
+        "stream_seq": 0,
+        "delta": { "kind": "item_completed", "item": { "kind": "assistant_text", "id": "backend-10", "at": "2026-11-09T01:53:00Z", "text": "The expiry check is in. I haven't run the tests yet." } }
+      } }
+    },
+    {
+      "event": { "type": "agent.stream", "payload": {
+        "agent_id": "01930000-0000-7000-8000-000000000101",
+        "session_id": "session-01930000-0000-7000-8000-000000000101",
+        "stream_seq": 0,
+        "delta": { "kind": "turn_ended", "message_id": "01930000-0000-7000-8000-000000000b01", "outcome": "completed" }
+      } }
+    },
+    {
+      "event": { "type": "agent.state", "payload": { "agent_id": "01930000-0000-7000-8000-000000000101", "state": "idle", "reason": null, "exit_code": null } }
+    }
+  ]
+}

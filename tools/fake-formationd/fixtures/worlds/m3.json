@@ -1,0 +1,483 @@
+{
+  "seq": 0,
+  "team": {
+    "me": "01930000-0000-7000-8000-000000000001",
+    "members": [
+      {
+        "id": "01930000-0000-7000-8000-000000000001",
+        "github_login": "dohyeon",
+        "display_name": "Dohyeon",
+        "tailscale_login": "dohyeon@github",
+        "tailscale_node": "dohyeon-mbp",
+        "role": "creator",
+        "joined_at": "2026-11-02T00:00:00Z",
+        "online": true,
+        "last_seen_at": null
+      },
+      {
+        "id": "01930000-0000-7000-8000-000000000002",
+        "github_login": "minsu",
+        "display_name": "Minsu",
+        "tailscale_login": "minsu@github",
+        "tailscale_node": "minsu-mbp",
+        "role": "member",
+        "joined_at": "2026-11-02T01:00:00Z",
+        "online": true,
+        "last_seen_at": null
+      },
+      {
+        "id": "01930000-0000-7000-8000-000000000003",
+        "github_login": "jiwoo",
+        "display_name": "Jiwoo",
+        "tailscale_login": "jiwoo@github",
+        "tailscale_node": "jiwoo-mbp",
+        "role": "member",
+        "joined_at": "2026-11-03T01:00:00Z",
+        "online": false,
+        "last_seen_at": "2026-11-09T00:40:00Z"
+      },
+      {
+        "id": "01930000-0000-7000-8000-000000000004",
+        "github_login": "seoyeon",
+        "display_name": "Seoyeon",
+        "tailscale_login": "seoyeon@github",
+        "tailscale_node": "seoyeon-mbp",
+        "role": "member",
+        "joined_at": "2026-11-04T01:00:00Z",
+        "online": true,
+        "last_seen_at": null
+      }
+    ],
+    "invitation": null
+  },
+  "agents": [
+    {
+      "id": "01930000-0000-7000-8000-000000000101",
+      "slug": "backend",
+      "name": "Backend",
+      "role": "Backend API development",
+      "harness": "claude_code",
+      "folder_path": "~/Formation/Agents/backend",
+      "repositories": ["~/Codes/shared-api"],
+      "avatar": { "shape": "rocket", "color": "#3a6df0" },
+      "state": "working",
+      "files_revision": "rev-backend-1",
+      "created_at": "2026-11-02T02:00:00Z",
+      "last_activity_at": "2026-11-09T01:52:00Z",
+      "detected": null
+    },
+    {
+      "id": "01930000-0000-7000-8000-000000000102",
+      "slug": "marketing",
+      "name": "Marketing",
+      "role": "Content ideas and drafts",
+      "harness": "codex",
+      "folder_path": "~/Formation/Agents/marketing",
+      "repositories": [],
+      "avatar": { "shape": "star", "color": "#ff6a1a" },
+      "state": "working",
+      "files_revision": "rev-marketing-1",
+      "created_at": "2026-11-02T02:10:00Z",
+      "last_activity_at": "2026-11-09T01:38:00Z",
+      "detected": null
+    },
+    {
+      "id": "01930000-0000-7000-8000-000000000103",
+      "slug": "research",
+      "name": "Research",
+      "role": "Competitor and market research",
+      "harness": "codex",
+      "folder_path": "~/Formation/Agents/research",
+      "repositories": [],
+      "avatar": { "shape": "magnifier", "color": "#8a5cf0" },
+      "state": "stalled",
+      "files_revision": "rev-research-1",
+      "created_at": "2026-11-03T02:00:00Z",
+      "last_activity_at": "2026-11-09T01:39:00Z",
+      "detected": null
+    },
+    {
+      "id": "01930000-0000-7000-8000-000000000104",
+      "slug": "support",
+      "name": "Support",
+      "role": "Drafts and sorts customer replies",
+      "harness": "claude_code",
+      "folder_path": "~/Formation/Agents/support",
+      "repositories": [],
+      "avatar": { "shape": "cat", "color": "#f8a01c" },
+      "state": "idle",
+      "files_revision": "rev-support-1",
+      "created_at": "2026-11-03T03:00:00Z",
+      "last_activity_at": "2026-11-09T00:49:00Z",
+      "detected": null
+    },
+    {
+      "id": "01930000-0000-7000-8000-000000000105",
+      "slug": "planning",
+      "name": "Planning",
+      "role": "Product planning docs",
+      "harness": "claude_code",
+      "folder_path": "~/Formation/Agents/planning",
+      "repositories": [],
+      "avatar": { "shape": "book", "color": "#a8693f" },
+      "state": "stopped",
+      "files_revision": "rev-planning-1",
+      "created_at": "2026-11-04T02:00:00Z",
+      "last_activity_at": "2026-11-08T09:42:00Z",
+      "detected": null
+    },
+    {
+      "id": "01930000-0000-7000-8000-000000000106",
+      "slug": "shared-web",
+      "name": "claude · shared-web",
+      "role": "Session running in Terminal",
+      "harness": "detected",
+      "folder_path": "~/Codes/shared-web",
+      "repositories": ["~/Codes/shared-web"],
+      "avatar": { "shape": "ghost", "color": "#b9bac2" },
+      "state": "idle",
+      "files_revision": "rev-shared-web-1",
+      "created_at": "2026-11-08T07:00:00Z",
+      "last_activity_at": "2026-11-08T07:10:00Z",
+      "detected": {
+        "harness": "claude_code",
+        "path": "~/Codes/shared-web",
+        "capabilities": {
+          "state": { "supported": true, "reason": null },
+          "read_conversation": { "supported": true, "reason": null },
+          "answer_teammates": { "supported": true, "reason": null },
+          "receive_requests": { "supported": false, "reason": "Started in Terminal, so Formation can't send it messages" }
+        }
+      }
+    }
+  ],
+  "shares": [
+    { "agent_id": "01930000-0000-7000-8000-000000000101", "shared": true, "visibility": "answer_excerpts", "accepts_requests": true },
+    { "agent_id": "01930000-0000-7000-8000-000000000102", "shared": false, "visibility": "answer_excerpts", "accepts_requests": false },
+    { "agent_id": "01930000-0000-7000-8000-000000000103", "shared": false, "visibility": "answer_excerpts", "accepts_requests": false },
+    { "agent_id": "01930000-0000-7000-8000-000000000104", "shared": false, "visibility": "answer_excerpts", "accepts_requests": false },
+    { "agent_id": "01930000-0000-7000-8000-000000000105", "shared": false, "visibility": "answer_excerpts", "accepts_requests": false },
+    { "agent_id": "01930000-0000-7000-8000-000000000106", "shared": false, "visibility": "answer_excerpts", "accepts_requests": false }
+  ],
+  "schedules": [
+    {
+      "id": "01930000-0000-7000-8000-000000000801",
+      "agent_id": "01930000-0000-7000-8000-000000000104",
+      "prompt": "Summarize yesterday's customer tickets",
+      "rule": { "kind": "weekdays" },
+      "time": "09:00:00",
+      "paused": false,
+      "next_run_at": "2026-11-10T00:00:00Z",
+      "last_run": {
+        "id": "01930000-0000-7000-8000-000000000802",
+        "schedule_id": "01930000-0000-7000-8000-000000000801",
+        "planned_at": "2026-11-09T00:00:00Z",
+        "started_at": "2026-11-09T00:47:00Z",
+        "finished_at": "2026-11-09T00:49:00Z",
+        "result": "missed_ran"
+      }
+    }
+  ],
+  "conversations": [
+    {
+      "agent_id": "01930000-0000-7000-8000-000000000101",
+      "session_id": "session-01930000-0000-7000-8000-000000000101",
+      "items": [
+        { "kind": "user_message", "id": "backend-1", "at": "2026-11-09T01:12:00Z", "author": { "kind": "owner" }, "text": "Clean up the login API endpoints and add a token expiry check." },
+        { "kind": "assistant_text", "id": "backend-2", "at": "2026-11-09T01:12:20Z", "text": "Sure. I'll tidy the three endpoints, then add the expiry check." },
+        { "kind": "step", "id": "backend-3", "at": "2026-11-09T01:14:00Z", "step": { "kind": "edit", "tool_name": "Edit", "target": "routes/auth.ts", "detail": null, "status": "done" } },
+        { "kind": "step", "id": "backend-4", "at": "2026-11-09T01:20:00Z", "step": { "kind": "edit", "tool_name": "Edit", "target": "routes/session.ts", "detail": null, "status": "done" } },
+        { "kind": "step", "id": "backend-5", "at": "2026-11-09T01:26:00Z", "step": { "kind": "command", "tool_name": "Bash", "target": "npm run lint", "detail": null, "status": "done" } },
+        { "kind": "step", "id": "backend-6", "at": "2026-11-09T01:31:00Z", "step": { "kind": "edit", "tool_name": "Edit", "target": "auth/token.ts", "detail": null, "status": "running" } },
+        { "kind": "assistant_text", "id": "backend-7", "at": "2026-11-09T01:40:00Z", "text": "The endpoints are done. Now adding the expiry check in auth/token.ts." },
+        { "kind": "request", "id": "backend-8", "at": "2026-11-09T01:50:00Z", "request_id": "01930000-0000-7000-8000-000000000401" }
+      ],
+      "has_more": false,
+      "queue": [
+        {
+          "id": "01930000-0000-7000-8000-000000000a01",
+          "agent_id": "01930000-0000-7000-8000-000000000101",
+          "source": { "kind": "request", "request_id": "01930000-0000-7000-8000-000000000401", "requester": "01930000-0000-7000-8000-000000000002" },
+          "text": "Add token expiry tests, both just before and just after expiry.",
+          "queued_at": "2026-11-09T01:52:00Z"
+        }
+      ],
+      "stream_seq": 40
+    },
+    {
+      "agent_id": "01930000-0000-7000-8000-000000000102",
+      "session_id": "session-01930000-0000-7000-8000-000000000102",
+      "items": [
+        { "kind": "user_message", "id": "marketing-1", "at": "2026-11-09T01:30:00Z", "author": { "kind": "owner" }, "text": "Draft five content ideas for this week." },
+        { "kind": "assistant_text", "id": "marketing-2", "at": "2026-11-09T01:38:00Z", "text": "Drafting this week's content ideas…" }
+      ],
+      "has_more": false,
+      "queue": [],
+      "stream_seq": 12
+    },
+    {
+      "agent_id": "01930000-0000-7000-8000-000000000103",
+      "session_id": "session-01930000-0000-7000-8000-000000000103",
+      "items": [
+        { "kind": "user_message", "id": "research-1", "at": "2026-11-09T01:20:00Z", "author": { "kind": "owner" }, "text": "Research the pricing of our three competitors." },
+        { "kind": "assistant_text", "id": "research-2", "at": "2026-11-09T01:21:00Z", "text": "Checking all three pricing pages." },
+        { "kind": "step", "id": "research-3", "at": "2026-11-09T01:24:00Z", "step": { "kind": "web", "tool_name": "WebFetch", "target": "competitor-a.com/pricing", "detail": null, "status": "done" } },
+        { "kind": "step", "id": "research-4", "at": "2026-11-09T01:31:00Z", "step": { "kind": "web", "tool_name": "WebFetch", "target": "competitor-b.com/pricing", "detail": null, "status": "done" } },
+        { "kind": "step", "id": "research-5", "at": "2026-11-09T01:39:00Z", "step": { "kind": "web", "tool_name": "WebFetch", "target": "competitor-c.com/plans", "detail": null, "status": "running" } }
+      ],
+      "has_more": false,
+      "queue": [],
+      "stream_seq": 8
+    },
+    {
+      "agent_id": "01930000-0000-7000-8000-000000000104",
+      "session_id": "session-01930000-0000-7000-8000-000000000104",
+      "items": [
+        { "kind": "user_message", "id": "support-1", "at": "2026-11-09T00:47:00Z", "author": { "kind": "schedule", "schedule_id": "01930000-0000-7000-8000-000000000801" }, "text": "Summarize yesterday's customer tickets" },
+        { "kind": "assistant_text", "id": "support-2", "at": "2026-11-09T00:49:00Z", "text": "Summarized 12 tickets: 7 billing, 3 login, 2 feature requests." }
+      ],
+      "has_more": true,
+      "queue": [],
+      "stream_seq": 30
+    },
+    {
+      "agent_id": "01930000-0000-7000-8000-000000000105",
+      "session_id": "session-01930000-0000-7000-8000-000000000105",
+      "items": [
+        { "kind": "user_message", "id": "planning-1", "at": "2026-11-08T09:40:00Z", "author": { "kind": "owner" }, "text": "Write up this week's planning meeting." },
+        { "kind": "assistant_text", "id": "planning-2", "at": "2026-11-08T09:42:00Z", "text": "Done in planning/2026-11-w2.md." }
+      ],
+      "has_more": false,
+      "queue": [],
+      "stream_seq": 20
+    },
+    {
+      "agent_id": "01930000-0000-7000-8000-000000000106",
+      "session_id": "session-01930000-0000-7000-8000-000000000106",
+      "items": [
+        { "kind": "user_message", "id": "shared-web-1", "at": "2026-11-08T07:05:00Z", "author": { "kind": "owner" }, "text": "Fix the landing page header on small screens." },
+        { "kind": "assistant_text", "id": "shared-web-2", "at": "2026-11-08T07:08:00Z", "text": "Switched the header to flex and collapsed the menu under 768px." },
+        { "kind": "step", "id": "shared-web-3", "at": "2026-11-08T07:09:00Z", "step": { "kind": "edit", "tool_name": "Edit", "target": "app/components/Header.tsx", "detail": null, "status": "done" } },
+        { "kind": "step", "id": "shared-web-4", "at": "2026-11-08T07:10:00Z", "step": { "kind": "command", "tool_name": "Bash", "target": "pnpm test", "detail": null, "status": "done" } }
+      ],
+      "has_more": false,
+      "queue": [],
+      "stream_seq": 6
+    }
+  ],
+  "teammate_agents": [
+    {
+      "owner": "01930000-0000-7000-8000-000000000002",
+      "agent_id": "01930000-0000-7000-8000-000000000201",
+      "slug": "auth",
+      "name": "Auth",
+      "role": "Login and tokens",
+      "harness": "codex",
+      "avatar": { "shape": "shield", "color": "#14b3a5" },
+      "state": "working",
+      "last_activity_at": "2026-11-09T01:42:00Z",
+      "accepts_requests": true
+    },
+    {
+      "owner": "01930000-0000-7000-8000-000000000002",
+      "agent_id": "01930000-0000-7000-8000-000000000202",
+      "slug": "frontend",
+      "name": "Frontend",
+      "role": "Web UI",
+      "harness": "claude_code",
+      "avatar": { "shape": "palette", "color": "#ec4899" },
+      "state": "idle",
+      "last_activity_at": "2026-11-09T01:05:00Z",
+      "accepts_requests": false
+    },
+    {
+      "owner": "01930000-0000-7000-8000-000000000002",
+      "agent_id": "01930000-0000-7000-8000-000000000203",
+      "slug": "qa",
+      "name": "QA",
+      "role": "Regression tests",
+      "harness": "codex",
+      "avatar": { "shape": "camera", "color": "#7a7a7a" },
+      "state": "idle",
+      "last_activity_at": "2026-11-08T08:00:00Z",
+      "accepts_requests": false
+    },
+    {
+      "owner": "01930000-0000-7000-8000-000000000003",
+      "agent_id": "01930000-0000-7000-8000-000000000204",
+      "slug": "design",
+      "name": "Design",
+      "role": "Design mockups",
+      "harness": "claude_code",
+      "avatar": { "shape": "paint-brush", "color": "#1fbf68" },
+      "state": "unknown",
+      "last_activity_at": "2026-11-09T00:40:00Z",
+      "accepts_requests": false
+    }
+  ],
+  "inbox": [
+    {
+      "id": "01930000-0000-7000-8000-000000000601",
+      "kind": "question_for_you",
+      "target": { "kind": "question", "question_id": "01930000-0000-7000-8000-000000000305" },
+      "subject": "Jiwoo · When will the payment refactor be done?",
+      "at": "2026-11-09T01:30:00Z",
+      "resolved_at": null
+    },
+    {
+      "id": "01930000-0000-7000-8000-000000000602",
+      "kind": "agent_stalled",
+      "target": { "kind": "agent", "agent_id": "01930000-0000-7000-8000-000000000103" },
+      "subject": "Research · no activity for 14 minutes",
+      "at": "2026-11-09T01:39:00Z",
+      "resolved_at": null
+    }
+  ],
+  "questions": [
+    {
+      "id": "01930000-0000-7000-8000-000000000301",
+      "thread_id": "01930000-0000-7000-8000-000000000301",
+      "asker": "01930000-0000-7000-8000-000000000001",
+      "target": { "kind": "agent", "member_id": "01930000-0000-7000-8000-000000000002", "agent_id": "01930000-0000-7000-8000-000000000201" },
+      "text": "How far is the login work?",
+      "status": "answered",
+      "candidates": [],
+      "agent_id": "01930000-0000-7000-8000-000000000201",
+      "answer": {
+        "id": "01930000-0000-7000-8000-000000000311",
+        "agent_id": "01930000-0000-7000-8000-000000000201",
+        "text": "The login API is done; it's now working on token refresh. Remaining: re-login when refresh fails, and tests. The conversation doesn't say when it will be finished.",
+        "excerpts": [
+          { "role": "user", "text": "Wrap up the login endpoints and move on to token refresh", "at": "2026-11-09T01:31:00Z" },
+          { "role": "assistant", "text": "Implementing refresh-token rotation; the re-login flow isn't done yet.", "at": "2026-11-09T01:40:00Z" }
+        ],
+        "as_of": "2026-11-09T01:42:00Z",
+        "possibly_stale": false,
+        "answered_at": "2026-11-09T01:42:00Z"
+      },
+      "error": null,
+      "created_at": "2026-11-09T01:41:00Z",
+      "updated_at": "2026-11-09T01:42:00Z"
+    },
+    {
+      "id": "01930000-0000-7000-8000-000000000302",
+      "thread_id": "01930000-0000-7000-8000-000000000301",
+      "asker": "01930000-0000-7000-8000-000000000001",
+      "target": { "kind": "agent", "member_id": "01930000-0000-7000-8000-000000000002", "agent_id": "01930000-0000-7000-8000-000000000201" },
+      "text": "How does the token refresh work?",
+      "status": "answered",
+      "candidates": [],
+      "agent_id": "01930000-0000-7000-8000-000000000201",
+      "answer": {
+        "id": "01930000-0000-7000-8000-000000000312",
+        "agent_id": "01930000-0000-7000-8000-000000000201",
+        "text": "Rotation: each time a refresh token is used it's replaced, and the old one stops working at once.",
+        "excerpts": [
+          { "role": "assistant", "text": "Chose refresh-token rotation to limit token theft.", "at": "2026-11-09T01:38:00Z" }
+        ],
+        "as_of": "2026-11-09T01:42:00Z",
+        "possibly_stale": false,
+        "answered_at": "2026-11-09T01:42:30Z"
+      },
+      "error": null,
+      "created_at": "2026-11-09T01:42:10Z",
+      "updated_at": "2026-11-09T01:42:30Z"
+    },
+    {
+      "id": "01930000-0000-7000-8000-000000000303",
+      "thread_id": "01930000-0000-7000-8000-000000000303",
+      "asker": "01930000-0000-7000-8000-000000000001",
+      "target": { "kind": "person", "member_id": "01930000-0000-7000-8000-000000000002" },
+      "text": "What's the deploy schedule this week?",
+      "status": "unsure",
+      "candidates": [
+        { "agent_id": "01930000-0000-7000-8000-000000000201", "name": "Auth", "role": "Login and tokens", "score": 0.46, "reason": "Recently worked on the deploy script" },
+        { "agent_id": "01930000-0000-7000-8000-000000000202", "name": "Frontend", "role": "Web UI", "score": 0.41, "reason": "Owns web deploy settings" },
+        { "agent_id": "01930000-0000-7000-8000-000000000203", "name": "QA", "role": "Regression tests", "score": 0.22, "reason": "Pre-release tests" }
+      ],
+      "agent_id": null,
+      "answer": null,
+      "error": null,
+      "created_at": "2026-11-09T01:20:00Z",
+      "updated_at": "2026-11-09T01:20:05Z"
+    },
+    {
+      "id": "01930000-0000-7000-8000-000000000304",
+      "thread_id": "01930000-0000-7000-8000-000000000304",
+      "asker": "01930000-0000-7000-8000-000000000001",
+      "target": { "kind": "agent", "member_id": "01930000-0000-7000-8000-000000000003", "agent_id": "01930000-0000-7000-8000-000000000204" },
+      "text": "Are the design mockups updated?",
+      "status": "waiting_offline",
+      "candidates": [],
+      "agent_id": "01930000-0000-7000-8000-000000000204",
+      "answer": null,
+      "error": null,
+      "created_at": "2026-11-09T00:58:00Z",
+      "updated_at": "2026-11-09T00:58:00Z"
+    },
+    {
+      "id": "01930000-0000-7000-8000-000000000305",
+      "thread_id": "01930000-0000-7000-8000-000000000305",
+      "asker": "01930000-0000-7000-8000-000000000003",
+      "target": { "kind": "person", "member_id": "01930000-0000-7000-8000-000000000001" },
+      "text": "When will the payment refactor be done?",
+      "status": "sent_to_owner",
+      "candidates": [],
+      "agent_id": null,
+      "answer": null,
+      "error": null,
+      "created_at": "2026-11-09T01:30:00Z",
+      "updated_at": "2026-11-09T01:30:00Z"
+    }
+  ],
+  "requests": [
+    {
+      "id": "01930000-0000-7000-8000-000000000401",
+      "requester": "01930000-0000-7000-8000-000000000002",
+      "requester_agent": "auth",
+      "chain": { "id": "01930000-0000-7000-8000-000000000c01", "depth": 1 },
+      "owner": "01930000-0000-7000-8000-000000000001",
+      "agent_id": "01930000-0000-7000-8000-000000000101",
+      "prompt": "Add token expiry tests, both just before and just after expiry.",
+      "idempotency_key": "minsu-auth-expiry-tests",
+      "status": "queued",
+      "result": null,
+      "error": null,
+      "created_at": "2026-11-09T01:50:00Z",
+      "updated_at": "2026-11-09T01:52:00Z"
+    }
+  ],
+  "approvals": [],
+  "rules": [
+    {
+      "id": "01930000-0000-7000-8000-000000000901",
+      "requester": "01930000-0000-7000-8000-000000000002",
+      "agent_id": "01930000-0000-7000-8000-000000000101",
+      "scope": { "kind": "command", "program": "npm", "arg_pattern": "test -- auth/*", "folder": "~/Codes/shared-api" },
+      "expires_at": "2026-11-15T01:53:00Z",
+      "max_uses": null,
+      "uses": 3,
+      "created_at": "2026-11-08T01:53:00Z",
+      "revoked_at": null
+    },
+    {
+      "id": "01930000-0000-7000-8000-000000000902",
+      "requester": "01930000-0000-7000-8000-000000000003",
+      "agent_id": "01930000-0000-7000-8000-000000000102",
+      "scope": { "kind": "command", "program": "write", "arg_pattern": "drafts/*", "folder": "~/Formation/Agents/marketing" },
+      "expires_at": null,
+      "max_uses": null,
+      "uses": 12,
+      "created_at": "2026-11-04T03:00:00Z",
+      "revoked_at": null
+    }
+  ],
+  "harnesses": [
+    { "harness": "claude_code", "installed": true, "signed_in": true, "version": "2.1.319", "path": "~/.local/bin/claude", "problem": null },
+    { "harness": "codex", "installed": true, "signed_in": true, "version": "0.98.0", "path": "/opt/homebrew/bin/codex", "problem": null }
+  ],
+  "settings": {
+    "language": null,
+    "notifications": { "enabled": true, "muted_until": null }
+  }
+}

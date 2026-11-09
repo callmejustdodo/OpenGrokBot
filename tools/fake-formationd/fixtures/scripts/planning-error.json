@@ -1,0 +1,18 @@
+{
+  "description": "Planning's Claude Code process exits with code 1",
+  "steps": [
+    {
+      "event": { "type": "agent.state", "payload": { "agent_id": "01930000-0000-7000-8000-000000000105", "state": "error", "reason": "The process exited unexpectedly", "exit_code": 1 } }
+    },
+    {
+      "event": { "type": "notify", "payload": { "alert": true, "item": {
+        "id": "01930000-0000-7000-8000-000000000605",
+        "kind": "agent_error",
+        "target": { "kind": "agent", "agent_id": "01930000-0000-7000-8000-000000000105" },
+        "subject": "Planning · exited with code 1",
+        "at": "2026-11-09T01:12:00Z",
+        "resolved_at": null
+      } } }
+    }
+  ]
+}

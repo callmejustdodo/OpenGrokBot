@@ -1,0 +1,33 @@
+{
+  "description": "After question_route_choose with an agent: that agent answers the deploy question",
+  "steps": [
+    {
+      "event": { "type": "question.update", "payload": { "change": "upsert", "question": {
+        "id": "{{params.question_id}}", "thread_id": "{{params.question_id}}", "asker": "01930000-0000-7000-8000-000000000001",
+        "target": { "kind": "person", "member_id": "01930000-0000-7000-8000-000000000002" },
+        "text": "What's the deploy schedule this week?", "status": "answering", "candidates": [], "agent_id": "{{params.choice.agent_id}}",
+        "answer": null, "error": null, "created_at": "2026-11-09T01:20:00Z", "updated_at": "{{now}}"
+      } } }
+    },
+    {
+      "after_ms": 1500,
+      "event": { "type": "question.update", "payload": { "change": "upsert", "question": {
+        "id": "{{params.question_id}}", "thread_id": "{{params.question_id}}", "asker": "01930000-0000-7000-8000-000000000001",
+        "target": { "kind": "person", "member_id": "01930000-0000-7000-8000-000000000002" },
+        "text": "What's the deploy schedule this week?", "status": "answered", "candidates": [], "agent_id": "{{params.choice.agent_id}}",
+        "answer": {
+          "id": "{{id:a}}",
+          "agent_id": "{{params.choice.agent_id}}",
+          "text": "The conversation mentions a staging deploy on Thursday. It doesn't mention a production date.",
+          "excerpts": [
+            { "role": "user", "text": "Let's put this on staging Thursday.", "at": "2026-11-08T08:10:00Z" }
+          ],
+          "as_of": "2026-11-09T01:40:00Z",
+          "possibly_stale": false,
+          "answered_at": "{{now}}"
+        },
+        "error": null, "created_at": "2026-11-09T01:20:00Z", "updated_at": "{{now}}"
+      } } }
+    }
+  ]
+}

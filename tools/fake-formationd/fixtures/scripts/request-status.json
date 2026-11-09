@@ -1,0 +1,76 @@
+{
+  "description": "My work request to Minsu's Auth agent: received, approved by Minsu, queued, and now running",
+  "steps": [
+    {
+      "event": { "type": "request.update", "payload": { "request": {
+        "id": "01930000-0000-7000-8000-000000000402",
+        "requester": "01930000-0000-7000-8000-000000000001",
+        "requester_agent": null,
+        "chain": { "id": "01930000-0000-7000-8000-000000000c02", "depth": 0 },
+        "owner": "01930000-0000-7000-8000-000000000002",
+        "agent_id": "01930000-0000-7000-8000-000000000201",
+        "prompt": "Add token expiry tests, both just before and just after expiry.\n\nContext:\n- Auth: Rotation — each refresh token is replaced…",
+        "idempotency_key": "dohyeon-auth-expiry-tests",
+        "status": "received",
+        "result": null,
+        "error": null,
+        "created_at": "2026-11-09T01:50:00Z",
+        "updated_at": "2026-11-09T01:50:00Z"
+      } } }
+    },
+    {
+      "after_ms": 1500,
+      "event": { "type": "request.update", "payload": { "request": {
+        "id": "01930000-0000-7000-8000-000000000402",
+        "requester": "01930000-0000-7000-8000-000000000001",
+        "requester_agent": null,
+        "chain": { "id": "01930000-0000-7000-8000-000000000c02", "depth": 0 },
+        "owner": "01930000-0000-7000-8000-000000000002",
+        "agent_id": "01930000-0000-7000-8000-000000000201",
+        "prompt": "Add token expiry tests, both just before and just after expiry.\n\nContext:\n- Auth: Rotation — each refresh token is replaced…",
+        "idempotency_key": "dohyeon-auth-expiry-tests",
+        "status": "awaiting_approval",
+        "result": null,
+        "error": null,
+        "created_at": "2026-11-09T01:50:00Z",
+        "updated_at": "2026-11-09T01:51:00Z"
+      } } }
+    },
+    {
+      "after_ms": 1500,
+      "event": { "type": "request.update", "payload": { "request": {
+        "id": "01930000-0000-7000-8000-000000000402",
+        "requester": "01930000-0000-7000-8000-000000000001",
+        "requester_agent": null,
+        "chain": { "id": "01930000-0000-7000-8000-000000000c02", "depth": 0 },
+        "owner": "01930000-0000-7000-8000-000000000002",
+        "agent_id": "01930000-0000-7000-8000-000000000201",
+        "prompt": "Add token expiry tests, both just before and just after expiry.\n\nContext:\n- Auth: Rotation — each refresh token is replaced…",
+        "idempotency_key": "dohyeon-auth-expiry-tests",
+        "status": "queued",
+        "result": null,
+        "error": null,
+        "created_at": "2026-11-09T01:50:00Z",
+        "updated_at": "2026-11-09T01:52:00Z"
+      } } }
+    },
+    {
+      "after_ms": 1500,
+      "event": { "type": "request.update", "payload": { "request": {
+        "id": "01930000-0000-7000-8000-000000000402",
+        "requester": "01930000-0000-7000-8000-000000000001",
+        "requester_agent": null,
+        "chain": { "id": "01930000-0000-7000-8000-000000000c02", "depth": 0 },
+        "owner": "01930000-0000-7000-8000-000000000002",
+        "agent_id": "01930000-0000-7000-8000-000000000201",
+        "prompt": "Add token expiry tests, both just before and just after expiry.\n\nContext:\n- Auth: Rotation — each refresh token is replaced…",
+        "idempotency_key": "dohyeon-auth-expiry-tests",
+        "status": "running",
+        "result": null,
+        "error": null,
+        "created_at": "2026-11-09T01:50:00Z",
+        "updated_at": "2026-11-09T01:53:00Z"
+      } } }
+    }
+  ]
+}

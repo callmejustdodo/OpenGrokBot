@@ -1,0 +1,40 @@
+{
+  "SC-003/default": { "description": "Sidebar as in M3: Backend waits for approval, 2 need you", "scripts": ["approval-raised"] },
+  "SC-003/empty": { "description": "First run: no agents yet", "world": "empty" },
+  "SC-003/detecting": { "description": "Looking for agents started elsewhere", "ui": "click Connect agents; agents_detect answers after 2.5 s" },
+
+  "SC-005/working": { "description": "Backend is working; Minsu's request runs after this turn" },
+  "SC-005/idle": { "description": "Backend finished its turn", "scripts": ["backend-idle"] },
+  "SC-005/queued": { "description": "\"Run the tests too\" waits in Backend's queue", "scripts": ["backend-queued"] },
+  "SC-005/permission": { "description": "Claude Code asks me for permission in Backend's conversation", "scripts": ["backend-permission"] },
+  "SC-005/approval": { "description": "Minsu's request waits for my approval", "scripts": ["approval-raised"] },
+  "SC-005/stalled": { "description": "Research has had no activity for 14 minutes", "ui": "open Research" },
+  "SC-005/error": { "description": "Planning's process exited with code 1", "scripts": ["planning-error"], "ui": "open Planning" },
+  "SC-005/stopped": { "description": "Planning is stopped", "ui": "open Planning" },
+  "SC-005/detected": { "description": "A Terminal session, read-only", "ui": "open claude · shared-web" },
+  "SC-005/stop-confirm": { "description": "Stop while Backend works", "ui": "in Backend, press Stop (⌘.)" },
+
+  "SC-010/default": { "description": "Inbox: an approval, a question for me, and an alert", "scripts": ["approval-raised"] },
+  "SC-010/empty": { "description": "Nothing needs me", "scripts": ["inbox-cleared"] },
+
+  "SC-011/default": { "description": "Approval for Minsu's npm test, 23 h 57 min left", "scripts": ["approval-raised"], "ui": "open the approval from the Inbox" },
+  "SC-011/keep-similar": { "description": "Reviewing the rule before saving it", "scripts": ["approval-raised"], "ui": "open the approval and choose Keep allowing similar commands" },
+  "SC-011/expiring": { "description": "The approval expires in 40 minutes", "scripts": ["approval-raised", "approval-expiring"], "ui": "open the approval from the Inbox" },
+  "SC-011/expired": { "description": "The approval expired after 24 hours", "scripts": ["approval-raised", "approval-expired"], "ui": "open the expired approval" },
+  "SC-011/deny-confirm": { "description": "Confirming a denial", "scripts": ["approval-raised"], "ui": "open the approval and choose Deny or press Esc" },
+
+  "SC-015/answered": { "description": "Two answered questions to Minsu's Auth agent", "ui": "open Auth · Minsu" },
+  "SC-015/new": { "description": "Choosing whom to ask", "ui": "choose + → New question" },
+  "SC-015/received": { "description": "My question was received", "scripts": ["auth-received"], "ui": "open Auth · Minsu" },
+  "SC-015/answering": { "description": "Auth is answering in a fork", "scripts": ["auth-answering"], "ui": "open Auth · Minsu" },
+  "SC-015/unsure": { "description": "Formation isn't sure which of Minsu's agents should answer", "ui": "open Minsu" },
+  "SC-015/stale": { "description": "The latest answer may be out of date", "scripts": ["auth-stale"], "ui": "open Auth · Minsu" },
+  "SC-015/offline-waiting": { "description": "Jiwoo is offline; the question waits", "ui": "open Design · Jiwoo" },
+  "SC-015/sent-to-owner": { "description": "The question went to Minsu", "scripts": ["person-sent"], "ui": "open Minsu" },
+  "SC-015/unshared": { "description": "Minsu stopped sharing Auth", "scripts": ["auth-unshared"], "ui": "open Auth · Minsu" },
+  "SC-015/error": { "description": "The answer couldn't be fetched", "scripts": ["question-failed"], "ui": "open Auth · Minsu" },
+
+  "SC-016/compose": { "description": "Writing a request to Minsu's Auth agent", "ui": "in Auth · Minsu, choose Request work…" },
+  "SC-016/status": { "description": "My request to Auth is running", "scripts": ["request-status"], "ui": "open the request's status" },
+  "SC-016/not-accepted": { "description": "QA doesn't accept work requests", "ui": "choose Request work for QA · Minsu" }
+}
