@@ -361,7 +361,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: A
 
 ### TASK-025: Approvals: allowed reads, allow once, deny, expiry
-- Status: pending
+- Status: complete
 - References: FR-015, US-011, D-028, SC-011
 - Prerequisites: TASK-019
 - Change locations: `crates/formation-core/src/policy/`
