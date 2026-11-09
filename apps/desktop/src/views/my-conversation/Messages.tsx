@@ -8,6 +8,7 @@ import i18n from "../../i18n";
 import PermissionCard from "../../components/cards/PermissionCard";
 import RequestCard from "../../components/cards/RequestCard";
 import { stepLine } from "../../components/sidebar/labels";
+import type { AgentId } from "../../ipc/generated/AgentId";
 import type { ConversationItem } from "../../ipc/generated/ConversationItem";
 import type { MirrorState } from "../../store/reducer";
 import { useAppStore } from "../../store/store";
@@ -128,11 +129,45 @@ function withoutCoveredApprovals(
   });
 }
 
-export default function Messages({ items }: { items: readonly ConversationItem[] }) {
+/**
+ * The gate raises the owner's own permission prompts as approvals, but no
+ * harness adds an approval item for them, so each of this agent's owner
+ * approvals without an item joins the conversation at the time it was raised
+ * (FR-022, proposed default 11): a pending one always, a decided one while that
+ * time is within the loaded items, so its result stays where it was asked.
+ */
+function withOwnerApprovals(
+  items: readonly ConversationItem[],
+  approvals: MirrorState["approvals"],
+  agentId: AgentId,
+): readonly ConversationItem[] {
+  const listed = new Set(items.flatMap((i) => (i.kind === "approval" ? [i.approval_id] : [])));
+  const since = items.length > 0 ? Date.parse(items[0].at) : Infinity;
+  const extra = Object.values(approvals)
+    .filter(
+      (a) =>
+        a.agent_id === agentId &&
+        a.request_id === null &&
+        !listed.has(a.id) &&
+        (a.status === "pending" || Date.parse(a.created_at) >= since),
+    )
+    .sort((a, b) => Date.parse(a.created_at) - Date.parse(b.created_at))
+    .map((a): ConversationItem => ({ kind: "approval", id: `approval-${a.id}`, at: a.created_at, approval_id: a.id }));
+  if (extra.length === 0) return items;
+  const out: ConversationItem[] = [];
+  let next = 0;
+  for (const item of items) {
+    while (next < extra.length && Date.parse(extra[next].at) < Date.parse(item.at)) out.push(extra[next++]);
+    out.push(item);
+  }
+  return out.concat(extra.slice(next));
+}
+
+export default function Messages({ agentId, items }: { agentId: AgentId; items: readonly ConversationItem[] }) {
   const approvals = useAppStore((s) => s.mirror?.approvals ?? NO_APPROVALS);
   return (
     <>
-      {withSeparators(withoutCoveredApprovals(items, approvals)).map(({ block, separator }) => (
+      {withSeparators(withoutCoveredApprovals(withOwnerApprovals(items, approvals, agentId), approvals)).map(({ block, separator }) => (
         <div key={block.kind === "item" ? block.item.id : block.id} className="block">
           {separator ? (
             <div className="sep-t">
