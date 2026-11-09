@@ -1,0 +1,6 @@
+{
+  "description": "After rules_update or rules_revoke: the changed rule",
+  "steps": [
+    { "event": { "type": "rule.update", "payload": { "rule": "{{result}}" } } }
+  ]
+}

@@ -36,5 +36,8 @@
 
   "SC-016/compose": { "description": "Writing a request to Minsu's Auth agent", "ui": "in Auth · Minsu, choose Request work…" },
   "SC-016/status": { "description": "My request to Auth is running", "scripts": ["request-status"], "ui": "open the request's status" },
-  "SC-016/not-accepted": { "description": "QA doesn't accept work requests", "ui": "choose Request work for QA · Minsu" }
+  "SC-016/not-accepted": { "description": "QA doesn't accept work requests", "ui": "choose Request work for QA · Minsu" },
+
+  "SC-012/default": { "description": "Two saved rules: Minsu → Backend npm test, Jiwoo → Marketing drafts", "ui": "open Rules" },
+  "SC-012/empty": { "description": "No saved rules", "scripts": ["rules-cleared"], "ui": "open Rules" }
 }

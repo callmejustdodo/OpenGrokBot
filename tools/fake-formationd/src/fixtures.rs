@@ -12,7 +12,7 @@ use chrono::{DateTime, SecondsFormat, TimeDelta, Utc};
 use formation_proto::common::Command;
 use formation_proto::events::Event;
 use formation_proto::snapshot::Snapshot;
-use formation_proto::{agent, ask, harness, policy, request, snapshot};
+use formation_proto::{agent, ask, harness, policy, request, snapshot, team};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
@@ -107,17 +107,22 @@ impl Fixtures {
             decode::<Snapshot>(world).map_err(|e| format!("worlds/{name}.json: {e}"))?;
         }
         // A script that a reaction plays is checked with that reaction's example
-        // params; any other script must not use params placeholders.
-        let mut examples: BTreeMap<&str, &Value> = BTreeMap::new();
+        // params and result; any other script must not use those placeholders.
+        let mut examples: BTreeMap<&str, &Reaction> = BTreeMap::new();
         for reaction in self.reactions.values().flatten() {
             if let Some(script) = &reaction.play {
-                examples.entry(script.as_str()).or_insert(&reaction.example);
+                examples.entry(script.as_str()).or_insert(reaction);
             }
         }
-        let no_params = Value::Object(Map::new());
         for (name, script) in &self.scripts {
-            let ph =
-                Placeholders::new((*examples.get(name.as_str()).unwrap_or(&&no_params)).clone());
+            let ph = match examples.get(name.as_str()) {
+                Some(r) => {
+                    let ph = Placeholders::new(r.example.clone());
+                    let result = ph.fill(&r.result);
+                    ph.with_result(result)
+                }
+                None => Placeholders::new(Value::Object(Map::new())),
+            };
             for (i, step) in script.steps.iter().enumerate() {
                 decode::<Event>(&ph.fill(&step.event))
                     .map_err(|e| format!("scripts/{name}.json step {}: {e}", i + 1))?;
@@ -193,7 +198,10 @@ fn check_command(method: &str, params: &Value, result: &Value) -> Result<(), Str
         request::RequestCreate,
         request::RequestCancel,
         policy::ApprovalDecide,
+        policy::RulesUpdate,
+        policy::RulesRevoke,
         snapshot::SettingsUpdate,
+        team::TeamLeave,
     );
     Err(format!(
         "{method} has no reaction support; add it to check_command"
@@ -288,12 +296,15 @@ pub fn shift_to(now: DateTime<Utc>) -> TimeDelta {
 /// - `{{id:<name>}}`: a fresh UUIDv7 per name, shared by a reaction's result and
 ///   the script it plays;
 /// - `{{now}}`: the current time, written in fixture time so that the shift to
-///   real time lands on now.
+///   real time lands on now;
+/// - `{{result}}` or `{{result.<field>}}`: in a script a reaction plays, that
+///   reaction's filled result.
 ///
 /// A string that is exactly one placeholder becomes the value itself (any JSON
 /// type); a placeholder inside longer text is replaced by the value as text.
 pub struct Placeholders {
     params: Value,
+    result: Value,
     now: String,
     ids: std::cell::RefCell<BTreeMap<String, String>>,
 }
@@ -308,9 +319,16 @@ impl Placeholders {
     pub fn at(params: Value, now: String) -> Self {
         Self {
             params,
+            result: Value::Null,
             now,
             ids: Default::default(),
         }
+    }
+
+    /// The same placeholders, also filling `{{result}}` for the script a
+    /// reaction plays. Ids stay shared with the result.
+    pub fn with_result(self, result: Value) -> Self {
+        Self { result, ..self }
     }
 
     pub fn fill(&self, value: &Value) -> Value {
@@ -361,6 +379,16 @@ impl Placeholders {
         if let Some(field) = key.strip_prefix("params.") {
             return self
                 .params
+                .pointer(&format!("/{}", field.replace('.', "/")))
+                .cloned()
+                .unwrap_or(Value::Null);
+        }
+        if key == "result" {
+            return self.result.clone();
+        }
+        if let Some(field) = key.strip_prefix("result.") {
+            return self
+                .result
                 .pointer(&format!("/{}", field.replace('.', "/")))
                 .cloned()
                 .unwrap_or(Value::Null);
@@ -425,6 +453,7 @@ mod tests {
                     "error",
                 ],
             ),
+            ("SC-012", &["default", "empty"]),
             ("SC-016", &["compose", "status", "not-accepted"]),
         ];
         let fixtures = Fixtures::load(&default_dir()).unwrap();
@@ -449,6 +478,18 @@ mod tests {
         assert_eq!(out["b"], "said: hi");
         assert_eq!(out["c"], out["d"]);
         assert!(uuid::Uuid::parse_str(out["c"].as_str().unwrap()).is_ok());
+    }
+
+    #[test]
+    fn a_played_script_can_send_the_reaction_result() {
+        let ph = Placeholders::new(json!({ "max_uses": 5 }));
+        let result = ph.fill(&json!({ "id": "{{id:rule}}", "max_uses": "{{params.max_uses}}" }));
+        let ph = ph.with_result(result.clone());
+        let event =
+            ph.fill(&json!({ "rule": "{{result}}", "id": "{{result.id}}", "same": "{{id:rule}}" }));
+        assert_eq!(event["rule"], result);
+        assert_eq!(event["rule"]["max_uses"], 5);
+        assert_eq!(event["id"], event["same"]);
     }
 
     #[test]
