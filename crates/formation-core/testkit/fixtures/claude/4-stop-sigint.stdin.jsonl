@@ -1,0 +1,1 @@
+{"type":"user","message":{"role":"user","content":"Use the Bash tool in the foreground (no run_in_background) to run exactly `sleep 20`. After it finishes, reply with exactly: FIRST-DONE"},"parent_tool_use_id":null}

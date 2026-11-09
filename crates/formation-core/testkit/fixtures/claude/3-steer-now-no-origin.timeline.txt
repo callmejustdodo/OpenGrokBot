@@ -1,0 +1,59 @@
+      0ms stdin#1   user "Use the Bash tool in the foreground (no run_in_background) to run exactly `sleep 12`. When it has finished, use the Bash tool the same way to run exactly `sleep 13`. After that, reply with exactly: ORIGINAL-PLAN"
+    316ms stdout#1   system hook_started
+    316ms stdout#2   system hook_started
+    316ms stdout#3   system hook_started
+    590ms stdout#4   system hook_response
+    598ms stdout#5   system hook_response
+   1110ms stdout#6   system hook_response
+   1197ms stdout#7   system init
+   1200ms stdout#8   system status
+   2341ms stdout#9   user "Use the Bash tool in the foreground (no run_in_background) t"
+   2341ms stdout#10  stream_event message_start
+   2341ms stdout#11  stream_event content_block_start
+   2827ms stdout#12  system thinking_tokens
+   2827ms stdout#13  stream_event content_block_delta
+   3718ms stdout#14  stream_event content_block_delta
+   3718ms stdout#15  system thinking_tokens
+   3718ms stdout#16  stream_event content_block_delta
+   3720ms stdout#17  assistant
+   3720ms stdout#18  stream_event content_block_stop
+   3721ms stdout#19  stream_event content_block_start
+   3721ms stdout#20  stream_event content_block_delta
+   3768ms stdout#21  stream_event content_block_delta
+   3818ms stdout#22  stream_event content_block_delta
+   3875ms stdout#23  stream_event content_block_delta
+   3918ms stdout#24  stream_event content_block_delta
+   3967ms stdout#25  stream_event content_block_delta
+   4027ms stdout#26  stream_event content_block_delta
+   4074ms stdout#27  stream_event content_block_delta
+   4170ms stdout#28  assistant "I'll run `sleep 12` in the foreground, then `sleep 13`, and "
+   4170ms stdout#29  stream_event content_block_stop
+   4170ms stdout#30  stream_event content_block_start
+   4170ms stdout#31  stream_event content_block_delta
+   4224ms stdout#32  stream_event content_block_delta
+   4268ms stdout#33  stream_event content_block_delta
+   4418ms stdout#34  stream_event content_block_delta
+   4566ms stdout#35  stream_event content_block_delta
+   4569ms stdout#36  assistant tool_use:"Bash"
+   4572ms stdout#37  stream_event content_block_stop
+   4576ms stdout#38  stream_event message_delta
+   4576ms stdout#39  stream_event message_stop
+   4577ms stdout#40  rate_limit_event
+   7667ms stdout#41  system task_started
+   7667ms stdin#2   user "Change of plan: do not run any more commands. Reply with exactly: STEERED"
+  16681ms stdout#42  system task_notification
+  16689ms stdout#43  user tool_result
+  16692ms stdout#44  result success
+  16700ms stdout#45  system init
+  16701ms stdout#46  system status
+  17281ms stdout#47  user "Change of plan: do not run any more commands. Reply with exa"
+  17281ms stdout#48  stream_event message_start
+  17281ms stdout#49  stream_event content_block_start
+  17282ms stdout#50  stream_event content_block_delta
+  17282ms stdout#51  assistant "STEERED"
+  17282ms stdout#52  stream_event content_block_stop
+  17289ms stdout#53  stream_event message_delta
+  17289ms stdout#54  stream_event message_stop
+  17290ms stdout#55  rate_limit_event
+  17293ms stdout#56  result success "STEERED"
+  47157ms exit      exit status: 0

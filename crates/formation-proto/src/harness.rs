@@ -235,10 +235,11 @@ pub struct AgentMessageSend {
     pub text: String,
 }
 
-/// Deliver a queued message into the running turn now. Only the owner's own messages
-/// can steer (`denied` otherwise), because the steered text runs under the running
-/// turn's caller. `harness_unsupported` when the harness cannot (TASK-004 decides the
-/// fallback).
+/// Deliver a queued message into the running turn. It takes effect at the next tool
+/// boundary: the running tool finishes and the turn follows the new message (TASK-004).
+/// Only the owner's own messages can steer (`denied` otherwise), because the steered
+/// text runs under the running turn's caller. `harness_unsupported` for a harness
+/// that cannot steer.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct AgentMessageSteer {

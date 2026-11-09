@@ -1,0 +1,49 @@
+      0ms stdin#1   user "Use the Bash tool in the foreground (no run_in_background) to run exactly `sleep 20`. After it finishes, reply with exactly: FIRST-DONE"
+    319ms stdout#1   system hook_started
+    319ms stdout#2   system hook_started
+    319ms stdout#3   system hook_started
+    507ms stdout#4   system hook_response
+    508ms stdout#5   system hook_response
+    993ms stdout#6   system hook_response
+   1106ms stdout#7   system init
+   1108ms stdout#8   system status
+   2183ms stdout#9   user "Use the Bash tool in the foreground (no run_in_background) t"
+   2183ms stdout#10  stream_event message_start
+   2183ms stdout#11  stream_event content_block_start
+   2183ms stdout#12  stream_event content_block_delta
+   2500ms stdout#13  stream_event content_block_delta
+   2500ms stdout#14  stream_event content_block_delta
+   2500ms stdout#15  stream_event content_block_delta
+   2677ms stdout#16  stream_event content_block_delta
+   2827ms stdout#17  stream_event content_block_delta
+   2838ms stdout#18  assistant tool_use:"Bash"
+   2845ms stdout#19  stream_event content_block_stop
+   2851ms stdout#20  stream_event message_delta
+   2851ms stdout#21  stream_event message_stop
+   2852ms stdout#22  rate_limit_event
+   6412ms stdout#23  system task_started
+   6412ms stdin#2   user "Also reply with exactly: SECOND-DONE"
+  23422ms stdout#24  system task_notification
+  23429ms stdout#25  user tool_result
+  23436ms stdout#26  user "Also reply with exactly: SECOND-DONE"
+  23437ms stdout#27  system status
+  24151ms stdout#28  stream_event message_start
+  24152ms stdout#29  stream_event content_block_start
+  24613ms stdout#30  system thinking_tokens
+  24614ms stdout#31  stream_event content_block_delta
+  24706ms stdout#32  stream_event content_block_delta
+  24706ms stdout#33  system thinking_tokens
+  24706ms stdout#34  stream_event content_block_delta
+  24706ms stdout#35  assistant
+  24706ms stdout#36  stream_event content_block_stop
+  24707ms stdout#37  stream_event content_block_start
+  24707ms stdout#38  stream_event content_block_delta
+  24707ms stdout#39  stream_event content_block_delta
+  24707ms stdout#40  stream_event content_block_delta
+  24707ms stdout#41  assistant "FIRST-DONE\nSECOND-DONE"
+  24707ms stdout#42  stream_event content_block_stop
+  24709ms stdout#43  stream_event message_delta
+  24709ms stdout#44  stream_event message_stop
+  24710ms stdout#45  rate_limit_event
+  24713ms stdout#46  result success "FIRST-DONE\nSECOND-DONE"
+  40182ms exit      exit status: 0

@@ -46,14 +46,18 @@ pub trait Harness: Send + Sync {
     async fn start(&self, agent: &Agent, resume: Option<SessionId>) -> Result<SessionInfo>;
 
     /// Runs one turn with this queued message and returns when it ends. The executor
-    /// calls it only when the agent is idle, one turn at a time per agent.
+    /// calls it only when the agent is idle, one turn at a time per agent; queued
+    /// messages stay in formationd until then (TASK-004: Claude Code gets each with
+    /// `"priority":"later"`).
     async fn run_turn(&self, agent_id: AgentId, item: QueueItem) -> Result<TurnResult>;
 
-    /// Delivers an owner message into the running turn. `harness_unsupported` when
-    /// the harness cannot (TASK-004 decides the fallback).
+    /// Delivers an owner message into the running turn, effective at the next tool
+    /// boundary (TASK-004: a default-priority message). `harness_unsupported` for a
+    /// harness that cannot steer.
     async fn steer(&self, agent_id: AgentId, item: QueueItem) -> Result<()>;
 
-    /// Stops the running turn and keeps the session.
+    /// Stops the running turn and keeps the session and process (TASK-004: the
+    /// stream-json `control_request` interrupt).
     async fn interrupt(&self, agent_id: AgentId) -> Result<()>;
 
     async fn stop(&self, agent_id: AgentId, mode: StopMode) -> Result<()>;

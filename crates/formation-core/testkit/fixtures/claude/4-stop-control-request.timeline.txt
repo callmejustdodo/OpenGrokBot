@@ -1,0 +1,43 @@
+      0ms stdin#1   user "Use the Bash tool in the foreground (no run_in_background) to run exactly `sleep 20`. After it finishes, reply with exactly: FIRST-DONE"
+    296ms stdout#1   system hook_started
+    296ms stdout#2   system hook_started
+    296ms stdout#3   system hook_started
+    529ms stdout#4   system hook_response
+    554ms stdout#5   system hook_response
+   1065ms stdout#6   system hook_response
+   1144ms stdout#7   system init
+   1147ms stdout#8   system status
+   2503ms stdout#9   user "Use the Bash tool in the foreground (no run_in_background) t"
+   2503ms stdout#10  stream_event message_start
+   2503ms stdout#11  stream_event content_block_start
+   2503ms stdout#12  stream_event content_block_delta
+   2692ms stdout#13  stream_event content_block_delta
+   2750ms stdout#14  stream_event content_block_delta
+   2803ms stdout#15  stream_event content_block_delta
+   2901ms stdout#16  stream_event content_block_delta
+   2904ms stdout#17  assistant tool_use:"Bash"
+   2908ms stdout#18  stream_event content_block_stop
+   2923ms stdout#19  stream_event message_delta
+   2923ms stdout#20  stream_event message_stop
+   2924ms stdout#21  rate_limit_event
+   6472ms stdout#22  system task_started
+   6472ms stdin#2   control_request
+   6478ms stdout#23  control_response
+   6480ms stdout#24  system task_notification
+   6484ms stdout#25  user tool_result
+   6485ms stdout#26  user "[Request interrupted by user for tool use]"
+   6487ms stdout#27  result error_during_execution
+   6488ms stdin#3   user "Which shell command did I ask you to run? Reply with only the command."
+   6497ms stdout#28  system init
+   6498ms stdout#29  system status
+   7236ms stdout#30  user "Which shell command did I ask you to run? Reply with only th"
+   7236ms stdout#31  stream_event message_start
+   7236ms stdout#32  stream_event content_block_start
+   7236ms stdout#33  stream_event content_block_delta
+   7236ms stdout#34  assistant "`sleep 20`"
+   7236ms stdout#35  stream_event content_block_stop
+   7253ms stdout#36  stream_event message_delta
+   7253ms stdout#37  stream_event message_stop
+   7254ms stdout#38  rate_limit_event
+   7256ms stdout#39  result success "`sleep 20`"
+   7826ms exit      exit status: 0

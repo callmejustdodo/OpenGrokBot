@@ -21,7 +21,7 @@ Inside `apps/desktop/` (from the `create-tauri-app` React + TypeScript scaffold)
 
 ```text
 apps/desktop/
-├── src-tauri/                 Rust: thin client to formationd, tray, menus, windows, notifications
+├── src-tauri/                 Rust: thin client to formationd, LaunchAgent registration, tray, menus, windows, notifications
 └── src/
     ├── main.tsx · menubar.tsx · settings.tsx   window entries
     ├── ipc/                   typed command calls and event subscription (generated types)

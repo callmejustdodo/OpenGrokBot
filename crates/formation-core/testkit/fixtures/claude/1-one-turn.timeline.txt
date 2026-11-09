@@ -1,0 +1,35 @@
+      0ms stdin#1   user "Use the Bash tool to run exactly `sleep 1`. After it finishes, reply with exactly: ONE-DONE"
+    300ms stdout#1   system hook_started
+    300ms stdout#2   system hook_started
+    300ms stdout#3   system hook_started
+    497ms stdout#4   system hook_response
+    554ms stdout#5   system hook_response
+   1063ms stdout#6   system hook_response
+   1156ms stdout#7   system init
+   1158ms stdout#8   system status
+   2441ms stdout#9   user "Use the Bash tool to run exactly `sleep 1`. After it finishe"
+   2441ms stdout#10  stream_event message_start
+   2441ms stdout#11  stream_event content_block_start
+   2441ms stdout#12  stream_event content_block_delta
+   2642ms stdout#13  stream_event content_block_delta
+   2702ms stdout#14  stream_event content_block_delta
+   2747ms stdout#15  stream_event content_block_delta
+   2826ms stdout#16  stream_event content_block_delta
+   2900ms stdout#17  stream_event content_block_delta
+   2903ms stdout#18  assistant tool_use:"Bash"
+   2907ms stdout#19  stream_event content_block_stop
+   2914ms stdout#20  stream_event message_delta
+   2914ms stdout#21  stream_event message_stop
+   2914ms stdout#22  rate_limit_event
+   4482ms stdout#23  user tool_result
+   4485ms stdout#24  system status
+   5215ms stdout#25  stream_event message_start
+   5215ms stdout#26  stream_event content_block_start
+   5215ms stdout#27  stream_event content_block_delta
+   5216ms stdout#28  assistant "ONE-DONE"
+   5216ms stdout#29  stream_event content_block_stop
+   5221ms stdout#30  stream_event message_delta
+   5221ms stdout#31  stream_event message_stop
+   5221ms stdout#32  rate_limit_event
+   5225ms stdout#33  result success "ONE-DONE"
+   6135ms exit      exit status: 0
