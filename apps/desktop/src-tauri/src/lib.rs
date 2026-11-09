@@ -149,11 +149,8 @@ pub fn run() {
             shell::create_app_menu(app.handle(), move |app| {
                 updater::check(app, updater::Trigger::Menu, restart_service)
             })?;
-            // Development builds run from `target/`, not an installed bundle,
-            // so only release builds check at launch.
-            if !cfg!(debug_assertions) {
-                updater::check(app.handle(), updater::Trigger::Launch, restart_service);
-            }
+            // Silent unless an update is found; skipped outside an app bundle.
+            updater::check(app.handle(), updater::Trigger::Launch, restart_service);
             shell::create_tray(app.handle())?;
             app.manage(shell::TrayIcons::new());
             notifications::on_click(app.handle());

@@ -65,6 +65,7 @@
     ],
     "macOS": {
       "minimumSystemVersion": "13.0",
+      "signingIdentity": "-",
       "files": {
         "MacOS/formationd": "../../../target/release/formationd",
         "MacOS/formation": "../../../target/release/formation"

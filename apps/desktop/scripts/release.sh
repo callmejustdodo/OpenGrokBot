@@ -31,11 +31,28 @@ if [ -n "$(git status --porcelain)" ]; then
   exit 1
 fi
 
+if [ "$(uname -m)" != arm64 ]; then
+  echo "release builds are made on an Apple Silicon Mac (the updater manifest lists darwin-aarch64 only)" >&2
+  exit 1
+fi
+
 version=$(node -p 'require("./apps/desktop/src-tauri/tauri.conf.json").version')
 commit=$(git rev-parse HEAD)
 tag="v$version"
 arch=aarch64
 repo=callmejustdodo/OpenGrokBot
+
+if [ "$publish" = true ]; then
+  git fetch -q origin
+  if [ -z "$(git branch -r --contains "$commit")" ]; then
+    echo "$commit is not on GitHub; push it before publishing" >&2
+    exit 1
+  fi
+  if gh release view "$tag" --repo "$repo" >/dev/null 2>&1; then
+    echo "release $tag already exists; raise the version first" >&2
+    exit 1
+  fi
+fi
 
 TAURI_SIGNING_PRIVATE_KEY=$(cat "$key")
 TAURI_SIGNING_PRIVATE_KEY_PASSWORD="${TAURI_SIGNING_PRIVATE_KEY_PASSWORD:-}"
