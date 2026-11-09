@@ -8,4 +8,8 @@ import type { WorkRequest } from "./WorkRequest";
 /**
  * Messages on `WS /v1/events`, filtered to what the caller may see.
  */
-export type PeerEvent = { "type": "presence", presence: PresenceEvent, } | { "type": "question_update", question: Question, } | { "type": "question_removed", question_id: QuestionId, } | { "type": "request_update", request: WorkRequest, } | { "type": "roster", members: Array<Member>, };
+export type PeerEvent = { "type": "presence", presence: PresenceEvent, } | { "type": "question_update", question: Question, } | { "type": "question_removed", question_id: QuestionId, } | { "type": "request_update", request: WorkRequest, } | { "type": "roster", members: Array<Member>, 
+/**
+ * As [`RosterResponse::version`].
+ */
+version: number, };

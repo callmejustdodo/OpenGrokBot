@@ -4,6 +4,15 @@ import type { MemberId } from "./MemberId";
 
 export type Invitation = { id: InvitationId, 
 /**
- * What the invitee pastes. Carries the creator's tailnet address; expires.
+ * The short code, such as `7F3K-Q9PX`. Works once, until `expires_at`.
  */
-code: string, created_by: MemberId, expires_at: string, used_by: MemberId | null, used_at: string | null, };
+code: string, created_by: MemberId, 
+/**
+ * 24 hours after the invitation is made.
+ */
+expires_at: string, used_by: MemberId | null, used_at: string | null, 
+/**
+ * What the invitee pastes: `formation://join/<code>?host=<host>&port=<port>&team=<team id>`,
+ * carrying the creator's tailnet address (tech spec, "Team and roster").
+ */
+link: string, };

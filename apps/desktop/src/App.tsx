@@ -1,22 +1,24 @@
-// The main window's frame: sidebar and content. TASK-015 and later fill both;
-// this shows formationd's agents so the shell can be checked against the fake.
-import { useSnapshot } from "./useSnapshot";
+// The main window: sidebar, content, information panel, and sheets.
+import ConnectionBanner from "./components/ConnectionBanner";
+import InfoPanel from "./components/info-panel/InfoPanel";
+import Sidebar from "./components/sidebar/Sidebar";
+import { useAppStore } from "./store/store";
+import { useUi } from "./store/ui";
+import SheetHost from "./views/SheetHost";
+import ViewRouter from "./views/ViewRouter";
 
 export default function App() {
-  const { connected, snapshot } = useSnapshot();
-  const agents = snapshot?.agents ?? [];
+  const connected = useAppStore((s) => s.connected);
+  const panelOpen = useUi((s) => s.panelOpen);
   return (
     <div className="app">
-      <aside className="sidebar" aria-label="Chats">
-        <ul className="chat-list">
-          {agents.map((a) => (
-            <li key={a.id} className="chat-item" data-state={a.state}>
-              <span className="name">{a.name}</span>
-            </li>
-          ))}
-        </ul>
-      </aside>
-      <main className="content" data-connected={connected} />
+      <Sidebar />
+      <main className="content" data-connected={connected}>
+        <ConnectionBanner />
+        <ViewRouter />
+      </main>
+      {panelOpen ? <InfoPanel /> : null}
+      <SheetHost />
     </div>
   );
 }

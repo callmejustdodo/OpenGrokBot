@@ -1,5 +1,7 @@
 import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import m3 from "../../../tools/fake-formationd/fixtures/worlds/m3.json";
+import type { Snapshot } from "./ipc/generated/Snapshot";
 
 // The Tauri bridge, replaced by an in-memory formationd.
 const invoke = vi.fn();
@@ -14,44 +16,68 @@ vi.mock("@tauri-apps/api/event", () => ({
 
 const { default: App } = await import("./App");
 const { default: MenubarPanel } = await import("./MenubarPanel");
+const { appStore, connectStore } = await import("./store/store");
+const { tauriTransport } = await import("./ipc/transport");
 
-const snapshot = {
-  agents: [
-    { id: "a1", name: "Backend", state: "working" },
-    { id: "a2", name: "Research", state: "stalled" },
-  ],
-};
+const snapshot = m3 as unknown as Snapshot;
 
+function formationd(connected: boolean) {
+  invoke.mockImplementation((cmd: string, args?: { method: string }) => {
+    if (cmd === "formationd_status") return Promise.resolve({ connected, socket: "/s" });
+    if (cmd === "formationd_call" && args?.method === "snapshot") return Promise.resolve(snapshot);
+    return Promise.reject(new Error(cmd));
+  });
+}
+
+let stop: () => void = () => {};
 beforeEach(() => {
+  stop();
   invoke.mockReset();
   listeners.clear();
+  appStore.setState({ mirror: null, connected: false, stale: true, pending: {} });
 });
 
-describe("shell windows", () => {
+describe("windows over the store", () => {
   it("shows formationd's agents once connected", async () => {
-    invoke.mockImplementation((cmd: string, args?: { method: string }) => {
-      if (cmd === "formationd_status") return Promise.resolve({ connected: true, socket: "/s" });
-      if (cmd === "formationd_call" && args?.method === "snapshot") return Promise.resolve(snapshot);
-      return Promise.reject(new Error(cmd));
-    });
+    formationd(true);
+    stop = connectStore(tauriTransport);
     render(<App />);
     expect(await screen.findByText("Backend")).toBeInTheDocument();
     expect(screen.getByText("Research").closest("li")).toHaveAttribute("data-state", "stalled");
-    expect(screen.getByRole("main")).toHaveAttribute("data-connected", "true");
+    expect(screen.queryByRole("status")).toBeNull();
   });
 
-  it("waits while formationd is unreachable and loads when it connects", async () => {
-    invoke.mockImplementation((cmd: string) => {
-      if (cmd === "formationd_status") return Promise.resolve({ connected: false, socket: "/s" });
-      if (cmd === "formationd_call") return Promise.resolve(snapshot);
-      return Promise.reject(new Error(cmd));
-    });
+  it("shows the banner while formationd is unreachable, then the data", async () => {
+    formationd(false);
+    stop = connectStore(tauriTransport);
     render(<MenubarPanel />);
-    await act(async () => {});
-    expect(screen.queryByText("Backend")).toBeNull();
+    render(<App />);
+    expect(await screen.findByRole("status")).toHaveTextContent("Connecting to formationd");
+    formationd(true);
     await act(async () => {
       listeners.get("formationd://status")?.({ payload: { connected: true, socket: "/s" } });
     });
-    expect(await screen.findByText("Backend")).toBeInTheDocument();
+    expect(await screen.findAllByText("Backend")).toHaveLength(2);
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("applies events after the snapshot", async () => {
+    formationd(true);
+    stop = connectStore(tauriTransport);
+    render(<App />);
+    await screen.findByText("Backend");
+    await act(async () => {
+      listeners.get("formationd://event")?.({
+        payload: {
+          seq: 1,
+          at: "2026-11-09T01:54:00Z",
+          event: {
+            type: "agent.state",
+            payload: { agent_id: "01930000-0000-7000-8000-000000000101", state: "idle", reason: null, exit_code: null },
+          },
+        },
+      });
+    });
+    expect(screen.getByText("Backend").closest("li")).toHaveAttribute("data-state", "idle");
   });
 });

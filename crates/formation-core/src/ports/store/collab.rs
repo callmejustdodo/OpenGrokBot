@@ -7,19 +7,40 @@ use formation_proto::common::{
 };
 use formation_proto::policy::{Approval, ApprovalStatus, Rule, ShareSettings};
 use formation_proto::request::{QueueItem, WorkRequest};
-use formation_proto::team::{Invitation, Member};
+use formation_proto::team::{Invitation, Member, TeamId};
 
 use crate::ports::Result;
+
+/// The team this Mac belongs to (one in the first version). On the creator's Mac it
+/// is the authoritative roster's state; on a member's Mac, the copy last applied.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TeamRecord {
+    pub id: TeamId,
+    /// Where the creator's Mac serves the roster and joins: its MagicDNS name or
+    /// tailnet IP, from the invitation link (its own address on the creator's Mac).
+    pub creator_host: String,
+    pub creator_port: u16,
+    /// The roster version held; only the creator's Mac increases it.
+    pub roster_version: u64,
+    /// The creator's open invitation, by code (creator's Mac only).
+    pub open_invitation: Option<String>,
+}
 
 pub trait TeamRepo {
     /// This Mac's member, once a team exists.
     fn me(&self) -> Result<Option<MemberId>>;
     fn set_me(&self, id: MemberId) -> Result<()>;
+    /// `None` until this Mac creates or joins a team, and again after it is removed.
+    fn team(&self) -> Result<Option<TeamRecord>>;
+    /// Replaces the record; `None` forgets the team.
+    fn put_team(&self, team: Option<&TeamRecord>) -> Result<()>;
     /// Members not removed.
     fn members(&self) -> Result<Vec<Member>>;
     fn member(&self, id: MemberId) -> Result<Option<Member>>;
     /// Only members not removed; used on every peer request.
     fn member_by_tailscale(&self, login: &str) -> Result<Option<Member>>;
+    /// Inserts or replaces a current member, clearing any earlier removal of the same
+    /// ID (a Mac that forgot its team stores the roster again when it rejoins).
     fn put_member(&self, member: &Member) -> Result<()>;
     fn remove_member(&self, id: MemberId, at: Timestamp) -> Result<()>;
     fn put_invitation(&self, invitation: &Invitation) -> Result<()>;

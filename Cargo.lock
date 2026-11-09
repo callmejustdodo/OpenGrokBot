@@ -885,6 +885,7 @@ dependencies = [
  "async-trait",
  "formation-core",
  "formation-proto",
+ "getrandom 0.4.3",
  "rmcp",
  "rusqlite",
  "schemars 1.2.3",
