@@ -1,6 +1,8 @@
 use formation_proto::{
     agent::{Activity, Agent, Attention, AttentionTarget, Schedule, ScheduleRun},
-    common::{ActivityId, AgentId, ApiError, ErrorCode, MemberId, RunId, ScheduleId, Timestamp},
+    common::{
+        ActivityId, AgentId, ApiError, ErrorCode, MemberId, RunId, ScheduleId, SessionId, Timestamp,
+    },
     harness::SessionInfo,
     request::QueueItem,
     snapshot::Settings,
@@ -229,6 +231,16 @@ impl SessionRepo for SqliteStore {
         let mut fields = fields(session)?;
         fields.insert("run_id".into(), Value::String(run_id.to_string()));
         self.with_connection(|c| put(c, "fork_sessions", "run_id", fields, false))
+    }
+    fn is_formation_session(&self, session_id: &SessionId) -> Result<bool> {
+        self.with_connection(|c| {
+            c.query_row(
+                "SELECT EXISTS(SELECT 1 FROM main_sessions WHERE session_id=?1) OR EXISTS(SELECT 1 FROM fork_sessions WHERE session_id=?1)",
+                [&session_id.0],
+                |r| r.get(0),
+            )
+            .map_err(db_error)
+        })
     }
     fn owner_queue(&self, agent_id: AgentId) -> Result<Vec<QueueItem>> {
         let items: Option<String> = self.with_connection(|c| {

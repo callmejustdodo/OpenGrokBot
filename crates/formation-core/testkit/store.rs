@@ -2,7 +2,7 @@ use std::sync::Mutex;
 
 use formation_proto::agent::{Activity, Agent, Attention, AttentionTarget, Schedule, ScheduleRun};
 use formation_proto::common::{
-    ActivityId, AgentId, ApiError, ErrorCode, MemberId, RunId, ScheduleId, Timestamp,
+    ActivityId, AgentId, ApiError, ErrorCode, MemberId, RunId, ScheduleId, SessionId, Timestamp,
 };
 use formation_proto::harness::SessionInfo;
 use formation_proto::request::QueueItem;
@@ -136,6 +136,14 @@ impl SessionRepo for MemoryStore {
             .fork_sessions
             .insert(run_id, session.clone());
         Ok(())
+    }
+    fn is_formation_session(&self, session_id: &SessionId) -> Result<bool> {
+        let data = self.data.lock().unwrap();
+        Ok(data.sessions.iter().any(|s| &s.session_id == session_id)
+            || data
+                .fork_sessions
+                .values()
+                .any(|s| &s.session_id == session_id))
     }
     fn owner_queue(&self, agent_id: AgentId) -> Result<Vec<QueueItem>> {
         Ok(self

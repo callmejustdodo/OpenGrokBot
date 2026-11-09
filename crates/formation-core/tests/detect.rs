@@ -8,13 +8,14 @@ use std::{
 use formation_core::{
     ask::transcript::project_dir_name,
     harness::detect::{Detect, DetectPaths},
-    ports::{AgentRepo, CommandCall, CommandHandler},
+    ports::{AgentRepo, CommandCall, CommandHandler, SessionRepo},
     testkit::{MemoryStore, RecordingEventSink},
 };
 use formation_proto::{
     agent::*,
-    common::{AgentId, Timestamp},
+    common::{AgentId, RunId, SessionId, Timestamp},
     events::Event,
+    harness::SessionInfo,
     policy::Caller,
 };
 use serde_json::{Value, json};
@@ -84,6 +85,45 @@ impl Fixture {
         fs::write(&path, format!("{meta}\n{turn}\n")).unwrap();
         path
     }
+    /// A Formation agent living in `project`, as created by the owner.
+    fn agent(&self, project: &str, harness: HarnessKind) -> AgentId {
+        let id = AgentId::generate();
+        self.store
+            .insert_agent(&Agent {
+                id,
+                slug: project.into(),
+                name: project.into(),
+                role: String::new(),
+                harness,
+                folder_path: self.root.join(project),
+                repositories: vec![],
+                avatar: Avatar {
+                    shape: "round".into(),
+                    color: "blue".into(),
+                },
+                state: AgentState::Idle,
+                files_revision: String::new(),
+                created_at: SystemTime::now().into(),
+                last_activity_at: None,
+                detected: None,
+                running_requests: vec![],
+            })
+            .unwrap();
+        id
+    }
+    fn session(&self, agent_id: AgentId, project: &str, sid: &str) -> SessionInfo {
+        SessionInfo {
+            agent_id,
+            session_id: SessionId(sid.into()),
+            transcript_path: PathBuf::new(),
+            cwd: self.root.join(project),
+            started_at: SystemTime::now().into(),
+            last_activity_at: None,
+        }
+    }
+    fn keys(found: &[DetectedAgent]) -> Vec<&str> {
+        found.iter().map(|d| d.key.as_str()).collect()
+    }
 }
 impl Drop for Fixture {
     fn drop(&mut self) {
@@ -92,7 +132,7 @@ impl Drop for Fixture {
 }
 
 #[tokio::test]
-async fn detects_recent_external_sessions_skips_owned_projects_and_connects_read_only() {
+async fn detects_recent_external_sessions_skips_formation_sessions_and_connects_read_only() {
     let f = Fixture::new();
     let now: Timestamp = SystemTime::now().into();
     let original = f.transcript("external", "external-session", now);
@@ -103,26 +143,15 @@ async fn detects_recent_external_sessions_skips_owned_projects_and_connects_read
     );
     f.transcript("owned", "main-session", now);
     f.transcript("owned", "fork-session", now);
+    let owned = f.agent("owned", HarnessKind::ClaudeCode);
     f.store
-        .insert_agent(&Agent {
-            id: AgentId::generate(),
-            slug: "owned".into(),
-            name: "Owned".into(),
-            role: String::new(),
-            harness: HarnessKind::ClaudeCode,
-            folder_path: f.root.join("owned"),
-            repositories: vec![],
-            avatar: Avatar {
-                shape: "round".into(),
-                color: "blue".into(),
-            },
-            state: AgentState::Idle,
-            files_revision: String::new(),
-            created_at: now,
-            last_activity_at: None,
-            detected: None,
-            running_requests: vec![],
-        })
+        .put_main_session(&f.session(owned, "owned", "main-session"))
+        .unwrap();
+    f.store
+        .put_fork_session(
+            RunId::generate(),
+            &f.session(owned, "owned", "fork-session"),
+        )
         .unwrap();
     let before = fs::read(&original).unwrap();
     let found = f.detected().await;
@@ -227,26 +256,9 @@ async fn detects_recent_codex_sessions_skips_known_ones_and_connects_read_only()
         (SystemTime::now() - Duration::from_secs(172800)).into(),
     );
     f.rollout("owned", "owned-session", now);
+    let owned = f.agent("owned", HarnessKind::Codex);
     f.store
-        .insert_agent(&Agent {
-            id: AgentId::generate(),
-            slug: "owned".into(),
-            name: "Owned".into(),
-            role: String::new(),
-            harness: HarnessKind::ClaudeCode,
-            folder_path: f.root.join("owned"),
-            repositories: vec![],
-            avatar: Avatar {
-                shape: "round".into(),
-                color: "blue".into(),
-            },
-            state: AgentState::Idle,
-            files_revision: String::new(),
-            created_at: now,
-            last_activity_at: None,
-            detected: None,
-            running_requests: vec![],
-        })
+        .put_main_session(&f.session(owned, "owned", "owned-session"))
         .unwrap();
     let before = fs::read(&original).unwrap();
     let found = f.detected().await;
@@ -287,5 +299,62 @@ async fn detects_recent_codex_sessions_skips_known_ones_and_connects_read_only()
     assert_eq!(
         fs::read_dir(f.root.join("codex-external")).unwrap().count(),
         0
+    );
+}
+
+#[tokio::test]
+async fn lists_external_sessions_in_an_agent_folder_by_session_id() {
+    let f = Fixture::new();
+    let now: Timestamp = SystemTime::now().into();
+    let agent = f.agent("shared", HarnessKind::ClaudeCode);
+    f.store
+        .put_main_session(&f.session(agent, "shared", "main-session"))
+        .unwrap();
+    f.store
+        .put_fork_session(
+            RunId::generate(),
+            &f.session(agent, "shared", "fork-session"),
+        )
+        .unwrap();
+    f.store
+        .put_main_session(&f.session(AgentId::generate(), "shared", "codex-main"))
+        .unwrap();
+    f.transcript("shared", "main-session", now);
+    f.transcript("shared", "fork-session", now);
+    f.transcript("shared", "mine", now);
+    f.transcript("shared", "mine-too", now);
+    f.rollout("shared", "codex-main", now);
+    f.rollout("shared", "codex-mine", now);
+    f.rollout("shared", "codex-mine-too", now);
+    // Formation's own main and fork sessions are never listed; the owner's are.
+    let found = f.detected().await;
+    assert_eq!(
+        Fixture::keys(&found),
+        vec![
+            "claude_code:mine",
+            "claude_code:mine-too",
+            "codex:codex-mine",
+            "codex:codex-mine-too"
+        ]
+    );
+    for key in ["claude_code:mine", "codex:codex-mine"] {
+        let connected: Agent =
+            serde_json::from_value(f.call("agent_connect", json!({"key":key})).await).unwrap();
+        assert_eq!(connected.folder_path, f.root.join("shared"));
+    }
+    // A connected session is listed only once; the others in its folder stay listed.
+    assert_eq!(
+        Fixture::keys(&f.detected().await),
+        vec!["claude_code:mine-too", "codex:codex-mine-too"]
+    );
+    let connected: Agent = serde_json::from_value(
+        f.call("agent_connect", json!({"key":"claude_code:mine-too"}))
+            .await,
+    )
+    .unwrap();
+    assert_eq!(connected.folder_path, f.root.join("shared"));
+    assert_eq!(
+        Fixture::keys(&f.detected().await),
+        vec!["codex:codex-mine-too"]
     );
 }
