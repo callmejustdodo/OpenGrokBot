@@ -8,8 +8,15 @@
 /* Avatars (AgentAvatar sets --size and --c; the shape is an inline SVG) */
 .ava { --size: 40px; position: relative; flex: none; display: inline-flex; align-items: center; justify-content: center; width: var(--size); height: var(--size); color: var(--badge-fg); font-weight: 700; font-size: calc(var(--size) * .42); }
 .ava > svg { width: 100%; height: 100%; display: block; overflow: visible; }
-.ava[data-state="working"] > svg { animation: bob 2.6s ease-in-out infinite; }
+/* A working agent moves gently (D-042): a slow bob, a glance aside, and a blink. Reduce Motion stops it. */
+.ava[data-motion="working"] > svg { animation: bob 2.6s ease-in-out infinite; }
+.ava[data-motion="working"] .eye { transform-box: fill-box; transform-origin: center; animation: ava-blink 4.2s ease-in-out infinite, ava-gaze 7s ease-in-out infinite; }
 @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4%); } }
+@keyframes ava-blink { 0%, 44%, 50%, 100% { scale: 1 1; } 47% { scale: 1 .1; } }
+@keyframes ava-gaze { 0%, 30%, 100% { translate: 0 0; } 40%, 60% { translate: 2px 0; } 70%, 90% { translate: -1px 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .ava[data-motion="working"] > svg, .ava[data-motion="working"] .eye { animation: none; }
+}
 .ava.sq { border-radius: 30%; background: var(--c); }
 .ava.person { border-radius: 50%; background: var(--c, var(--person-0)); font-size: calc(var(--size) * .4); }
 .ava[data-state]::after { content: ""; position: absolute; right: -2px; bottom: -2px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--side); background: var(--text3); }

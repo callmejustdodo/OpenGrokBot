@@ -93,7 +93,7 @@ export default function MyConversation({ agentId }: { agentId: AgentId }) {
     <section className="conversation" aria-label={t("conversation.labelWith", "Conversation with {{name}}", { name: agent.name })} data-state={state}>
       <div className="c-head" data-tauri-drag-region>
         <span className="pill">
-          <AgentAvatar avatar={agent.avatar} size={28} />
+          <AgentAvatar avatar={agent.avatar} size={28} working={agent.state === "working"} />
           <span className="nm">{agent.name}</span>
           <span className="st status" data-state={state}>
             {stateLabel(t, agent.state)}
