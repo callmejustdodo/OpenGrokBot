@@ -14,7 +14,7 @@ impl ClaudeSupervisor {
                 permission_prompt_tool: Some("mcp__formation__permission"),
                 mcp_config: Some(&config.mcp_config),
                 settings: Some(&settings),
-                permission_mode: None,
+                permission_mode: Some("default"),
             },
         };
         let mut args = protocol::launch_args(
@@ -24,6 +24,9 @@ impl ClaudeSupervisor {
             options,
         );
         args.push("--fork-session".into());
+        if fork.tools == ForkTools::Gated {
+            args.extend(GATED_ARGS.map(String::from));
+        }
         if fork.tools == ForkTools::None {
             args.extend(crate::ask::fork::ISOLATION_ARGS.map(String::from));
             args.extend(["--system-prompt-snapshot".into(), "off".into()]);
