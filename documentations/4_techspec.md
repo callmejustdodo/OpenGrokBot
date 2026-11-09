@@ -81,7 +81,23 @@ Flags below follow the [Claude Code CLI reference](https://code.claude.com/docs/
 | Read a session conversation | Transcript files (`.jsonl`) under `$CLAUDE_CONFIG_DIR/projects/` (default `~/.claude/projects/`); `--resume` also accepts a transcript path. | FR-012 |
 | Detect sessions started elsewhere | Read detected sessions and work only in forks; never resume or write to the original (FR-006). Scan transcript folders for recent activity. Live-process detection (for example `~/.claude/sessions/<pid>.json`, used by Reason Network) is undocumented; treat as best effort and label states "unknown" when unsure. Skip sessions Formation created as forks: every fork writes a full transcript copy (`<fork-id>.jsonl`) into the same project folder (TASK-006). | FR-006 |
 
-**Codex (second harness):** launch `codex app-server` and speak its JSON-RPC protocol (thread, turn, and approval requests), per the [Codex App Server docs](https://learn.chatgpt.com/docs/app-server) referenced in the product plan. Verify the protocol and approval hooks before building it.
+## Codex integration (second harness)
+
+Launch `codex app-server` in the agent's folder and speak JSON-RPC over its stdin and stdout, one JSON object per line, per the [Codex App Server docs](https://learn.chatgpt.com/docs/app-server). The methods below were measured against codex-cli 0.164.0, where `app-server` is experimental, in TASK-041 step 1 (#129); `codex app-server generate-ts` and `generate-json-schema` print the full protocol. The recorded traffic for start, turn, interrupt and both approval answers is in `crates/formation-core/src/harness/codex/testdata/`. The harness itself is not built yet.
+
+| Need | How | PRD |
+| --- | --- | --- |
+| Start the process | Send the `initialize` request (`clientInfo`, `capabilities.experimentalApi: false`), then the `initialized` notification. The server's messages carry no `jsonrpc` field. | FR-003 |
+| Start a session | `thread/start` with `cwd`, `approvalPolicy`, `approvalsReviewer` and `sandbox`. The response's `thread.id` is the session ID and `thread.path` the rollout file (`$CODEX_HOME/sessions/<yyyy>/<mm>/<dd>/rollout-<time>-<id>.jsonl`; the schema marks `path` unstable). A `thread/started` notification follows. | FR-003 |
+| Run a turn | `turn/start` with `threadId` and `input` (`[{"type":"text","text":…,"text_elements":[]}]`) returns the new turn at once (`inProgress`). Then come `turn/started`, `item/started` and `item/completed` per item (`userMessage`, `reasoning`, `agentMessage`, `commandExecution`), `item/agentMessage/delta` while text streams, `thread/status/changed` (`active`, then `idle`), and `turn/completed` with the turn's status and items. | FR-022 |
+| Queue while working | The server does not queue: a second `turn/start` during a turn returns the running turn's ID, and its input joins that turn at the next boundary, like `turn/steer`. It is not rejected either. formationd holds queued messages and sends each with `turn/start` after `turn/completed`, as with Claude Code. | FR-022 |
+| Steer now | `turn/steer` with `threadId`, `input` and `expectedTurnId` (the running turn) returns `{turnId}`; the reply followed both the steer and the joined `turn/start`. | FR-022 |
+| Stop | `turn/interrupt` with `threadId` and `turnId` returns `{}`, and `turn/completed` with status `interrupted` arrived 4 ms later. The streaming `agentMessage` got no `item/completed`. | FR-003 |
+| Owner's approvals | With `approvalPolicy: "untrusted"`, `approvalsReviewer: "user"` and `sandbox: "read-only"`, a shell command arrives as the server request `item/commandExecution/requestApproval` (`threadId`, `turnId`, `itemId`, `command`, `cwd`, `availableDecisions`) while the thread is `waitingOnApproval`. Answering `{"decision":"accept"}` ran it once; `{"decision":"decline"}` ended the item as `declined`, nothing ran, and the turn went on to complete. `serverRequest/resolved` follows each answer. `decline` worked although `availableDecisions` listed only `accept`, `acceptWithExecpolicyAmendment` and `cancel`. Server request IDs are their own sequence from 0. | FR-022 |
+| Restart and continue | Start a new process, `initialize`, then `thread/resume` with `threadId`: the same ID and rollout path, and `thread.turns` lists the earlier turns with their statuses (including the interrupted one). The next turn answered from the earlier conversation. | FR-003 |
+| Owner's Codex settings | The owner's `$CODEX_HOME` applies to the session: its `AGENTS.md` (`instructionSources`), hooks (`hook/started`), MCP servers and default model. The owner's config here sets `approvals_reviewer` to an automatic reviewer, so Formation passes `approvalsReviewer: "user"` explicitly; behavior without it was not tested. | FR-004 |
+
+Not yet proven: file-edit approvals (`item/fileChange/requestApproval`), `acceptForSession` and `cancel`, other sandbox and approval settings, the experimental API (`experimentalApi: true`), a second client joining a running thread, models other than the owner's default, and reading the rollout file.
 
 ## Ask pipeline
 
@@ -215,7 +231,7 @@ UI work (developer C and the designer) stays in `apps/desktop/src`; the core (de
 | Tailscale WhoIs is reachable from Rust | Peer identity | Call the `tailscale whois --json` CLI or the LocalAPI socket; the Rust bindings lack WhoIs ([tailscale-rs #478](https://github.com/tailscale/tailscale-rs/issues/478)) |
 | formationd can be registered as a LaunchAgent from the app on macOS 13, and can open the app hidden for notifications | D-048, FR-007 | Plist plus `launchctl` chosen (TASK-009). On macOS 27.2, formationd survived quitting the app, and launchd restarted it after a kill. Still to check: macOS 13, and formationd opening the app with `--hidden` (formationd side comes with TASK-034). |
 | The tray icon shows once | Menu bar panel | Check for the duplicate-icon report ([tauri #10912](https://github.com/tauri-apps/tauri/issues/10912)) |
-| Codex app-server supports turns, interrupts, and approvals as needed | Second harness | Prototype after Claude Code works |
+| Codex app-server supports turns, interrupts, and approvals as needed | Second harness | Proven for command approvals in TASK-041 step 1: see [Codex integration](#codex-integration-second-harness) |
 
 ## Open decisions
 
