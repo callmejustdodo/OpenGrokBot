@@ -7,6 +7,7 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
+import i18n from "../../i18n";
 import type { ChatListItem } from "../../store/selectors";
 import { selectChatList, selectNeedsYouCount } from "../../store/selectors";
 import { useAppStore } from "../../store/store";
@@ -32,7 +33,7 @@ function isSelected(view: View, item: ChatListItem): boolean {
 
 function timeText(at: string | null): string {
   if (!at) return "";
-  return new Date(at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return new Date(at).toLocaleTimeString(i18n.language, { hour: "numeric", minute: "2-digit" });
 }
 
 interface RowView {
@@ -152,6 +153,9 @@ export default function Sidebar() {
   const rows = mirror
     ? selectChatList(mirror)
         .map((item) => ({ item, row: describeRow(t, item, mirror) }))
+        // A conversation with someone no longer on the team (or before joining one)
+        // has no name to show.
+        .filter(({ item, row }) => item.kind !== "person" || row.name !== "")
         .filter(
           ({ row }) =>
             !needle ||
@@ -173,7 +177,7 @@ export default function Sidebar() {
   const currentTop = view.kind === "member" ? "team" : view.kind;
 
   return (
-    <aside className="side" aria-label={t("sidebar.label", "Sidebar")} data-state={empty ? "empty" : detecting ? "detecting" : "default"}>
+    <aside className="side" role="navigation" aria-label={t("sidebar.label", "Sidebar")} data-state={empty ? "empty" : detecting ? "detecting" : "default"}>
       <div className="side-top" data-tauri-drag-region>
         {top.map((icon) => (
           <button

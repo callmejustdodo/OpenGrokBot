@@ -4,6 +4,7 @@
 // The collapse button hides it; the conversation header's panel button brings it back.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import i18n from "../../i18n";
 import "./info-panel.css";
 import type { AgentId } from "../../ipc/generated/AgentId";
 import type { MemberId } from "../../ipc/generated/MemberId";
@@ -16,7 +17,7 @@ import AgentAvatar, { PersonAvatar } from "../sidebar/AgentAvatar";
 import { harnessLabel, stateLabel } from "../sidebar/labels";
 
 function when(at: string | null): string {
-  return at ? new Date(at).toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "";
+  return at ? new Date(at).toLocaleString(i18n.language, { dateStyle: "medium", timeStyle: "short" }) : "";
 }
 
 function CollapseButton() {
@@ -189,7 +190,7 @@ function MyAgentPanel({ agentId }: { agentId: AgentId }) {
           <SharingCard agentId={agentId} />
           {teammateQuestions.length > 0 ? (
             <>
-              <div className="p-lbl">{t("panel.teammateQuestions", "Teammates' questions")}</div>
+              <div className="p-lbl" role="heading" aria-level={2}>{t("panel.teammateQuestions", "Teammates' questions")}</div>
               {teammateQuestions.map((q) => (
                 <div key={q.id} className="p-card">
                   <small>
@@ -290,7 +291,7 @@ function PersonPanel({ memberId }: { memberId: MemberId }) {
           {t("panel.personNote", "When you ask a person, OpenGrokBot picks which shared agent answers.")}
         </small>
       </div>
-      <div className="p-lbl">{t("panel.sharedAgents", "Shared agents")}</div>
+      <div className="p-lbl" role="heading" aria-level={2}>{t("panel.sharedAgents", "Shared agents")}</div>
       {agents && agents.length > 0 ? (
         agents.map((a) => (
           <button

@@ -4,6 +4,7 @@
 import * as ToggleGroup from "@radix-ui/react-toggle-group";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import i18n from "../../i18n";
 import "../team/team.css";
 import "./history.css";
 import type { Activity } from "../../ipc/generated/Activity";
@@ -44,7 +45,7 @@ function newestFirst(a: Activity, b: Activity): number {
   return Date.parse(b.at) - Date.parse(a.at);
 }
 
-const timeFormat = new Intl.DateTimeFormat(undefined, {
+const timeFormat = () => new Intl.DateTimeFormat(i18n.language, {
   month: "short",
   day: "numeric",
   hour: "2-digit",
@@ -242,7 +243,7 @@ export default function History() {
               aria-label={t("history.select", "Select {{summary}}", { summary: activity.summary })}
             />
             <time className="when" dateTime={activity.at}>
-              {timeFormat.format(new Date(activity.at))}
+              {timeFormat().format(new Date(activity.at))}
             </time>
             <span className="tag">{tagLabel(tag)}</span>
             <span className="t">

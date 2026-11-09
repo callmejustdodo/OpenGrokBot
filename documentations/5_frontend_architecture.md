@@ -122,6 +122,9 @@ AGPL-3.0 projects (HAPI, Claude Squad) and Flowpad (no license) are for reading 
 - Full keyboard use: Tab order follows the visual order; arrow keys move in the chat list and segmented controls.
 - State always pairs color with an icon and a text label.
 - Reduce Motion stops avatar motion and transitions.
+- Reduce Transparency makes the glass surfaces opaque and turns off background blur.
+- Contrast: text tokens reach 4.5:1 on every surface and the focus ring 3:1, in light and dark; `src/a11y/contrast.test.ts` checks `tokens.css`.
+- Landmarks: the sidebar is navigation, the content is main, the information panel is complementary; each view has one level-1 heading; conversations are polite logs, errors are alerts. `src/a11y/a11y.test.tsx` renders every view, sheet and window over the M3 world and fails on a control without an accessible name.
 - Manual VoiceOver pass on SC-003, SC-005, SC-011, and SC-015 before release to the team.
 
 ## Testing

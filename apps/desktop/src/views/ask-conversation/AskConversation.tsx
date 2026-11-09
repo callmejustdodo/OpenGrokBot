@@ -121,12 +121,16 @@ function AskThread({ target }: { target: AskTargetView }) {
       <div className="c-head">
         {target.kind === "person" ? (
           <span className="pill">
-            <b>{ownerName}</b>
+            <b role="heading" aria-level={1}>
+              {ownerName}
+            </b>
             <span className="st">{t("ask.personNote", "Asking a person · OpenGrokBot picks the agent")}</span>
           </span>
         ) : (
           <span className="pill">
-            <b>{agentName}</b>
+            <b role="heading" aria-level={1}>
+              {agentName}
+            </b>
             <span className="st">
               {ownerName}
               {agent ? (
@@ -183,7 +187,7 @@ function AskThread({ target }: { target: AskTargetView }) {
           </button>
         </div>
       ) : null}
-      <div className="msgs">
+      <div className="msgs" role="log" aria-label={t("ask.messages", "Questions and answers")}>
         {questions.map((q) => (
           <QuestionItem
             key={q.id}
@@ -225,7 +229,9 @@ function NewQuestion() {
   return (
     <section className="conversation" aria-label={t("ask.newTitle", "New question")} data-state="new">
       <div className="c-head">
-        <span className="pill">{t("ask.newTitle", "New question")}</span>
+        <span className="pill" role="heading" aria-level={1}>
+          {t("ask.newTitle", "New question")}
+        </span>
       </div>
       <div className="msgs">
         <div className="empty">

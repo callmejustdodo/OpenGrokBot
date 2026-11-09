@@ -4,6 +4,7 @@
 import type { TFunction } from "i18next";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import i18n from "../../i18n";
 import PermissionCard from "../../components/cards/PermissionCard";
 import RequestCard from "../../components/cards/RequestCard";
 import { stepLine } from "../../components/sidebar/labels";
@@ -56,9 +57,9 @@ function StepGroup({ id, steps }: { id: string; steps: StepItem[] }) {
         <span className="chev" aria-hidden="true" />
         {stepSummary(t, steps)}
       </button>
-      <div id={listId} hidden={!open}>
+      <div id={listId} role="list" hidden={!open}>
         {steps.map(({ id: stepId, step }) => (
-          <div key={stepId} className="step" data-kind={step.kind} data-status={step.status}>
+          <div key={stepId} role="listitem" className="step" data-kind={step.kind} data-status={step.status}>
             <span className="mono">{stepLine(t, step)}</span>
             {step.detail ? <pre className="detail">{step.detail}</pre> : null}
           </div>
@@ -136,7 +137,7 @@ export default function Messages({ items }: { items: readonly ConversationItem[]
           {separator ? (
             <div className="sep-t">
               <time dateTime={separator}>
-                {new Date(separator).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}
+                {new Date(separator).toLocaleString(i18n.language, { dateStyle: "medium", timeStyle: "short" })}
               </time>
             </div>
           ) : null}
