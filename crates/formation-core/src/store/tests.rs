@@ -137,9 +137,9 @@ fn fresh_schema_and_file_reopen() {
 #[test]
 fn migrations_merge_roles_validate_first_and_rollback_failed_step() {
     const A: &[Migration] = &[Migration {
-        version: 1002,
+        version: 1003,
         name: "a",
-        sql: "CREATE TABLE ordering (n INTEGER); INSERT INTO ordering VALUES (1002);",
+        sql: "CREATE TABLE ordering (n INTEGER); INSERT INTO ordering VALUES (1003);",
     }];
     const B: &[Migration] = &[
         Migration {
@@ -165,7 +165,7 @@ fn migrations_merge_roles_validate_first_and_rollback_failed_step() {
                 .unwrap()
                 .map(|r| r.unwrap())
                 .collect();
-            assert_eq!(rows, [1002, 2001, 2002]);
+            assert_eq!(rows, [1003, 2001, 2002]);
             Ok(())
         })
         .unwrap();
@@ -211,7 +211,7 @@ fn migrations_merge_roles_validate_first_and_rollback_failed_step() {
             .unwrap();
     }
     let failed = Migration {
-        version: 1003,
+        version: 1004,
         name: "bad sql",
         sql: "CREATE TABLE rolled_back (id TEXT); INSERT INTO missing VALUES (1);",
     };
@@ -316,6 +316,29 @@ fn sessions_roundtrip_and_replace_by_agent_or_run() {
     let second = RunId::generate();
     store.put_fork_session(second, &s).unwrap();
     assert_eq!(store.fork_session(second).unwrap(), Some(s));
+}
+
+#[test]
+fn owner_queue_roundtrip_in_order_and_replace() {
+    use formation_proto::request::{QueueItem, QueueSource};
+    let store = store();
+    let agent_id = AgentId::generate();
+    assert_eq!(store.owner_queue(agent_id).unwrap(), vec![]);
+    let items: Vec<_> = ["first", "second"]
+        .into_iter()
+        .map(|text| QueueItem {
+            id: MessageId::generate(),
+            agent_id,
+            source: QueueSource::Owner,
+            text: text.into(),
+            queued_at: at(1),
+        })
+        .collect();
+    store.put_owner_queue(agent_id, &items).unwrap();
+    assert_eq!(store.owner_queue(agent_id).unwrap(), items);
+    store.put_owner_queue(agent_id, &items[1..]).unwrap();
+    assert_eq!(store.owner_queue(agent_id).unwrap(), items[1..]);
+    assert_eq!(store.owner_queue(AgentId::generate()).unwrap(), vec![]);
 }
 
 #[test]
