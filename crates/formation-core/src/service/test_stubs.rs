@@ -14,6 +14,8 @@ impl AgentRepo for Stub {
 }
 
 impl SessionRepo for Stub {
+    fn fork_session(&self, _run_id: RunId) -> Result<Option<SessionInfo>> { unreachable!("unused port method") }
+    fn put_fork_session(&self, _run_id: RunId, _session: &SessionInfo) -> Result<()> { unreachable!("unused port method") }
     fn main_session(&self, _agent_id: AgentId) -> Result<Option<SessionInfo>> { Ok(None) }
     fn put_main_session(&self, _session: &SessionInfo) -> Result<()> { unreachable!("unused port method") }
 }
@@ -99,13 +101,14 @@ impl Harness for Stub {
     fn kind(&self) -> HarnessKind { HarnessKind::ClaudeCode }
     async fn status(&self) -> HarnessStatus { HarnessStatus { harness: HarnessKind::ClaudeCode, installed: true, signed_in: Some(true), version: None, path: None, problem: None } }
     async fn start(&self, _agent: &Agent, _resume: Option<SessionId>) -> Result<SessionInfo> { unreachable!("unused port method") }
-    async fn run_turn(&self, _agent_id: AgentId, _item: QueueItem) -> Result<TurnResult> { unreachable!("unused port method") }
+    async fn run_turn(&self, _agent_id: AgentId, _run_id: RunId, _item: QueueItem) -> Result<TurnResult> { unreachable!("unused port method") }
+    async fn run_fork(&self, _agent_id: AgentId, _fork: ForkRun) -> Result<ForkResult> { unreachable!("unused port method") }
     async fn steer(&self, _agent_id: AgentId, _item: QueueItem) -> Result<()> { unreachable!("unused port method") }
     async fn interrupt(&self, _agent_id: AgentId) -> Result<()> { unreachable!("unused port method") }
     async fn stop(&self, _agent_id: AgentId, _mode: StopMode) -> Result<()> { unreachable!("unused port method") }
     async fn session_info(&self, _agent_id: AgentId) -> Result<Option<SessionInfo>> { unreachable!("unused port method") }
-    async fn current_turn(&self, _agent_id: AgentId) -> Option<QueueItem> { unreachable!("unused port method") }
-    async fn conversation( &self, _agent_id: AgentId, _before: Option<ItemId>, _limit: u32, ) -> Result<ConversationPageResult> { assert_eq!(_agent_id, agent_id()); assert_eq!(_before, None); assert!(_limit > 0); Ok(ConversationPageResult { items: vec![], has_more: true, stream_seq: 7 }) }
+    async fn run(&self, _run_id: RunId) -> Option<RunInfo> { unreachable!("unused port method") }
+    async fn conversation( &self, _agent_id: AgentId, _session_id: Option<SessionId>, _before: Option<ItemId>, _limit: u32, ) -> Result<ConversationPageResult> { assert_eq!(_agent_id, agent_id()); assert_eq!(_session_id, None); assert_eq!(_before, None); assert!(_limit > 0); Ok(ConversationPageResult { items: vec![], has_more: true, stream_seq: 7 }) }
     fn subscribe(&self) -> broadcast::Receiver<AgentStreamEvent> { unreachable!("unused port method") }
 }
 

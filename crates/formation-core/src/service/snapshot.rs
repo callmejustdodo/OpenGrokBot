@@ -52,7 +52,7 @@ impl SnapshotBuilder {
         for mut conversation in conversations {
             let page = self
                 .harness
-                .conversation(conversation.agent_id, None, 100)
+                .conversation(conversation.agent_id, None, None, 100)
                 .await?;
             conversation.items = page.items;
             conversation.has_more = page.has_more;

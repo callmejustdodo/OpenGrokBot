@@ -93,6 +93,17 @@ fn service_request_decoding_distinguishes_json_and_requests() {
     }
 }
 
+#[test]
+fn service_snapshot_params_reject_nonempty_array() {
+    let request =
+        decode_request(br#"{"jsonrpc":"2.0","id":4,"method":"snapshot","params":[1]}"#).unwrap();
+    assert!(
+        request
+            .parse_params::<formation_proto::snapshot::SnapshotGet>()
+            .is_err()
+    );
+}
+
 include!("test_stubs.rs");
 
 fn agent_id() -> AgentId {
@@ -222,7 +233,7 @@ async fn service_socket_snapshot_events_errors_and_permissions() {
         assert_eq!(receive(&mut lines).await["error"]["code"], code);
     }
     write
-        .write_all(b"{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"snapshot\",\"params\":[]}\n")
+        .write_all(b"{\"jsonrpc\":\"2.0\",\"id\":4,\"method\":\"snapshot\",\"params\":[1]}\n")
         .await
         .unwrap();
     assert_eq!(receive(&mut lines).await["error"]["code"], -32602);
