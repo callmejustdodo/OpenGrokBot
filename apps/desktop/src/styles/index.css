@@ -1,0 +1,6 @@
+/* Shared styles, imported once by each window entry. */
+@import "./tokens.css";
+@import "./icons.css";
+@import "./base.css";
+@import "./components.css";
+@import "./layout.css";

@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import "./i18n";
+import "./styles/index.css";
 import { startStore } from "./store/boot";
 import Settings from "./views/settings/Settings";
 import { followLanguageSetting } from "./views/settings/language";
