@@ -351,7 +351,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: B
 
 ### TASK-024: Requests run in forks
-- Status: in review (#104)
+- Status: complete (#104)
 - References: FR-014, FR-022
 - Prerequisites: TASK-013, TASK-042 (uses `FakeRequestQueue` until IC-3)
 - Change locations: `crates/formation-core/src/harness/claude/` (executor)
