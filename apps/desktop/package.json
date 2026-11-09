@@ -12,7 +12,9 @@
     "test": "vitest run",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
-    "ipc:generate": "sh scripts/generate-ipc.sh"
+    "ipc:generate": "sh scripts/generate-ipc.sh",
+    "i18n:extract": "node scripts/i18n.mjs",
+    "i18n:check": "node scripts/i18n.mjs --check"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.2.1",
