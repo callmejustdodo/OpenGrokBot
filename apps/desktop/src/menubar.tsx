@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import MenubarPanel from "./MenubarPanel";
+import "./i18n";
 import { startStore } from "./store/boot";
 
 startStore();
