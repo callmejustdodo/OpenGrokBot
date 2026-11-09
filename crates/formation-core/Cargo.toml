@@ -14,8 +14,10 @@ path = "testkit/fake_claude.rs"
 required-features = ["testkit"]
 
 [dependencies]
+chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
 async-trait = "0.1.92"
 formation-proto = { version = "0.1.0", path = "../formation-proto" }
+getrandom = "0.4"
 rusqlite = { version = "0.41.1", features = ["bundled"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = { version = "1", features = ["preserve_order"] }

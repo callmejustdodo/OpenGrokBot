@@ -2,6 +2,10 @@
 
 /**
  * `POST /v1/team/join`. The creator's Mac checks the code and records the caller's
- * Tailscale WhoIs with the GitHub login.
+ * Tailscale WhoIs (login and node, never from this body) with the GitHub login.
  */
-export type PeerJoin = { code: string, github_login: string, display_name: string, };
+export type PeerJoin = { code: string, 
+/**
+ * From `gh api user` on the joiner's Mac in the MVP.
+ */
+github_login: string, display_name: string, };

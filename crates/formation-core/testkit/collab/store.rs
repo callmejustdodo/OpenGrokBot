@@ -37,6 +37,7 @@ pub struct MemoryCollabStore {
 #[derive(Debug, Default)]
 struct StoreState {
     me: Option<MemberId>,
+    team: Option<crate::ports::TeamRecord>,
     members: Vec<Member>,
     removed: HashMap<MemberId, Timestamp>,
     invitations: Vec<Invitation>,
@@ -83,6 +84,15 @@ impl TeamRepo for MemoryCollabStore {
 
     fn set_me(&self, id: MemberId) -> Result<()> {
         lock(&self.state).me = Some(id);
+        Ok(())
+    }
+
+    fn team(&self) -> Result<Option<crate::ports::TeamRecord>> {
+        Ok(lock(&self.state).team.clone())
+    }
+
+    fn put_team(&self, team: Option<&crate::ports::TeamRecord>) -> Result<()> {
+        lock(&self.state).team = team.cloned();
         Ok(())
     }
 
@@ -437,6 +447,7 @@ mod tests {
             expires_at: later(now(), Duration::from_secs(3600)),
             used_by: None,
             used_at: None,
+            link: String::new(),
         };
         store.put_invitation(&invitation).unwrap();
         assert_eq!(
