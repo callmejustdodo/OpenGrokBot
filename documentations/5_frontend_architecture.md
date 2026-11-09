@@ -61,7 +61,7 @@ flowchart LR
 
 | SC | View or component | Main data | Commands | States to implement (from M3) |
 | --- | --- | --- | --- | --- |
-| SC-001 | `views/welcome` | harness check, team | `team_create`, `team_join`, `settings_notifications` | default, harness-missing, invite-expired |
+| SC-001 | `views/welcome` | harness check, team | `team_create`, `team_join`, `harness_check`, `settings_update` | default, harness-missing, invite-expired |
 | SC-002 | `menubar.tsx` | agents, inbox counts | `focus_item` | default, all-clear, offline |
 | SC-003 | `components/sidebar` (TopIcons, NeedsYou, ChatList, ChatItem, ProfileBar) | agents, conversations, people, inbox count | `navigate` (UI only) | default, empty, detecting |
 | SC-004 | `views/new-agent` (PlusMenu, NewAgentSheet, AvatarPicker, HarnessPicker) | harness status | `agent_create` | plus-menu, default, harness-not-ready, name-taken |

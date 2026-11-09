@@ -329,7 +329,7 @@ async fn stalled_resumes_when_output_returns() {
 async fn every_served_command_and_turn_interrupt_keeps_process() {
     let s = Setup::new("2-queue-later", 3, 600_000);
     let id = s.agent.id;
-    assert_eq!(s.supervisor.methods().len(), 5);
+    assert_eq!(s.supervisor.methods().len(), 8);
     let started = s.call("agent_start", json!({"agent_id":id})).await.unwrap();
     assert_eq!(started["state"], "idle");
     let first = s

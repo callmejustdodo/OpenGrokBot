@@ -15,7 +15,7 @@ use super::Result;
 mod collab;
 
 pub use collab::{
-    ApprovalRepo, CollabStore, QuestionRepo, RequestRepo, RuleRepo, ShareRepo, TeamRepo,
+    ApprovalRepo, CollabStore, QuestionRepo, RequestRepo, RuleRepo, ShareRepo, TeamRecord, TeamRepo,
 };
 
 /// Migration versions A may use.

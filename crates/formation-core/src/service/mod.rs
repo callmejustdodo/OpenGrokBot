@@ -14,7 +14,7 @@ use crate::ports::{CommandCall, CommandHandler, EventSink};
 mod snapshot;
 mod socket;
 pub use snapshot::SnapshotBuilder;
-pub use socket::{SocketServer, default_socket_path};
+pub use socket::{SocketServer, connection, default_socket_path};
 
 /// Serializes numbering and publication so concurrent publishers cannot reorder events.
 pub struct EventBus {
