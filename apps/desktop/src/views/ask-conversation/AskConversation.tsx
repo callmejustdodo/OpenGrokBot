@@ -2,6 +2,7 @@
 // agent), or "new" (choosing whom to ask).
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import "./ask-conversation.css";
 import type { AskTarget } from "../../ipc/generated/AskTarget";
 import type { Method, Params } from "../../ipc/generated/commands";
 import type { Question } from "../../ipc/generated/Question";

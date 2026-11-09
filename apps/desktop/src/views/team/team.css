@@ -1,0 +1,15 @@
+/* SC-013 team, also used by SC-014 member and SC-017 history. Copied from
+   documentations/mockups/index.html (.page, .online, .empty). */
+.page { flex: 1; overflow: auto; padding: 22px 30px; }
+.page h1 { font-size: 20px; font-weight: 600; margin: 0; display: flex; align-items: center; gap: 10px; }
+.page .h1row { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.page .lead { color: var(--text2); font-size: 13px; }
+.page ul.list { list-style: none; margin: 0; padding: 0; }
+.list.invite { padding: 12px 14px; margin-bottom: 18px; }
+.online { display: inline-flex; align-items: center; gap: 5px; color: var(--text2); font-size: 12.5px; font-weight: 400; }
+.online::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+.online.off::before { background: var(--text3); }
+.empty { text-align: center; padding: 90px 20px; color: var(--text2); }
+.empty > .ic { width: 34px; height: 34px; color: var(--text3); margin-bottom: 10px; }
+.empty b { display: block; color: var(--text); font-size: 17px; margin-bottom: 6px; font-weight: 600; }
+.empty .row-actions { justify-content: center; margin-top: 16px; }
