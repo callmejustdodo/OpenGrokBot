@@ -14,3 +14,15 @@
 .mb-row:hover { background: var(--hover); }
 .mb-row .r { margin-left: auto; color: var(--text3); font-size: 12px; }
 .mb-row .ago { color: var(--text3); font-size: 12px; }
+/* v2 fidelity (SC-002): brighter glass, dark bold section labels, roomier
+   rows, and a brand-gradient primary pill. */
+.mb-panel { background: color-mix(in srgb, var(--card) 88%, transparent); box-shadow: var(--glass-shadow, var(--shadow)); }
+.mb-panel .head { padding: 16px 20px 8px; }
+.mb-panel .head b { font-size: 14px; }
+.mb-panel .head p { color: var(--text); font-size: 12px; margin-top: 2px; }
+.mb-panel .sec { padding: 4px 12px 4px; }
+.mb-panel .sec > div:first-child, .mb-panel .sec > h2 { color: var(--text); font-weight: 700; font-size: 12px; padding: 8px 8px 4px; }
+.mb-row { padding: 8px 8px; min-height: 38px; font-size: 13.5px; }
+.mb-panel .sec.actions { gap: 8px; padding: 10px 20px 12px; }
+.mb-panel .sec.actions .btn { border-radius: 999px; }
+.mb-panel .sec.actions .btn.primary { background: var(--brand-grad, var(--brand, var(--focus))); color: #fff; box-shadow: 0 4px 12px color-mix(in srgb, var(--brand, var(--focus)) 35%, transparent); }

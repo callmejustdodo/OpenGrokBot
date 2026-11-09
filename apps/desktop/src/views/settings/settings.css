@@ -26,3 +26,16 @@
 .online::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
 .online.off::before { background: var(--text3); }
 .err { color: var(--red); font-size: 12.5px; }
+/* v2 fidelity (SC-018): icon tabs with a quiet grey selection, dark labels,
+   larger brand-blue switches and ~40px rows. */
+.stabs { gap: 4px; padding: 6px 8px 10px; }
+.stabs button { color: var(--text); padding: 6px 12px; }
+.stabs button[aria-selected="true"] { background: var(--sec); color: var(--text); box-shadow: none; }
+.stabs .ic { width: 18px; height: 18px; }
+.wbody { padding: 10px 30px 24px; }
+.form-row { padding: 10px 0; min-height: 40px; }
+.switch .track { width: 34px; height: 21px; background: color-mix(in srgb, var(--text3) 35%, transparent); }
+.switch .track::after { width: 17px; height: 17px; }
+.switch[aria-checked="true"] .track { background: var(--brand, var(--focus)); }
+.switch[aria-checked="true"] .track::after { left: 15px; }
+.seg button { padding: 5px 14px; }
