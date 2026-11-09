@@ -695,6 +695,10 @@ impl ClaudeSupervisor {
         let mut queue = VecDeque::<Pending>::new();
         let mut active: Option<Pending> = None;
         let mut steered = Vec::<Pending>::new();
+        // Steers written in the running turn that Claude has not yet replayed. Claude
+        // answers a steer that arrives after the turn's last tool call with a result of
+        // its own, so the turn ends with the result that follows the last replay.
+        let mut unreplayed = Vec::<String>::new();
         let mut started = HashSet::new();
         let mut stopping = false;
         let mut stops = Vec::new();
@@ -779,7 +783,7 @@ impl ClaudeSupervisor {
                             Err(error(ErrorCode::Conflict, "agent has no running turn"))
                         } else {
                             let result = self.send_steer(id, &mut stdin, &item).await;
-                            if result.is_ok() {started.insert(item.id);}
+                            if result.is_ok() {started.insert(item.id);unreplayed.push(item.text);}
                             result
                         };
                         let fatal = result.as_ref().err().filter(|e| e.code == ErrorCode::Internal).cloned();
@@ -798,6 +802,7 @@ impl ClaudeSupervisor {
                                 match self.send_steer(id, &mut stdin, &queue[index].item).await {
                                     Ok(()) => {
                                         started.insert(message_id);
+                                        unreplayed.push(queue[index].item.text.clone());
                                         steered.push(queue.remove(index).unwrap());
                                         self.queue(id, &queue)
                                     }
@@ -912,7 +917,9 @@ impl ClaudeSupervisor {
                         protocol::Event::Assistant(_) | protocol::Event::User(_) => {
                             let value:Value=serde_json::from_str(&line).expect("decoded JSON");
                             // Input is already emitted at dispatch. Tool results still update steps.
-                            if value["isReplay"]!=true {
+                            if value["isReplay"]==true {
+                                if let Some(i)=unreplayed.iter().position(|t| value["message"]["content"].as_str()==Some(t)) {unreplayed.remove(i);}
+                            } else {
                                 for item in super::conversation::line_items(&value,now()) {
                                     if let ConversationItem::Step{id,..}=&item {steps.insert(id.0.clone(),item.clone());}
                                     self.stream(id,StreamDelta::ItemCompleted{item});
@@ -921,6 +928,9 @@ impl ClaudeSupervisor {
                             }
                         }
                         protocol::Event::Result(result) => {
+                            // A steer not yet replayed gets its own result; an interrupt may drop it.
+                            if !unreplayed.is_empty() && !interrupted {continue;}
+                            unreplayed.clear();
                             if let Some(p)=active.take() {
                                 stalled=false;
                                 let outcome=if interrupted && result.subtype=="error_during_execution" {TurnOutcome::Interrupted} else if result.is_error || result.subtype!="success" {TurnOutcome::Failed} else {TurnOutcome::Completed};

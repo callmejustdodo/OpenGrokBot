@@ -47,6 +47,22 @@ fn auth_failure(session: &str) -> VecDeque<Value> {
     ])
 }
 
+/// Claude echoes each user message it takes, from `--replay-user-messages`.
+fn replay(session: &str, text: &Value) -> Value {
+    json!({"type":"user","session_id":session,"parent_tool_use_id":null,"isReplay":true,"message":{"role":"user","content":text}})
+}
+
+/// A steer that arrived after the turn's last tool call: Claude answers it in a turn
+/// of its own, with its own result.
+fn steer_turn(session: &str, text: &Value) -> VecDeque<Value> {
+    let id = formation_proto::common::RunId::generate().to_string();
+    VecDeque::from([
+        replay(session, text),
+        json!({"type":"assistant","session_id":session,"parent_tool_use_id":null,"uuid":id,"timestamp":"2026-11-09T00:00:00Z","message":{"id":format!("msg_{id}"),"type":"message","role":"assistant","content":[{"type":"text","text":"STEERED"}]}}),
+        json!({"type":"result","session_id":session,"subtype":"success","is_error":false,"result":"STEERED"}),
+    ])
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let argv: Vec<_> = env::args().skip(1).collect();
     if argv == ["--version"] {
@@ -100,6 +116,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         log.write_all(format!("{record}\n").as_bytes())?;
     }
     let accept_steer = env::var_os("FAKE_CLAUDE_ACCEPT_STEER").is_some();
+    // Steers are answered after the running turn, each with its own result.
+    let separate_steer = env::var_os("FAKE_CLAUDE_SEPARATE_STEER").is_some();
+    let mut steers = VecDeque::new();
     let ignore_interrupt = env::var_os("FAKE_CLAUDE_IGNORE_INTERRUPT").is_some();
     // The first N turns fail to authenticate as in the IC-1 run, before any recorded turn.
     let mut auth_failures =
@@ -136,6 +155,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut eof = false;
     let mut next_line = Instant::now();
     loop {
+        if active.is_none()
+            && let Some(text) = steers.pop_front()
+        {
+            active = Some(steer_turn(&session, &text));
+            next_line = Instant::now();
+        }
         if active.is_none() && queued > 0 {
             queued -= 1;
             active = if auth_failures > 0 {
@@ -186,7 +211,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                 writeln!(log, "{value}")?;
             }
             if value["type"] == "user" {
-                if !accept_steer || active.is_none() || value["priority"] == "later" {
+                if active.is_none() || value["priority"] == "later" {
+                    queued += 1;
+                } else if separate_steer {
+                    steers.push_back(value["message"]["content"].clone());
+                } else if accept_steer {
+                    write_line(&mut out, &replay(&session, &value["message"]["content"]))?;
+                } else {
                     queued += 1;
                 }
             } else if value["type"] == "control_request"

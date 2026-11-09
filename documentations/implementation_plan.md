@@ -253,7 +253,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: C
 
 ### TASK-015: Sidebar and conversation with my agent
-- Status: in progress
+- Status: complete
 - References: SC-003, SC-004, SC-005, SC-020; M3 states for those screens; US-001, US-002, US-024
 - Prerequisites: TASK-014
 - Change locations: `apps/desktop/src/views/{my-conversation,new-agent}/`, `apps/desktop/src/components/{sidebar,info-panel}/`
@@ -307,7 +307,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: B
 
 ### TASK-020: Asking screens
-- Status: in progress
+- Status: complete
 - References: SC-008, SC-013, SC-014, SC-015, SC-001; M3 states
 - Prerequisites: TASK-014
 - Change locations: `apps/desktop/src/views/{ask-conversation,member,team,sharing,welcome}/`
@@ -381,7 +381,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: B
 
 ### TASK-026: Request and approval screens
-- Status: in progress
+- Status: complete
 - References: SC-005 (approval and permission states), SC-010, SC-011, SC-016; M3 states
 - Prerequisites: TASK-014
 - Change locations: `apps/desktop/src/views/{work-request,inbox,approval,my-conversation}/`
