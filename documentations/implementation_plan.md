@@ -371,7 +371,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: B
 
 ### TASK-044: The permission gate decides every tool call
-- Status: pending
+- Status: complete (#124); manual run with real Claude Code at IC-3 pending
 - References: FR-015, FR-022, NFR-004, TASK-005 results, proposed default 11
 - Prerequisites: TASK-005, TASK-025
 - Change locations: `crates/formation-core/src/permission/`, `crates/formation-cli/` (`formation mcp --permission`)
