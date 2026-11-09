@@ -25,7 +25,7 @@ Rev 1 · 2026-11-09 · Implements the [tech spec](4_techspec.md) (Rev 3) for the
 | `agents` | Agent folders: create layout (`AGENTS.md`, `CLAUDE.md` importing it, `.claude/skills/`, `formation.toml` with name, role, harness, avatar), watch for outside edits, file read and write for the UI | FR-001, FR-004 |
 | `schedules` | Timers per schedule; detect missed runs after sleep and run them once; record runs | FR-005 |
 | `policy` | Membership and sharing checks, visibility, always-allowed reads, rule matching, approvals and expiry, chain depth and rate limits | FR-009, FR-015, FR-019, D-024 to D-028 |
-| `ask` | Routing (score shared agents, decide confident or unsure), answer runner (`--resume --fork-session --tools ""`), excerpts, `as_of` and staleness, secret masking | FR-010 to FR-013, NFR-003, NFR-005 |
+| `ask` | Routing (score shared agents, decide confident or unsure), answer runner (an isolated, tool-less fork; see the tech spec's [ask pipeline](4_techspec.md#ask-pipeline)), excerpts, `as_of` and staleness, secret masking | FR-010 to FR-013, NFR-003, NFR-005 |
 | `requests` | Per-agent ordered queue for work requests and owner messages, idempotency, status machine | FR-014, FR-017 |
 | `peer` | HTTP and WebSocket server on the Tailscale address; client with an outbox and retries; Tailscale WhoIs identity; presence | FR-016, NFR-006 |
 | `team` | Members, invitations, GitHub identity binding, roster changes | FR-008, D-046 |
@@ -63,7 +63,7 @@ sequenceDiagram
   alt unsure
     O-->>A: event: unsure + candidates
   else confident or agent picked
-    O->>C: --resume <session> --fork-session --tools ""
+    O->>C: isolated tool-less fork of the session
     C-->>O: answer stream
     O->>O: excerpts, as_of, masking
     O-->>A: event: answered

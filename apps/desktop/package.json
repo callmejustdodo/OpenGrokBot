@@ -11,7 +11,8 @@
     "tauri": "tauri",
     "test": "vitest run",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.node.json",
+    "ipc:generate": "sh scripts/generate-ipc.sh"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
