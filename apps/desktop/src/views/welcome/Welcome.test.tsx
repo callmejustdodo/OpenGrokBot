@@ -77,6 +77,17 @@ describe("welcome", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 
+  it.each([
+    ["rate_limited", "Too many tries. Wait a few minutes, then try again."],
+    ["peer_offline", "The team creator's Mac is offline. Try again when it's back."],
+  ])("explains a %s join error", async (code, text) => {
+    call.mockRejectedValue({ code: "rpc", message: "x", rpc_code: -32000, data: { code, message: "x" } });
+    render(<Welcome />);
+    fireEvent.change(screen.getByRole("textbox", { name: "Invitation code" }), { target: { value: "code" } });
+    await click(screen.getByRole("button", { name: "Join" }));
+    expect(screen.getByRole("alert")).toHaveTextContent(text);
+  });
+
   it("says when formationd could not be reached while joining", async () => {
     call.mockRejectedValue({ code: "disconnected", message: "x", rpc_code: null, data: null });
     render(<Welcome />);

@@ -89,8 +89,8 @@ export default function Team() {
         <div className="list invite" role="region" aria-label={t("team.invitationCreated", "Invitation link created")}>
           <b>{t("team.invitationCreated", "Invitation link created")}</b>
           <div className="row-actions">
-            <span className="code">{invitation.code}</span>
-            <button type="button" className="btn" onClick={() => copy(invitation.code)}>
+            <span className="code">{invitation.link}</span>
+            <button type="button" className="btn" onClick={() => copy(invitation.link)}>
               {copied ? t("team.copied", "Copied") : t("team.copy", "Copy")}
             </button>
           </div>

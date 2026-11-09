@@ -8,10 +8,11 @@ import { tauriTransport } from "../../ipc/transport";
 import { useAppStore } from "../../store/store";
 import { act } from "../../store/sync";
 import { harnessLabel } from "../ask-conversation/format";
+import { errorCode } from "../ask-conversation/selectors";
 
 const NO_HARNESSES: readonly HarnessStatus[] = [];
 
-type JoinError = "expired" | "unreachable" | null;
+type JoinError = "expired" | "rate-limited" | "creator-offline" | "unreachable" | null;
 
 export default function Welcome() {
   const { t } = useTranslation();
@@ -38,9 +39,18 @@ export default function Welcome() {
     if (!trimmed) return;
     setJoinError(null);
     act(tauriTransport, "team:join", "team_join", { code: trimmed, display_name: null }).catch((error: unknown) => {
-      // formationd answered: the invitation is invalid or expired. Otherwise it was not reached.
-      const rpc = typeof error === "object" && error !== null && (error as { code?: unknown }).code === "rpc";
-      setJoinError(rpc ? "expired" : "unreachable");
+      // Unknown, used, or expired codes answer `not_found` (tech spec, "Team and roster").
+      switch (errorCode(error)) {
+        case "not_found":
+        case "invalid_params":
+          return setJoinError("expired");
+        case "rate_limited":
+          return setJoinError("rate-limited");
+        case "peer_offline":
+          return setJoinError("creator-offline");
+        default:
+          return setJoinError("unreachable");
+      }
     });
   };
 
@@ -115,9 +125,7 @@ export default function Welcome() {
             </form>
             {joinError ? (
               <span className="err" id="welcome-join-error" role="alert">
-                {joinError === "expired"
-                  ? t("welcome.inviteExpired", "This link has expired. Ask your teammate for a new one.")
-                  : t("welcome.joinUnreachable", "Couldn't reach formationd. Try again.")}
+                {joinErrorText(t, joinError)}
               </span>
             ) : null}
           </div>
@@ -144,6 +152,19 @@ export default function Welcome() {
       </div>
     </section>
   );
+}
+
+function joinErrorText(t: ReturnType<typeof useTranslation>["t"], error: Exclude<JoinError, null>): string {
+  switch (error) {
+    case "expired":
+      return t("welcome.inviteExpired", "This link has expired. Ask your teammate for a new one.");
+    case "rate-limited":
+      return t("welcome.joinRateLimited", "Too many tries. Wait a few minutes, then try again.");
+    case "creator-offline":
+      return t("welcome.creatorOffline", "The team creator's Mac is offline. Try again when it's back.");
+    case "unreachable":
+      return t("welcome.joinUnreachable", "Couldn't reach formationd. Try again.");
+  }
 }
 
 function harnessState(h: HarnessStatus): string {

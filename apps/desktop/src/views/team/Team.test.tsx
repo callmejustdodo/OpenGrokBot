@@ -80,7 +80,8 @@ describe("team", () => {
     Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
     call.mockResolvedValue({
       id: "inv",
-      code: "formation://join/7F3K-Q9PX",
+      code: "7F3K-Q9PX",
+      link: "formation://join/7F3K-Q9PX?host=dohyeon-mbp&port=7443&team=t1",
       created_by: ME,
       expires_at: "2026-11-10T01:00:00Z",
       used_by: null,
@@ -94,12 +95,12 @@ describe("team", () => {
     const page = screen.getByRole("region", { name: "Team" });
     expect(page).toHaveAttribute("data-state", "invite");
     const invite = within(page).getByRole("region", { name: "Invitation link created" });
-    expect(within(invite).getByText("formation://join/7F3K-Q9PX")).toBeInTheDocument();
+    expect(within(invite).getByText("formation://join/7F3K-Q9PX?host=dohyeon-mbp&port=7443&team=t1")).toBeInTheDocument();
     expect(invite).toHaveTextContent(/Expires .+\. Send it over Slack or chat\./);
     await act(async () => {
       fireEvent.click(within(invite).getByRole("button", { name: "Copy" }));
     });
-    expect(writeText).toHaveBeenCalledWith("formation://join/7F3K-Q9PX");
+    expect(writeText).toHaveBeenCalledWith("formation://join/7F3K-Q9PX?host=dohyeon-mbp&port=7443&team=t1");
     expect(within(invite).getByRole("button", { name: "Copied" })).toBeInTheDocument();
   });
 
