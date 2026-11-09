@@ -174,7 +174,7 @@ impl Detect {
                         path,
                         session_id: Some(session_id),
                         last_activity_at: Some(at),
-                        capabilities: capabilities(None),
+                        capabilities: capabilities(None, None),
                         connected_agent: None,
                     },
                     cwd,
@@ -243,7 +243,7 @@ impl Detect {
                     path,
                     session_id: Some(SessionId(id.into())),
                     last_activity_at: latest,
-                    capabilities: capabilities(Some("Codex support arrives with TASK-041")),
+                    capabilities: capabilities(None, Some("Codex agents cannot fork yet")),
                     connected_agent: None,
                 },
                 cwd,
@@ -271,9 +271,11 @@ impl Detect {
                         path: path.clone(),
                         session_id: None,
                         last_activity_at: None,
-                        capabilities: capabilities(Some(
-                            "No conversation or fork adapter is available for this harness",
-                        )),
+                        capabilities: {
+                            let reason =
+                                "No conversation or fork adapter is available for this harness";
+                            capabilities(Some(reason), Some(reason))
+                        },
                         connected_agent,
                     },
                     folder,
@@ -419,13 +421,14 @@ fn is_installation(path: &Path) -> bool {
         || (path.is_file() && fs::metadata(path).is_ok_and(|m| m.permissions().mode() & 0o111 != 0))
 }
 
-/// `unreadable` is why the conversation cannot be read, or `None` when it can.
-fn capabilities(unreadable: Option<&str>) -> DetectedCapabilities {
+/// `unreadable` is why the conversation cannot be read, and `unforkable` why teammates
+/// cannot be answered in a fork; `None` when they can.
+fn capabilities(unreadable: Option<&str>, unforkable: Option<&str>) -> DetectedCapabilities {
     let unsupported = |reason: &str| Capability {
         supported: false,
         reason: Some(reason.into()),
     };
-    let readable = match unreadable {
+    let capability = |reason: Option<&str>| match reason {
         Some(reason) => unsupported(reason),
         None => Capability {
             supported: true,
@@ -434,8 +437,8 @@ fn capabilities(unreadable: Option<&str>) -> DetectedCapabilities {
     };
     DetectedCapabilities {
         state: unsupported("Live session state cannot be determined from discovery"),
-        read_conversation: readable.clone(),
-        answer_teammates: readable,
+        read_conversation: capability(unreadable),
+        answer_teammates: capability(unforkable),
         receive_requests: unsupported("Work requests for detected agents are not implemented"),
     }
 }
