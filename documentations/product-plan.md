@@ -59,11 +59,11 @@ Responses identify their source session and context revision. Where available, t
 
 The initial mode answers from shared history without tools. A later file-reading mode may read only approved project paths. Forking conversation history does not isolate the filesystem: side conversations must not write to the original working directory. Use a file snapshot or isolated worktree where consistent reads are necessary.
 
-### Submit work to the main session
+### Submit work to a session fork
 
-“Add tests for token expiration” is a work request. Formation previews the prompt that will be delivered and submits it according to the owner's policy. By default, requests wait until the current turn finishes. Mid-turn intervention requires a separate explicit permission.
+“Add tests for token expiration” is a work request that runs in its own session fork ([D-056](0_one_pager.md#planning-progress)). Formation previews the prompt that will be delivered and submits it according to the owner's policy. By default, requests wait until the current turn finishes. Mid-turn intervention requires a separate explicit permission.
 
-A side conversation can be promoted into a main-session request by selecting the relevant messages. The entire side conversation is not attached automatically.
+A side conversation can be promoted into a session-fork request by selecting the relevant messages. The entire side conversation is not attached automatically.
 
 ### Disconnect or revoke
 
@@ -79,7 +79,7 @@ Access permissions and execution permissions are separate. Accepting a prompt do
 |---|---|
 | Read history | Read selected messages and results. |
 | Ask side questions | Generate answers from approved context; tool access is controlled separately. |
-| Submit work | Add requests to the main session, subject to execution policy. |
+| Submit work | Add requests to session forks, subject to execution policy ([D-056](0_one_pager.md#planning-progress)). |
 
 | Approval choice | Meaning |
 |---|---|
@@ -109,7 +109,7 @@ formation requests get req_123 --json
 formation requests cancel req_123 --json
 ```
 
-`ask` targets a side conversation. `request` submits work to the main session. Approval-pending requests return an ID and `pending_approval`; agent callers do not hang on an interactive terminal prompt. An optional wait mode has a timeout.
+`ask` targets a side conversation. `request` submits work to a session fork ([D-056](0_one_pager.md#planning-progress)). Approval-pending requests return an ID and `pending_approval`; agent callers do not hang on an interactive terminal prompt. An optional wait mode has a timeout.
 
 Example completed response:
 
