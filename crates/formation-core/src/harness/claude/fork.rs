@@ -8,13 +8,15 @@ impl ClaudeSupervisor {
     pub(super) async fn execute_fork(&self, agent: &Agent, fork: &ForkRun) -> Result<ForkResult> {
         let config = &self.inner.config;
         let settings = json!({"hooks":{"PreToolUse":[{"matcher":"","hooks":[{"type":"command","command":config.pre_tool_use_command}]}]}}).to_string();
+        // Only a teammate's request ignores the owner's settings (#136, #197).
+        let request = matches!(fork.item.source, QueueSource::Request { .. });
         let options = match fork.tools {
             ForkTools::None => LaunchOptions::default(),
             ForkTools::Gated => LaunchOptions {
                 permission_prompt_tool: Some("mcp__formation__permission"),
                 mcp_config: Some(&config.mcp_config),
                 settings: Some(&settings),
-                permission_mode: Some("default"),
+                permission_mode: request.then_some("default"),
             },
         };
         let mut args = protocol::launch_args(
@@ -24,7 +26,7 @@ impl ClaudeSupervisor {
             options,
         );
         args.push("--fork-session".into());
-        if fork.tools == ForkTools::Gated {
+        if fork.tools == ForkTools::Gated && request {
             args.extend(GATED_ARGS.map(String::from));
         }
         if fork.tools == ForkTools::None {
