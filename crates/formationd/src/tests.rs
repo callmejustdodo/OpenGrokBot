@@ -45,9 +45,15 @@ async fn check_wiring(fakes: &str, fake_peers: bool) {
         (2, "agents_list"),
         (3, "agents_detect"),
         (4, "schedule_list"),
+        (9, "history_list"),
     ] {
+        let params = if method == "history_list" {
+            json!({"agent_id": null, "member_id": null, "before": null, "limit": 50})
+        } else {
+            json!({})
+        };
         let mut request = serde_json::to_vec(
-            &json!({"jsonrpc": "2.0", "id": id, "method": method, "params": {}}),
+            &json!({"jsonrpc": "2.0", "id": id, "method": method, "params": params}),
         )
         .unwrap();
         request.push(b'\n');
@@ -115,6 +121,7 @@ async fn check_wiring(fakes: &str, fake_peers: bool) {
             "request_get",
             json!({"request_id": RequestId::generate()}),
         ),
+        (10, "history_delete", json!({"ids": []})),
     ] {
         let mut request = serde_json::to_vec(
             &json!({"jsonrpc": "2.0", "id": id, "method": method, "params": params}),
