@@ -21,10 +21,10 @@ const { tauriTransport } = await import("./ipc/transport");
 
 const snapshot = m3 as unknown as Snapshot;
 
-function formationd(connected: boolean) {
+function formationd(connected: boolean, answer: Snapshot = snapshot) {
   invoke.mockImplementation((cmd: string, args?: { method: string }) => {
     if (cmd === "formationd_status") return Promise.resolve({ connected, socket: "/s" });
-    if (cmd === "formationd_call" && args?.method === "snapshot") return Promise.resolve(snapshot);
+    if (cmd === "formationd_call" && args?.method === "snapshot") return Promise.resolve(answer);
     return Promise.reject(new Error(cmd));
   });
 }
@@ -59,6 +59,16 @@ describe("windows over the store", () => {
     });
     expect(await screen.findAllByText("Backend")).toHaveLength(2);
     expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("asks to restart formationd when its contract version differs", async () => {
+    formationd(true, { ...snapshot, daemon: { version: "0.0.9", protocol: 0 } });
+    stop = connectStore(tauriTransport);
+    render(<App />);
+    await screen.findByText("Backend");
+    const banner = screen.getByRole("status");
+    expect(banner).toHaveTextContent("formationd needs restarting");
+    expect(banner).toHaveTextContent("contract version 0; this app needs version 1");
   });
 
   it("applies events after the snapshot", async () => {

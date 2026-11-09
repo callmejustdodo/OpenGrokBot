@@ -41,7 +41,7 @@ apps/desktop/
 ```mermaid
 flowchart LR
   D["formationd"] -- "snapshot on connect" --> R["store reducer"]
-  D -- "events (agent.*, schedule.update, harness.update, notify, approval.*, question.update, request.update, share.update, rule.update, team.update, peer.presence, settings.update)" --> R
+  D -- "events (agent.*, schedule.update, harness.update, notify, approval.*, question.update, request.update, request.removed, share.update, rule.update, team.update, peer.presence, settings.update, network.update)" --> R
   R --> V["views (React)"]
   V -- "commands via ipc/" --> T["src-tauri client"] --> D
 ```

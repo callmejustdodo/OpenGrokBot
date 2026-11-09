@@ -131,3 +131,6 @@ export type Result<M extends Method> = Commands[M]["result"];
 
 /** The JSON-RPC notification whose params is an `EventEnvelope`. */
 export const EVENT_NOTIFICATION = "event";
+
+/** The contract version the app was built with; compare with `Snapshot.daemon.protocol`. */
+export const PROTOCOL_VERSION = 1;

@@ -83,6 +83,22 @@ describe("applyEnvelope", () => {
     expect(state.settings.language).toBe("ko");
   });
 
+  it("keeps the daemon and network from the snapshot, and follows network.update", () => {
+    let state = fromSnapshot(snapshot);
+    expect(state.daemon).toEqual({ version: "0.1.0", protocol: 1 });
+    expect(state.network.tailnet).toBe(true);
+    state = apply(state, { type: "network.update", payload: { network: { tailnet: false } } });
+    expect(state.network.tailnet).toBe(false);
+  });
+
+  it("drops a request on request.removed", () => {
+    const id = "01930000-0000-7000-8000-000000000401";
+    let state = fromSnapshot(snapshot);
+    expect(state.requests[id]).toBeDefined();
+    state = apply(state, { type: "request.removed", payload: { request_id: id } });
+    expect(state.requests[id]).toBeUndefined();
+  });
+
   it("returns new objects and leaves the previous state untouched", () => {
     const before = fromSnapshot(snapshot);
     const after = apply(before, {

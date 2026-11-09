@@ -39,5 +39,7 @@
   "SC-016/not-accepted": { "description": "QA doesn't accept work requests", "ui": "choose Request work for QA · Minsu" },
 
   "SC-012/default": { "description": "Two saved rules: Minsu → Backend npm test, Jiwoo → Marketing drafts", "ui": "open Rules" },
-  "SC-012/empty": { "description": "No saved rules", "scripts": ["rules-cleared"], "ui": "open Rules" }
+  "SC-012/empty": { "description": "No saved rules", "scripts": ["rules-cleared"], "ui": "open Rules" },
+
+  "SC-002/offline": { "description": "This Mac is off the tailnet; the menu bar panel shows offline", "scripts": ["tailnet-offline"], "ui": "open the menu bar panel" }
 }
