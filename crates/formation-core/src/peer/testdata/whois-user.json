@@ -1,0 +1,50 @@
+{
+  "Node": {
+    "ID": 1000000000000001,
+    "StableID": "nEXAMPLE0001CNTRL",
+    "Name": "alice-mbp.tail0000.ts.net.",
+    "User": 2000000000000002,
+    "Key": "nodekey:0000000000000000000000000000000000000000000000000000000000000001",
+    "KeyExpiry": "2027-05-01T00:00:00Z",
+    "DiscoKey": "discokey:0000000000000000000000000000000000000000000000000000000000000001",
+    "Addresses": [
+      "100.101.102.103/32",
+      "fd7a:115c:a1e0::1234:5678/128"
+    ],
+    "AllowedIPs": [
+      "100.101.102.103/32",
+      "fd7a:115c:a1e0::1234:5678/128"
+    ],
+    "Endpoints": [
+      "192.0.2.10:41641",
+      "198.51.100.20:41641"
+    ],
+    "HomeDERP": 1,
+    "Hostinfo": {
+      "OS": "macOS",
+      "Hostname": "Alices-MacBook-Pro",
+      "Services": [
+        {
+          "Proto": "peerapi4",
+          "Port": 54321
+        },
+        {
+          "Proto": "peerapi6",
+          "Port": 54321
+        }
+      ]
+    },
+    "Created": "2026-10-01T00:00:00.000000000Z",
+    "Cap": 130,
+    "LastSeen": "2026-11-09T00:00:00Z",
+    "Online": true,
+    "ComputedName": "alice-mbp",
+    "ComputedNameWithHost": "alice-mbp"
+  },
+  "UserProfile": {
+    "ID": 2000000000000002,
+    "LoginName": "alice@example.com",
+    "DisplayName": "Alice Example"
+  },
+  "CapMap": null
+}
