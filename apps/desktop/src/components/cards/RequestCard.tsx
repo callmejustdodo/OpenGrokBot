@@ -7,6 +7,7 @@ import type { MirrorState } from "../../store/reducer";
 import { useAppStore } from "../../store/store";
 import { uiStore } from "../../store/ui";
 import { memberName } from "../../views/approval/model";
+import "./cards.css";
 
 function pendingApprovals(state: MirrorState, requestId: RequestId) {
   return Object.values(state.approvals).filter((a) => a.request_id === requestId && a.status === "pending");
