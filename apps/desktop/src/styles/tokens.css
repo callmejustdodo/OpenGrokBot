@@ -7,14 +7,23 @@
 :root {
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", system-ui, sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, monospace;
-  --win: #fcfcfc; --side: #f5f5f5; --sel: #e9e9eb; --hover: rgba(0,0,0,.04);
-  --bub: #f0f0f0; --me: #1a1a1a; --me-fg: #ffffff; --primary: #1a1a1a; --primary-fg: #ffffff;
-  --sec: #efefef; --card: #ffffff; --field: #ffffff;
-  --text: #1a1a1a; --text2: rgba(0,0,0,.6); --text3: rgba(0,0,0,.35); --sep: rgba(0,0,0,.08);
-  --focus: #007aff;
+  /* v2 "Sky Glass" (Figma Renewal v2): pale blue backdrop, frosted white glass, blue brand. */
+  --win: #f7f9fc; --side: #eef2f7; --sel: rgba(47,107,245,.12); --hover: rgba(47,107,245,.06);
+  --bub: #eef2f7; --me: #2f6bf5; --me-fg: #ffffff; --primary: #2f6bf5; --primary-fg: #ffffff;
+  --sec: #eef2f7; --card: #ffffff; --field: #ffffff;
+  --text: #1b2230; --text2: #5b6575; --text3: #9aa3b2; --sep: #e3e8ef;
+  --brand: #2f6bf5; --brand-light: #8fc2ff; --pink: #ff453a;
+  --brand-grad: linear-gradient(135deg, #5b9bff 0%, #2f6bf5 100%);
+  --backdrop: linear-gradient(160deg, #e6f0ff 0%, #f3f7fd 45%, #dfeafc 100%);
+  --glass: rgba(255,255,255,.72); --glass-border: rgba(255,255,255,.9);
+  --glass-shadow: 0 8px 30px rgba(47,80,140,.10), 0 0 0 1px rgba(227,232,239,.8);
+  --radius-panel: 20px;
+  --glass-side: rgba(240,244,250,.78); --glass-card: rgba(255,255,255,.72); --glass-line: rgba(214,223,236,.9);
+  --bub-glow: 0 6px 18px rgba(47,107,245,.28); --sheet-bg: rgba(255,255,255,.94);
+  --focus: #2f6bf5;
   --green: #28cd41; --orange: #ff9500; --yellow: #e0b000; --red: #ff3b30; --gray: #8e8e93;
-  --scrim: rgba(0,0,0,.16); --shadow: 0 24px 70px rgba(0,0,0,.18), 0 0 0 .5px rgba(0,0,0,.14);
-  --soft: 0 2px 10px rgba(0,0,0,.06), 0 0 0 .5px rgba(0,0,0,.06);
+  --scrim: rgba(27,34,48,.22); --shadow: 0 24px 70px rgba(47,80,140,.20), 0 0 0 1px rgba(227,232,239,.9);
+  --soft: 0 2px 12px rgba(47,80,140,.07), 0 0 0 1px #e3e8ef;
   /* Sidebar tint over the window's sidebar vibrancy; the panel window's tint over popover vibrancy. */
   --side-tint: color-mix(in srgb, var(--side) 55%, transparent);
   --popover-tint: color-mix(in srgb, var(--win) 72%, transparent);
@@ -23,16 +32,20 @@
   --person-0: #2b2b2f; --person-1: #e8833a; --person-2: #2aa3b8; --person-3: #d94f7a;
   color-scheme: light dark;
 }
-@supports (color: AccentColor) {
-  :root { --focus: AccentColor; }
-}
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --win: #161618; --side: #1c1c1e; --sel: #2c2c2e; --hover: rgba(255,255,255,.05);
-  --bub: #2a2a2c; --me: #f2f2f2; --me-fg: #111111; --primary: #f2f2f2; --primary-fg: #111111;
-  --sec: #2c2c2e; --card: #1f1f22; --field: #232326;
-  --text: #f5f5f7; --text2: rgba(235,235,245,.62); --text3: rgba(235,235,245,.34); --sep: rgba(255,255,255,.1);
+  --win: #12161f; --side: #171c27; --sel: rgba(90,150,255,.2); --hover: rgba(90,150,255,.08);
+  --bub: #232a38; --me: #3d7bff; --me-fg: #ffffff; --primary: #3d7bff; --primary-fg: #ffffff;
+  --brand: #5b9bff; --brand-light: #8fc2ff; --pink: #ff453a; --focus: #5b9bff;
+  --brand-grad: linear-gradient(135deg, #5b9bff 0%, #2f6bf5 100%);
+  --backdrop: linear-gradient(160deg, #0d1424 0%, #121a2b 50%, #0f1830 100%);
+  --glass: rgba(28,34,48,.72); --glass-border: rgba(255,255,255,.08);
+  --glass-side: rgba(22,27,39,.78); --glass-card: rgba(255,255,255,.05); --glass-line: rgba(255,255,255,.08);
+  --bub-glow: 0 6px 18px rgba(61,123,255,.3); --sheet-bg: rgba(30,36,50,.94);
+  --glass-shadow: 0 8px 30px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.07);
+  --sec: #232a38; --card: #1c2230; --field: #1f2533;
+  --text: #eef2f8; --text2: #a3adbd; --text3: #6b7587; --sep: rgba(255,255,255,.09);
   --green: #32d74b; --orange: #ff9f0a; --yellow: #ffd60a; --red: #ff453a; --gray: #98989d;
   --scrim: rgba(0,0,0,.45); --shadow: 0 24px 70px rgba(0,0,0,.6), 0 0 0 .5px rgba(255,255,255,.14);
   --soft: 0 2px 10px rgba(0,0,0,.3), 0 0 0 .5px rgba(255,255,255,.08);
@@ -40,17 +53,20 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --win: #161618; --side: #1c1c1e; --sel: #2c2c2e; --hover: rgba(255,255,255,.05);
-    --bub: #2a2a2c; --me: #f2f2f2; --me-fg: #111111; --primary: #f2f2f2; --primary-fg: #111111;
-    --sec: #2c2c2e; --card: #1f1f22; --field: #232326;
-    --text: #f5f5f7; --text2: rgba(235,235,245,.62); --text3: rgba(235,235,245,.34); --sep: rgba(255,255,255,.1);
+    --win: #12161f; --side: #171c27; --sel: rgba(90,150,255,.2); --hover: rgba(90,150,255,.08);
+    --bub: #232a38; --me: #3d7bff; --me-fg: #ffffff; --primary: #3d7bff; --primary-fg: #ffffff;
+    --brand: #5b9bff; --brand-light: #8fc2ff; --pink: #ff453a; --focus: #5b9bff;
+    --brand-grad: linear-gradient(135deg, #5b9bff 0%, #2f6bf5 100%);
+    --backdrop: linear-gradient(160deg, #0d1424 0%, #121a2b 50%, #0f1830 100%);
+    --glass: rgba(28,34,48,.72); --glass-border: rgba(255,255,255,.08);
+  --glass-side: rgba(22,27,39,.78); --glass-card: rgba(255,255,255,.05); --glass-line: rgba(255,255,255,.08);
+  --bub-glow: 0 6px 18px rgba(61,123,255,.3); --sheet-bg: rgba(30,36,50,.94);
+    --glass-shadow: 0 8px 30px rgba(0,0,0,.4), 0 0 0 1px rgba(255,255,255,.07);
+    --sec: #232a38; --card: #1c2230; --field: #1f2533;
+    --text: #eef2f8; --text2: #a3adbd; --text3: #6b7587; --sep: rgba(255,255,255,.09);
     --green: #32d74b; --orange: #ff9f0a; --yellow: #ffd60a; --red: #ff453a; --gray: #98989d;
     --scrim: rgba(0,0,0,.45); --shadow: 0 24px 70px rgba(0,0,0,.6), 0 0 0 .5px rgba(255,255,255,.14);
     --soft: 0 2px 10px rgba(0,0,0,.3), 0 0 0 .5px rgba(255,255,255,.08);
     --person-0: #5a5a60;
   }
-}
-@supports not (color: AccentColor) {
-  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --focus: #0a84ff; } }
-  :root[data-theme="dark"] { --focus: #0a84ff; }
 }

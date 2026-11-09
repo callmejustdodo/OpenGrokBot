@@ -1,15 +1,16 @@
-/* SC-004 New agent: screen rules copied from documentations/mockups/index.html.
+/* SC-004 New agent: screen rules from documentations/mockups/index.html, restyled to Renewal v2 Sky Glass
+   (selected choices take the brand blue instead of the text colour).
    The shared layer (src/styles/) owns .pop, .field, .input, .textarea and .err. */
-.harness { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--sep); background: var(--field); cursor: pointer; width: 100%; text-align: left; margin-bottom: 6px; }
-.harness[aria-checked="true"] { border-color: var(--text); }
+.harness { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; border: 1.5px solid var(--glass-line); background: var(--card); cursor: pointer; width: 100%; text-align: left; margin-bottom: 6px; }
+.harness[aria-checked="true"] { border-color: var(--brand, var(--focus)); background: color-mix(in srgb, var(--brand, var(--focus)) 6%, var(--card)); }
 .harness .hn { flex: 1; }
 .harness .hn small { display: block; color: var(--text2); font-size: 12px; }
 .harness .radio { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--text3); flex: none; }
-.harness[aria-checked="true"] .radio { border: 5px solid var(--text); }
+.harness[aria-checked="true"] .radio { border: 5px solid var(--brand, var(--focus)); }
 .hlogo { width: 30px; height: 30px; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: var(--sec); font-weight: 700; font-size: 12px; }
 .shapes { display: flex; gap: 6px; flex-wrap: wrap; }
-.shape-btn { width: 44px; height: 44px; border-radius: 12px; border: 1.5px solid var(--sep); background: var(--field); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 4px; }
-.shape-btn[aria-pressed="true"] { border-color: var(--text); }
+.shape-btn { width: 44px; height: 44px; border-radius: 14px; border: 1.5px solid var(--sep); background: var(--card); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 4px; }
+.shape-btn[aria-pressed="true"] { border-color: var(--brand, var(--focus)); background: color-mix(in srgb, var(--brand, var(--focus)) 6%, var(--card)); }
 .swatches { display: flex; gap: 8px; margin-top: 8px; }
 .swatch { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--win); box-shadow: 0 0 0 1px var(--sep); cursor: pointer; padding: 0; }
-.swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--text); }
+.swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--brand, var(--focus)); }

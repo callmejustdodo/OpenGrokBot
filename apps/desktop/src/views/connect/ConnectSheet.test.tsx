@@ -70,14 +70,14 @@ describe("Connect agents sheet (SC-009)", () => {
     expect(within(detail).getByText("Claude Code")).toBeInTheDocument();
     expect(within(detail).getByText("~/Codes/shared-web")).toBeInTheDocument();
     expect(within(detail).getByText(/2026/)).toBeInTheDocument();
-    const caps = within(detail).getByRole("list", { name: "What Formation can do" });
+    const caps = within(detail).getByRole("list", { name: "What OpenGrokBot can do" });
     expect(within(caps).getAllByRole("listitem").map((li) => li.getAttribute("data-supported"))).toEqual([
       "true",
       "true",
       "true",
       "false",
     ]);
-    expect(caps).toHaveTextContent("Started in Terminal, so Formation can't send it messages");
+    expect(caps).toHaveTextContent("Started in Terminal, so OpenGrokBot can't send it messages");
 
     fireEvent.click(screen.getByRole("button", { name: "Connect" }));
     expect(call).toHaveBeenLastCalledWith("agent_connect", { key: "claude_code:~/Codes/other" });
@@ -129,7 +129,7 @@ describe("Connect agents sheet (SC-009)", () => {
     );
     await openSheet();
     fireEvent.click(screen.getByRole("button", { name: "Connect" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Formation doesn't support this harness yet.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("OpenGrokBot doesn't support this harness yet.");
     expect(uiStore.getState().sheet).toEqual({ kind: "connect" });
   });
 
@@ -139,7 +139,7 @@ describe("Connect agents sheet (SC-009)", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't look for agents");
     formationd([]);
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
-    expect(await screen.findByText("No agents are running outside Formation on this Mac.")).toBeInTheDocument();
+    expect(await screen.findByText("No agents are running outside OpenGrokBot on this Mac.")).toBeInTheDocument();
   });
 
   it("closes on Cancel and Esc", async () => {
@@ -157,15 +157,15 @@ describe("Detected banner (SC-005 detected)", () => {
   it("explains a read-only detected agent and lists what works", () => {
     render(<DetectedBanner agentId={SHARED_WEB} />);
     const banner = screen.getByRole("region", { name: "Read-only · detected agent" });
-    expect(banner).toHaveTextContent("This Claude Code session in ~/Codes/shared-web was started outside Formation");
+    expect(banner).toHaveTextContent("This Claude Code session in ~/Codes/shared-web was started outside OpenGrokBot");
     expect(banner).toHaveTextContent("can't send it messages");
     const items = within(banner).getAllByRole("listitem");
     expect(items.map((li) => li.getAttribute("data-supported"))).toEqual(["true", "true", "true", "false"]);
     expect(items[0]).toHaveTextContent("Show state: works");
-    expect(items[3]).toHaveTextContent("Started in Terminal, so Formation can't send it messages");
+    expect(items[3]).toHaveTextContent("Started in Terminal, so OpenGrokBot can't send it messages");
   });
 
-  it("renders nothing for an agent Formation created", () => {
+  it("renders nothing for an agent OpenGrokBot created", () => {
     const { container } = render(<DetectedBanner agentId={BACKEND} />);
     expect(container).toBeEmptyDOMElement();
   });

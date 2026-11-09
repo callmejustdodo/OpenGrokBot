@@ -4,18 +4,28 @@
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
 .field > span { font-weight: 600; font-size: 13px; }
 .field small { color: var(--text2); font-weight: 400; }
-.input, .textarea { border: 1px solid var(--sep); background: var(--field); border-radius: 12px; padding: 8px 12px; width: 100%; }
+.input, .textarea { border: 1px solid var(--sep); background: var(--field); border-radius: 10px; padding: 8px 12px; width: 100%; }
 .textarea { min-height: 76px; resize: none; line-height: 1.45; }
-.code { font-family: var(--mono); font-size: 12.5px; background: var(--sec); border-radius: 10px; padding: 9px 12px; white-space: pre-wrap; word-break: break-word; }
+.code { font-family: var(--mono); font-size: 12.5px; background: var(--sec); border: 1px solid var(--sep); border-radius: 12px; padding: 9px 12px; white-space: pre-wrap; word-break: break-word; }
 .check { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 13.5px; }
 .err { color: var(--red); font-size: 12.5px; }
 .timeline { list-style: none; margin: 8px 0 0; padding: 0; }
 .timeline li { display: flex; gap: 10px; padding: 7px 0; align-items: center; }
 .timeline li > span:nth-child(2) { flex: 1; }
 .timeline .mark { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--sep); flex: none; display: flex; align-items: center; justify-content: center; }
-.timeline .done .mark { border-color: var(--green); color: var(--green); }
+.timeline .done .mark { border-color: var(--focus); color: var(--focus); }
 /* The app's mark holds no icon; draw the mockup's check mark in CSS. */
 .timeline .done .mark::after { content: ""; width: 4px; height: 7px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: translateY(-1px) rotate(45deg); }
 .timeline .now .mark { border-color: var(--orange); }
 .timeline .todo { color: var(--text3); }
 .timeline .mark .ic { width: 11px; height: 11px; }
+/* v2 Sky Glass: brand-blue focus ring on fields. */
+.input:focus, .textarea:focus { outline: none; border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 18%, transparent); }
+/* v2 fidelity (SC-016): rounder fields, brand-blue checkboxes, flat grey
+   prompt preview. */
+.field > span { font-size: 13.5px; }
+.input, .textarea { border-radius: 12px; padding: 10px 12px; }
+.textarea { min-height: 72px; }
+.check input { accent-color: var(--brand, var(--focus)); width: 15px; height: 15px; }
+.code { border: 0; border-radius: 12px; padding: 12px 14px; line-height: 1.55; }
+.timeline .done .mark { border-color: var(--brand, var(--focus)); color: var(--brand, var(--focus)); }

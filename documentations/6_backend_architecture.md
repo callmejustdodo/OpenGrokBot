@@ -1,4 +1,4 @@
-# Formation — Backend architecture
+# OpenGrokBot — Backend architecture
 
 Rev 1 · 2026-11-09 · Implements the [tech spec](4_techspec.md) (Rev 3) for the requirements in the [PRD](1_product_requirements_documentation.md) (Rev 2). The frontend side is in the [frontend architecture](5_frontend_architecture.md). Decision IDs refer to the [planning progress](0_one_pager.md#planning-progress) record.
 
@@ -80,15 +80,15 @@ Work requests follow the same entry path to `requests`; they run per [FR-014](1_
 
 - **Location:** `~/Library/Application Support/Formation/formation.db` (SQLite, WAL mode), schema from the [data model](4_techspec.md#data-model), migrations applied by formationd at start.
 - **What each Mac owns:** the owner's Mac owns its agents, their folders, approvals, rules, and the answers its agents produce. The asker's Mac keeps a copy of its own questions and the answers received (D-029).
-- **Harness transcripts** stay where Claude Code and Codex keep them; Formation reads them and never copies them off the Mac, except excerpts allowed by visibility.
+- **Harness transcripts** stay where Claude Code and Codex keep them; OpenGrokBot reads them and never copies them off the Mac, except excerpts allowed by visibility.
 - **Deletion (proposed):** an asker's delete removes only the asker's copy. An owner's delete removes the owner's copy and asks the asker's Mac to delete its copy the next time it is reachable. Confirm in review; the PRD allows both deletions but does not say whether the owner's delete reaches the asker's copy.
-- **Backups (assumption):** none in the first version. Losing a Mac loses its Formation history; the harness transcripts and agent folders remain wherever the user backs them up.
+- **Backups (assumption):** none in the first version. Losing a Mac loses its OpenGrokBot history; the harness transcripts and agent folders remain wherever the user backs them up.
 
 ## Recovery
 
-- **formationd crash:** launchd restarts it (`KeepAlive`). On start it rebuilds state: resumes Formation-managed sessions with `--resume` (never detected originals, per [FR-006](1_product_requirements_documentation.md#managing-agents-owner)), re-queues requests that were `queued`, marks interrupted ones `failed` with a reason, expires approvals past 24 hours, and retries the outbox.
+- **formationd crash:** launchd restarts it (`KeepAlive`). On start it rebuilds state: resumes OpenGrokBot-managed sessions with `--resume` (never detected originals, per [FR-006](1_product_requirements_documentation.md#managing-agents-owner)), re-queues requests that were `queued`, marks interrupted ones `failed` with a reason, expires approvals past 24 hours, and retries the outbox.
 - **App crash or quit:** no effect on agents; the UI reconnects and takes a fresh snapshot.
-- **Harness crash:** the agent goes to `error` with the exit code; restart resumes a Formation-managed session; detected originals follow [FR-006](1_product_requirements_documentation.md#managing-agents-owner).
+- **Harness crash:** the agent goes to `error` with the exit code; restart resumes a OpenGrokBot-managed session; detected originals follow [FR-006](1_product_requirements_documentation.md#managing-agents-owner).
 - **Peer unreachable:** questions and requests wait in the asker's outbox; the owner re-checks membership and sharing when they arrive (FR-016).
 
 ## Identity and team
@@ -108,7 +108,7 @@ Work requests follow the same entry path to `requests`; they run per [FR-014](1_
 
 Inspect and copy before writing from scratch. Licenses checked 2026-11-09; keep notices and record each copied file in `THIRD_PARTY_NOTICES.md`.
 
-| Formation module | Source | License | Use |
+| OpenGrokBot module | Source | License | Use |
 | --- | --- | --- | --- |
 | `harness::detect` | [Reason Network](https://github.com/reason-machines/reason-network) `src/daemon/sessions.rs`, `src/setup/hermes.rs` | MIT or Apache-2.0 | Copy and adapt: discovers Claude Code sessions from local session files and Hermes profiles |
 | `harness::claude`, `harness::codex` | Reason Network `src/claude.rs`, `src/codex.rs`, `src/hook.rs` | MIT or Apache-2.0 | Copy and adapt: harness specifics, hook payloads, Codex app-server usage |

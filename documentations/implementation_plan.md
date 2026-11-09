@@ -1,10 +1,10 @@
-# Formation — Implementation plan
+# OpenGrokBot — Implementation plan
 
 Rev 2 · 2026-11-09 · For the coding agents of a team of three developers and one designer. Decision IDs refer to the [planning progress](0_one_pager.md#planning-progress) record. Rev 2 removes the waits between roles: the contract is written together at kickoff, each role builds the fakes it needs, tasks depend on interfaces instead of another role's implementation, and work is rebalanced (D-054).
 
 ## Goal
 
-Build Formation, a macOS app that runs role agents on Claude Code (later Codex) and lets a four-person team ask each other's agents, as specified in the documents below. **First milestone (today, D-052):** on two Macs on the team's tailnet, a member can chat with their own Claude Code agent, a teammate can ask that member's agent and get an answer from its session conversation, and a teammate can send a work request that runs after the owner approves its command.
+Build OpenGrokBot, a macOS app that runs role agents on Claude Code (later Codex) and lets a four-person team ask each other's agents, as specified in the documents below. **First milestone (today, D-052):** on two Macs on the team's tailnet, a member can chat with their own Claude Code agent, a teammate can ask that member's agent and get an answer from its session conversation, and a teammate can send a work request that runs after the owner approves its command.
 
 ## Read first, in this order
 
@@ -28,7 +28,7 @@ Each role is one person and their coding agent. A role changes only the paths it
 | Role | Area | Owns (paths) |
 | --- | --- | --- |
 | **A · Agent runtime** | formationd service, local storage, Claude Code (later Codex) harness supervisor, agent folders, schedules, detection, notifications | `crates/formationd/`, `crates/formation-core/src/{service,store,harness,agents,schedules,notify}/`, migrations `1000–1999` and the migration runner, proto files `common.rs`, `agent.rs`, `harness.rs`, and the `Harness`, `Store`, `Notifier`, `EventSink`, `CommandHandler` traits |
-| **B · Collaboration core** | Team and identity, Tailscale peer protocol, policy and approvals, the permission gate (Claude Code permission tool and `PreToolUse` hook), ask pipeline, work requests, CLI and MCP | `crates/formation-core/src/{team,peer,policy,permission,ask,requests}/`, `crates/formation-cli/`, migrations `2000–2999`, proto files `team.rs`, `peer.rs`, `policy.rs`, `ask.rs`, `request.rs`, and the `CollabStore`, `Policy`, `PermissionGate`, `Peers`, `RequestQueue` traits |
+| **B · Collaboration core** | Team and identity, Tailscale peer protocol, policy and approvals, the permission gate (Claude Code permission tool and `PreToolUse` hook), ask pipeline, work requests, CLI and MCP | `crates/formation-core/src/{team,peer,policy,permission,ask,requests,collab_store}/`, `crates/formation-cli/`, migrations `2000–2999`, proto files `team.rs`, `peer.rs`, `policy.rs`, `ask.rs`, `request.rs`, and the `CollabStore`, `Policy`, `PermissionGate`, `Peers`, `RequestQueue` traits |
 | **C · App** | Tauri client, LaunchAgent registration from the app, tray, menus, windows, notifications bridge, IPC, store, view logic, `fake-formationd` | `apps/desktop/src-tauri/`, `apps/desktop/src/{ipc,store,views}/`, window entries, `tools/fake-formationd/`, proto files `snapshot.rs`, `events.rs` (the envelope; each event payload lives with its domain owner) |
 | **D · Design** | Design tokens, component styles, avatars, Korean and English copy, preview page, visual QA against M3 | `apps/desktop/src/styles/`, `apps/desktop/src/**/*.css`, `apps/desktop/src/i18n/`, `apps/desktop/src/preview/` |
 
@@ -156,7 +156,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Prerequisites: TASK-001
 - Change locations: `crates/formation-core/src/permission/` (spike), `crates/formation-cli/` (`formation mcp --permission` stub)
 - Work: run Claude Code with `--permission-prompt-tool mcp__formation__permission` and an injected `PreToolUse` hook via `--settings`; try each permission mode and tool type (read, edit, bash, network); log which calls reach the tool and which reach the hook. Hand the exact flags to A for TASK-013.
-- Acceptance criteria: a coverage table showing that every write, command, and network call reaches Formation before it runs; the flag set A must pass when spawning.
+- Acceptance criteria: a coverage table showing that every write, command, and network call reaches OpenGrokBot before it runs; the flag set A must pass when spawning.
 - Verification: the spike's logged run.
 - Owner: B
 
