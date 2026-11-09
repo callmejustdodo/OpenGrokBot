@@ -4,7 +4,8 @@ Formation is a proposed open-source macOS app and CLI for collaborating through 
 
 ## Repository layout
 
-- `documentations/`: product planning documents (one-pager, product plan, competitive landscape).
+- `documentations/`: product planning documents (one-pager, product requirements, user stories, screens and flows, tech spec, frontend and backend architecture, implementation plan, product plan, competitive landscape) and HTML mockups.
+- `.claude/skills/`: project-scoped Claude Code skills for macOS, SwiftUI and Swift development.
 - `scripts/`: repository tooling, currently the documentation link checker.
 
 ## Checks
