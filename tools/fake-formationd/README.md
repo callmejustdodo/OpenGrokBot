@@ -49,6 +49,7 @@ Placeholders work in scripts and reactions:
 | `{{params.field}}` | The command's params; nested fields use dots, as in `params.target.agent_id`. |
 | `{{id:name}}` | A fresh UUIDv7, shared by a reaction's result and the script it plays. |
 | `{{now}}` | The current time. |
+| `{{result}}`, `{{result.field}}` | In a script a reaction plays: that reaction's result, for example to send a changed rule as `rule.update`. |
 
 A string that is exactly one placeholder becomes that value with its JSON type.
 
@@ -66,6 +67,8 @@ A string that is exactly one placeholder becomes that value with its JSON type.
 | `approval_decide` | Allow once or allow all, keep allowing similar (saves a rule), or deny. The owner's own permission prompt is handled separately. |
 | `agents_detect` | Answers after 2.5 s, so the detecting state shows. |
 | `settings_update` | Sends `settings.update`. |
+| `rules_update`, `rules_revoke` | For the world's two rules: the changed rule, also sent as `rule.update` (`rule-changed`). A rule saved during the session is not simulated. |
+| `team_leave` | Answers `null`. No event clears the team; the contract has none yet. |
 | `agent_start`, `agent_stop`, `agent_turn_interrupt` | Built in: the named agent from the world with its new state. |
 | `agents_list`, `teammate_agents`, `rules_list`, `harness_check`, `schedule_list` | Read from the world. |
 
@@ -73,7 +76,7 @@ Any other contract method answers with an `internal` error saying the fake does 
 
 ## M3 states covered
 
-Every M3 state of SC-003, SC-005, SC-010, SC-011, SC-015 and SC-016 has an entry in `states.json`. A test fails if one goes missing. Run `list` for the full set with the app steps.
+Every M3 state of SC-003, SC-005, SC-010, SC-011, SC-012, SC-015 and SC-016 has an entry in `states.json`. A test fails if one goes missing. Run `list` for the full set with the app steps.
 
 ## Limits
 

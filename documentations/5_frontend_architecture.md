@@ -79,7 +79,7 @@ flowchart LR
 | SC-016 | `views/work-request` (ComposeSheet, StatusSheet) | request | `request_create`, `request_cancel` | compose, status, not-accepted |
 | SC-017 | `views/history` | activity, questions | `history_delete` | default, delete-confirm, empty-filter |
 | SC-018 | `settings.tsx` | settings, harness status | `settings_*`, `team_leave` | general, harnesses, notifications, team |
-| SC-019 | `src-tauri` notification bridge | `notify` events | — | approval, error |
+| SC-019 | `notifications/` in the menu bar window (decides and words each alert, once) and `src-tauri` (shows it, handles the click) | `notify` events | — | approval, error |
 | SC-020 | `components/info-panel` | agent details | opens SC-006, SC-007, SC-008 | my-agent, teammate-agent, person, collapsed |
 
 ## Design system in code
