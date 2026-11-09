@@ -12,7 +12,7 @@ use super::Result;
 #[derive(Debug, Clone, PartialEq)]
 pub struct CommandCall {
     /// `Caller::Owner` for the local socket; an agent's own calls name it in params
-    /// (`from_agent`).
+    /// (`from_run`).
     pub caller: Caller,
     pub method: String,
     pub params: serde_json::Value,
