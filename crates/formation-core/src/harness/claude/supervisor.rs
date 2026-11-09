@@ -559,10 +559,7 @@ impl ClaudeSupervisor {
                         let result = if stopping {
                             Err(error(ErrorCode::Conflict, "agent is stopping"))
                         } else if active.is_none() {
-                            let (completion, _) = oneshot::channel();
-                            queue.push_back(Pending {run_id: RunId::generate(), item, done: completion});
-                            self.queue(id, &queue);
-                            Ok(())
+                            Err(error(ErrorCode::Conflict, "agent has no running turn"))
                         } else {
                             let result = self.send_steer(id, &mut stdin, &item).await;
                             if result.is_ok() {started.insert(item.id);}
@@ -575,12 +572,11 @@ impl ClaudeSupervisor {
                     Some(Control::SteerQueued(message_id, done)) => {
                         let result = if stopping {
                             Err(error(ErrorCode::Conflict, "agent is stopping"))
+                        } else if active.is_none() {
+                            Err(error(ErrorCode::Conflict, "agent has no running turn"))
                         } else if let Some(index) = queue.iter().position(|p| p.item.id == message_id) {
                             if queue[index].item.source != QueueSource::Owner {
                                 Err(error(ErrorCode::Denied, "only owner messages can steer"))
-                            } else if active.is_none() {
-                                // The queued message will dispatch normally when idle.
-                                Ok(())
                             } else {
                                 match self.send_steer(id, &mut stdin, &queue[index].item).await {
                                     Ok(()) => {

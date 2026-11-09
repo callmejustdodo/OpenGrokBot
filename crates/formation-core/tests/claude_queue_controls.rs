@@ -203,7 +203,7 @@ async fn queued_steer_joins_running_turn_without_priority_or_extra_turn() {
 }
 
 #[tokio::test]
-async fn harness_steer_delivers_default_priority_and_idle_steer_sends_normally() {
+async fn harness_steer_delivers_default_priority_and_idle_steer_conflicts() {
     let s = Setup::new().await;
     let first = s.running().await;
     s.harness
@@ -214,11 +214,26 @@ async fn harness_steer_delivers_default_priority_and_idle_steer_sends_normally()
     assert_eq!(s.inputs()[1]["message"]["content"], "direct steer");
     assert!(s.inputs()[1].get("priority").is_none());
     s.wait(|| s.ended(first.id)).await;
-    let idle = s.item("idle send");
-    s.harness.steer(s.agent.id, idle.clone()).await.unwrap();
-    s.wait(|| s.ended(idle.id)).await;
-    assert_eq!(s.inputs()[2]["message"]["content"], "idle send");
-    assert_eq!(s.inputs()[2]["priority"], "later");
+    let idle = s.item("idle steer");
+    assert_eq!(
+        s.harness
+            .steer(s.agent.id, idle.clone())
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::Conflict
+    );
+    assert_eq!(
+        s.call(
+            "agent_message_steer",
+            json!({"agent_id":s.agent.id,"message_id":idle.id}),
+        )
+        .await
+        .unwrap_err()
+        .code,
+        ErrorCode::Conflict
+    );
+    assert_eq!(s.inputs().len(), 2);
     s.stop().await;
 }
 
