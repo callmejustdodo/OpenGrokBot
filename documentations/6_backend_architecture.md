@@ -19,7 +19,7 @@ Rev 1 · 2026-11-09 · Implements the [tech spec](4_techspec.md) (Rev 3) for the
 | --- | --- | --- |
 | `service` | Lifecycle (the app registers formationd with launchd; see the [tech spec](4_techspec.md#technology-choices)), local socket server (newline-delimited JSON-RPC 2.0), snapshot builder, event bus with sequence numbers | D-048, NFR-007 |
 | `harness::claude` | One supervisor task per running agent: spawn `claude -p` in stream-json mode in the agent folder, parse stdout events, write user messages to stdin, track queue and turn state, stop and resume, stalled detection | FR-003, FR-022, FR-007 |
-| `harness::permission` | Bridge for `formation mcp --permission`: receives Claude Code permission prompts, asks `policy`, returns allow or deny; serves the `PreToolUse` hook endpoint | FR-015, FR-022, NFR-004 |
+| `permission` | The gate behind `permission_decide`, which `formation mcp --permission` and the `formation hook pre-tool-use` hook send: finds the run's caller, asks `policy`, raises approvals; the hook only denies or defers, and a deny wins for that tool call | FR-015, FR-022, NFR-004 |
 | `harness::codex` | `codex app-server` JSON-RPC adapter (after Claude Code) | D-002 |
 | `harness::detect` | Find sessions started elsewhere (transcripts, live-session markers), Hermes and OpenClaw installs; report per-harness capabilities | FR-006 |
 | `agents` | Agent folders: create layout (`AGENTS.md`, `CLAUDE.md` importing it, `.claude/skills/`, `formation.toml` with name, role, harness, avatar), watch for outside edits, file read and write for the UI | FR-001, FR-004 |
@@ -41,7 +41,7 @@ All enforcement happens in formationd on the owner's Mac. The UI, CLI, MCP clien
 | Private agents are invisible to teammates | `policy` before every peer response and routing step | Filter by `agent_share.shared`; never list, route to, or answer from private agents |
 | Teammates see answers only, or answers and excerpts | `ask` post-processing | Drop excerpts when visibility is `answer` (D-025) |
 | Side conversations change nothing | `ask` runner | Fork with all tools disabled; never resume the original session for a question |
-| Nothing runs without approval except allowed reads | `harness::permission` and the `PreToolUse` hook, both calling `policy` | Allowed reads inside the agent folder and assigned repositories; saved rules; otherwise raise an approval and wait (D-028) |
+| Nothing runs without approval except allowed reads | `permission`, reached by the permission tool and the `PreToolUse` hook, calling `policy` | Allowed reads inside the agent folder and assigned repositories; saved rules; otherwise raise an approval and wait (D-028) |
 | Rules never widen | `policy::rules` | Match program, argument pattern, and folder exactly as stored; reject command chaining and paths outside the folder |
 | Only the owner approves | `policy::approvals` | Decisions are accepted only from the local socket of the owner's own session, never from peers |
 | A retried request runs once | `requests` with a unique index on (requester, idempotency key) | Insert-or-return in one transaction |
@@ -70,7 +70,7 @@ sequenceDiagram
   end
 ```
 
-Work requests follow the same entry path to `requests`; they run per [FR-014](1_product_requirements_documentation.md#work-requests-and-approvals), with the policy context bound at fork startup as specified in the [Claude Code integration](4_techspec.md#claude-code-integration-first-harness), and every tool call goes through `harness::permission`.
+Work requests follow the same entry path to `requests`; they run per [FR-014](1_product_requirements_documentation.md#work-requests-and-approvals), with the policy context bound at fork startup as specified in the [Claude Code integration](4_techspec.md#claude-code-integration-first-harness), and every tool call goes through `permission`.
 
 ## Error codes
 

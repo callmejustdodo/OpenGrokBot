@@ -55,6 +55,14 @@ fn agent() -> Agent {
                 },
             },
         }),
+        running_requests: vec![RunningRequest {
+            request_id: RequestId::generate(),
+            requester: MemberId::generate(),
+            prompt: "Review 한글".into(),
+            started_at: at(2),
+            run_id: RunId::generate(),
+            fork_session_id: Some(SessionId("fork".into())),
+        }],
     }
 }
 fn session(agent_id: AgentId) -> SessionInfo {
@@ -262,6 +270,7 @@ fn agents_roundtrip_conflicts_updates_and_soft_deletion() {
     a.name = "Updated".into();
     a.detected = None;
     a.last_activity_at = None;
+    a.running_requests.clear();
     store.update_agent(&a).unwrap();
     assert_eq!(store.agent(a.id).unwrap(), Some(a.clone()));
     store.delete_agent(a.id, at(10)).unwrap();

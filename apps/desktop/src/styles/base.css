@@ -1,0 +1,93 @@
+/*
+ * Base styles and shared controls, ported from the approved mockup
+ * (documentations/mockups/index.html, "controls").
+ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--text);
+  /* The main and panel windows are transparent so their vibrancy shows. */
+  background: transparent;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+#root { height: 100%; }
+/* Settings has a normal, opaque window. */
+html:has(main.settings) body { background: var(--win); }
+button, input, textarea, select { font: inherit; color: inherit; }
+input, textarea, .msgs, .mono, .code, pre, dd, .ag, .me, blockquote { -webkit-user-select: text; user-select: text; }
+:focus-visible { outline: 3px solid color-mix(in srgb, var(--focus) 55%, transparent); outline-offset: 1px; border-radius: 8px; }
+h1, h2, h3, p { margin: 0; }
+ul.list, ol.list, ul.chat-list, ul.checks, ol.timeline { list-style: none; margin: 0; padding: 0; }
+dl { margin: 0; }
+fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+pre { margin: 0; }
+kbd { font-family: var(--font); }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; gap: 6px; border: 0; background: var(--sec); border-radius: 999px; padding: 6px 14px; cursor: pointer; white-space: nowrap; font-size: 13.5px; }
+.btn:hover { filter: brightness(.97); }
+.btn.primary { background: var(--primary); color: var(--primary-fg); }
+.btn.destructive { background: transparent; color: var(--red); }
+.btn.plain { background: transparent; color: var(--text2); padding: 4px 8px; font-size: 12.5px; }
+.btn.plain:hover { background: var(--hover); color: var(--text); }
+.btn[disabled] { opacity: .4; cursor: not-allowed; }
+.btn .k, .btn kbd { opacity: .55; font-size: 11px; }
+.ticon { position: relative; width: 32px; height: 32px; border-radius: 10px; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text2); flex: none; padding: 0; }
+.ticon:hover { background: var(--hover); color: var(--text); }
+.ticon[aria-current="page"], .ticon[aria-pressed="true"] { background: var(--sel); color: var(--text); }
+.ticon.plus { background: var(--card); box-shadow: var(--soft); color: var(--text); margin-left: 4px; }
+.ticon .cnt { position: absolute; top: 2px; right: 1px; min-width: 15px; height: 15px; padding: 0 4px; border-radius: 999px; background: var(--orange); color: var(--badge-fg); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+
+/* Labels and tags */
+.status { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.tag { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--text2); background: var(--sec); border-radius: 999px; padding: 1px 8px; white-space: nowrap; font-weight: 400; }
+.tagpill { margin-left: auto; font-size: 11px; font-weight: 600; background: var(--sec); border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+.online { display: inline-flex; align-items: center; gap: 5px; color: var(--text2); font-size: 12.5px; font-weight: 400; }
+.online::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+.online.off::before { background: var(--text3); }
+
+/* Switch (Radix Switch: the root is the track, its thumb a span) */
+.switch { display: inline-flex; align-items: center; cursor: pointer; border: 0; padding: 0; flex: none; width: 34px; height: 20px; border-radius: 999px; background: var(--sel); position: relative; transition: background .15s; }
+.switch > span { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--badge-fg); box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: left .15s; }
+.switch[data-state="checked"] { background: var(--primary); }
+.switch[data-state="checked"] > span { left: 16px; background: var(--primary-fg); }
+.switch[disabled] { opacity: .4; cursor: not-allowed; }
+
+/* Segmented control (Radix ToggleGroup) */
+.seg { display: inline-flex; flex-wrap: wrap; background: var(--sec); border-radius: 999px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: transparent; padding: 4px 12px; border-radius: 999px; cursor: pointer; font-size: 12.5px; }
+.seg button[data-state="on"], .seg button[aria-pressed="true"] { background: var(--card); box-shadow: var(--soft); font-weight: 600; }
+.seg button[disabled] { opacity: .5; cursor: not-allowed; }
+
+/* Form fields */
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.field > span, .field > label, .field > legend { font-weight: 600; font-size: 13px; padding: 0; }
+.field small { color: var(--text2); font-weight: 400; }
+.input, .textarea, .select { border: 1px solid var(--sep); background: var(--field); border-radius: 12px; padding: 8px 12px; width: 100%; outline: none; }
+.select { appearance: auto; }
+.textarea { min-height: 76px; resize: none; line-height: 1.45; }
+.input.invalid, .textarea.invalid, [aria-invalid="true"].input, [aria-invalid="true"].textarea { border-color: var(--red); }
+.err, .error { color: var(--red); font-size: 12.5px; }
+.check { display: flex; align-items: center; gap: 8px; margin: 4px 0; font-size: 13.5px; }
+.ok { color: var(--green); } .bad { color: var(--orange); }
+
+/* Text helpers */
+.mono { font-family: var(--mono); font-size: 12.5px; }
+.code { font-family: var(--mono); font-size: 12.5px; background: var(--sec); border-radius: 10px; padding: 9px 12px; white-space: pre-wrap; word-break: break-word; }
+.code code { font: inherit; }
+.muted { color: var(--text2); } .small { font-size: 12px; }
+.row-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.spacer { flex: 1; }
+.dots { display: inline-flex; gap: 3px; }
+.dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--text3); animation: blink 1.2s infinite; }
+.dots i:nth-child(2) { animation-delay: .2s; } .dots i:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }

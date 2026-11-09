@@ -34,6 +34,7 @@ fn agent(slug: &str, state: AgentState) -> Agent {
         created_at: SystemTime::now().into(),
         last_activity_at: None,
         detected: None,
+        running_requests: vec![],
     }
 }
 

@@ -4,6 +4,8 @@
 import * as ToggleGroup from "@radix-ui/react-toggle-group";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import "../team/team.css";
+import "./history.css";
 import type { Activity } from "../../ipc/generated/Activity";
 import type { ActivityId } from "../../ipc/generated/ActivityId";
 import type { CallError } from "../../ipc/client";

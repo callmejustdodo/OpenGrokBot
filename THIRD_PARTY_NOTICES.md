@@ -14,3 +14,10 @@ Add one entry per copied file or file group: the path in this repository, the up
   - `apps/desktop/src-tauri/Cargo.toml`, `apps/desktop/src-tauri/build.rs`, `apps/desktop/src-tauri/src/main.rs`, `apps/desktop/src-tauri/src/lib.rs`, `apps/desktop/src-tauri/tauri.conf.json`, `apps/desktop/src-tauri/capabilities/default.json`, `apps/desktop/src-tauri/.gitignore`
   - `apps/desktop/src-tauri/icons/*` (Tauri's placeholder icons, unchanged; to be replaced with Formation's icon)
 - **Changes:** removed the sample `greet` command, the opener plugin, and the demo page and assets; renamed the app to Formation; set the window size and the macOS 13 minimum; added Vitest settings to `vite.config.ts`.
+
+## open-bot-avatar (avatar body shapes)
+
+- **Upstream:** [DominikScholz/open-bot-avatar](https://github.com/DominikScholz/open-bot-avatar), gallery shapes as embedded in the approved mockup `documentations/mockups/index.html` (the mockup does not record the upstream commit)
+- **License:** MIT. Copyright (c) 2026 Dominik Scholz.
+- **Files:** `apps/desktop/src/components/sidebar/avatarShapes.ts` (the license text is kept in the file header)
+- **Changes:** copied the mockup's `OBA` map of body paths and eye positions into a typed TypeScript constant; `AgentAvatar.tsx` draws them as flat stills the way the mockup does.

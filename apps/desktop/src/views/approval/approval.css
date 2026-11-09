@@ -1,0 +1,16 @@
+/* SC-011 Approval sheet: screen-specific rules from the approved mockup
+   (documentations/mockups/index.html). The sheet, footer, banners and
+   buttons come from the shared styles. */
+.kv { display: grid; grid-template-columns: 110px 1fr; gap: 7px 10px; font-size: 13px; margin: 0; }
+.kv dt { color: var(--text2); } .kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.code { font-family: var(--mono); font-size: 12.5px; background: var(--sec); border-radius: 10px; padding: 9px 12px; white-space: pre-wrap; word-break: break-word; }
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.field > span { font-weight: 600; font-size: 13px; }
+.field small { color: var(--text2); font-weight: 400; }
+.input, .textarea, .select { border: 1px solid var(--sep); background: var(--field); border-radius: 12px; padding: 8px 12px; width: 100%; }
+.input.invalid { border-color: var(--red); }
+.choice-list { display: flex; flex-direction: column; gap: 6px; }
+.choice-list .btn { justify-content: space-between; padding: 10px 14px; border-radius: 12px; }
+.choice-list .btn small { opacity: .6; font-size: 11.5px; }
+.choice-list .btn.destructive { background: var(--sec); }
+.err { color: var(--red); font-size: 12.5px; }

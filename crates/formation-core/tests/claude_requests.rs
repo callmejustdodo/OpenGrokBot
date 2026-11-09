@@ -45,6 +45,7 @@ impl Setup {
             created_at: SystemTime::now().into(),
             last_activity_at: None,
             detected: None,
+            running_requests: vec![],
         };
         let store = Arc::new(MemoryStore::default());
         store.insert_agent(&agent).unwrap();

@@ -13,6 +13,7 @@ import { act } from "../../store/sync";
 import { uiStore } from "../../store/ui";
 import Sheet from "../../ui/Sheet";
 import { errorCode, memberName } from "../approval/model";
+import "./work-request.css";
 
 /** One message of the side conversation that can go with the request. */
 type ThreadMessage = { id: string; who: string; text: string };

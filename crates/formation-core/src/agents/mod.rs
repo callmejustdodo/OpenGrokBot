@@ -250,6 +250,7 @@ impl Inner {
             created_at: SystemTime::now().into(),
             last_activity_at: None,
             detected: None,
+            running_requests: vec![],
         };
         let instructions = args
             .instructions

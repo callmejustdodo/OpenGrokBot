@@ -39,6 +39,7 @@ async fn real_harness_exposes_durable_session_and_conversation_like_fake() {
         created_at: SystemTime::now().into(),
         last_activity_at: None,
         detected: None,
+        running_requests: vec![],
     };
     let store = Arc::new(MemoryStore::default());
     store.insert_agent(&agent).unwrap();
