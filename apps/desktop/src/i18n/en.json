@@ -1,1 +1,922 @@
-{}
+{
+  "agent": {
+    "harness": {
+      "detected": "Detected"
+    },
+    "state": {
+      "error": "Error",
+      "idle": "Idle",
+      "stalled": "Stalled",
+      "stopped": "Stopped",
+      "unknown": "Unknown",
+      "waiting_for_approval": "Waiting for approval",
+      "working": "Working"
+    },
+    "step": {
+      "command": "Running {{target}}",
+      "edit": "Editing {{target}}",
+      "read": "Reading {{target}}",
+      "tool": "Using {{tool}} on {{target}}",
+      "web": "Opening {{target}}"
+    }
+  },
+  "agentState": {
+    "error": "Error",
+    "idle": "Idle",
+    "stalled": "Stalled",
+    "stopped": "Stopped",
+    "unknown": "Unknown",
+    "waiting_for_approval": "Waiting for approval",
+    "working": "Working"
+  },
+  "approval": {
+    "action": {
+      "command": "Run a command",
+      "network": "Use the network",
+      "other": "Use {{tool}}",
+      "write": "Change a file"
+    },
+    "allowAll": "Allow all for {{member}} · {{agent}}",
+    "allowAllHint": "This requester and agent",
+    "allowOnce": "Allow once",
+    "allowOnceHint": "This command only",
+    "back": "Back",
+    "choice": "Your choice",
+    "command": "Command",
+    "decided": {
+      "all": "Allowed all for this requester and agent",
+      "denied": "Denied",
+      "once": "Allowed once",
+      "similar": "Allowed · similar commands keep running"
+    },
+    "deny": "Deny",
+    "denyConfirm": {
+      "body": "{{member}} will be told it was denied. The agent won't run this command.",
+      "title": "Deny this action?"
+    },
+    "error": {
+      "conflict": "This approval was already decided.",
+      "disconnected": "OpenGrokBot isn't reachable. Try again in a moment.",
+      "expired": "This request expired before your choice arrived.",
+      "invalid": "OpenGrokBot couldn't accept this choice. Allow once or deny instead.",
+      "other": "Your choice wasn't saved. Try again."
+    },
+    "expired": {
+      "body": "No answer for 24 hours; {{member}} was told.",
+      "title": "This request expired"
+    },
+    "expiredLead": "Expired",
+    "expiresIn": "Expires in {{minutes}} min",
+    "keepSimilar": "Keep allowing similar commands…",
+    "keepSimilarHint": "Review the rule first",
+    "keepSimilarNone": "No rule fits this action",
+    "missing": "This approval is no longer available.",
+    "noReturn": "Return doesn't pick any choice, to prevent accidents.",
+    "purpose": "Purpose",
+    "requestedBy": "Requested by",
+    "rule": {
+      "agent": "Agent",
+      "arguments": "Arguments",
+      "expires": "Expires",
+      "folder": "Folder",
+      "inDays": "In {{count}} days",
+      "noExpiry": "No expiry",
+      "note": "Never allows chaining (&&, ;) or other folders.",
+      "program": "Program",
+      "requester": "Requester",
+      "title": "Rule to save"
+    },
+    "saveRule": "Save rule and allow",
+    "someone": "A teammate",
+    "targetAgent": "Target agent",
+    "timeLeft": "{{hours}} h {{minutes}} min left",
+    "title": "Approval needed",
+    "unknownAgent": "This agent",
+    "viaAgent": "sent by {{member}}'s agent via CLI"
+  },
+  "ask": {
+    "actionFailed": "That didn't go through",
+    "agentChoice": "{{owner}} · {{agent}}",
+    "agentTitle": "{{agent}} · {{owner}}",
+    "anotherTitle": "Which agent should answer instead?",
+    "answering": "Answering… {{owner}}'s work isn't interrupted",
+    "answeringAgent": "The {{agent}} agent is answering… {{owner}}'s work isn't interrupted",
+    "askAgain": "Ask again",
+    "askAnotherAgent": "Ask another agent",
+    "askOwner": "Ask {{owner}}",
+    "askOwnerDirectly": "Ask {{owner}} directly",
+    "bestGuess": "Best guess",
+    "cancelQuestion": "Cancel question",
+    "canceled": "You canceled this question.",
+    "composerAgent": "Ask {{agent}}",
+    "composerPerson": "Ask {{owner}}",
+    "composerUnshared": "Sharing is off",
+    "errorDropped": "The connection dropped. Your question is saved.",
+    "errorHarness": "{{owner}}'s agent can't run right now.",
+    "errorNotMember": "You're no longer on {{owner}}'s team.",
+    "errorNotShared": "This agent is no longer shared.",
+    "errorRateLimited": "Too many questions right now. Try again in a moment.",
+    "errorTitle": "Couldn't get an answer",
+    "excerptAgent": "Agent",
+    "excerptsMany": "{{count}} supporting excerpts",
+    "excerptsOne": "1 supporting excerpt",
+    "newTitle": "New question",
+    "offlineBody": "When {{owner}} is back, OpenGrokBot re-checks sharing and permissions, answers, and notifies you.",
+    "offlineTitle": "{{owner}}'s Mac is offline",
+    "ownerInbox": "Goes to {{owner}}'s Inbox",
+    "people": "People",
+    "personNote": "Asking a person · OpenGrokBot picks the agent",
+    "possiblyStale": "Possibly out of date",
+    "questionInput": "Question",
+    "received": "Received · preparing an answer",
+    "refresh": "Refresh",
+    "requestWork": "Request work…",
+    "retry": "Retry",
+    "send": "Send ⌘↩",
+    "sentBody": "When {{owner}} answers or hands it to an agent, it shows up here.",
+    "sentTitle": "Sent to {{owner}}",
+    "sharedAgents": "Shared agents",
+    "source": "{{owner}}'s {{agent}} agent · As of {{time}}",
+    "sourceOwner": "{{owner}} · As of {{time}}",
+    "tryAgain": "Try again",
+    "unknownAgent": "shared",
+    "unknownMember": "Your teammate",
+    "unsharedAgent": "Agent",
+    "unsharedBody": "{{owner}} turned sharing off. You can read past messages but can't ask new ones.",
+    "unsharedTitle": "This agent is no longer shared",
+    "unsureBody": "Pick one and it will answer.",
+    "unsureTitle": "Not sure which agent should answer",
+    "whoBody": "Pick a person and OpenGrokBot picks the agent, or pick an agent directly.",
+    "whoTitle": "Who do you want to ask?"
+  },
+  "attention": {
+    "kind": {
+      "agent_error": "Error",
+      "agent_stalled": "Stalled",
+      "approval": "Waiting for approval",
+      "question_for_you": "Question for you",
+      "request_finished": "Request finished",
+      "schedule_failed": "Scheduled run failed",
+      "schedule_missed": "Scheduled run missed"
+    }
+  },
+  "common": {
+    "cancel": "Cancel",
+    "close": "Close"
+  },
+  "connect": {
+    "cancel": "Cancel",
+    "capabilities": "What OpenGrokBot can do",
+    "capability": {
+      "answer_teammates": "Answer teammates",
+      "read_conversation": "Read the conversation",
+      "receive_requests": "Send messages, receive requests",
+      "state": "Show state",
+      "unsupported": "Not supported"
+    },
+    "connect": "Connect",
+    "connected": "Connected",
+    "connecting": "Connecting…",
+    "detectFailed": "Couldn't look for agents. Check that formationd is running.",
+    "detecting": "Looking for agents running on this Mac…",
+    "doesNotWork": "Doesn't work",
+    "error": {
+      "harness_unsupported": "OpenGrokBot doesn't support this harness yet.",
+      "other": "Couldn't connect this agent. Try again."
+    },
+    "found": "Detected agents",
+    "harness": {
+      "claude_code": "Claude Code",
+      "codex": "Codex",
+      "hermes": "Hermes",
+      "open_claw": "OpenClaw"
+    },
+    "harnessLabel": "Harness",
+    "lastActivity": "Last activity",
+    "lead": "Agents found running outside OpenGrokBot on this Mac. Connecting adds them to your list, private.",
+    "noActivity": "No activity yet",
+    "noChange": "OpenGrokBot won't change this agent's own configuration.",
+    "none": "No agents are running outside OpenGrokBot on this Mac.",
+    "notSupported": "OpenGrokBot can't connect this agent yet.",
+    "open": "Open",
+    "path": "Folder",
+    "readOnly": "Read-only: OpenGrokBot can show this agent's activity but can't use it for teammates.",
+    "retry": "Try again",
+    "title": "Connect agents",
+    "works": "Works"
+  },
+  "conversation": {
+    "detectedPlaceholder": "OpenGrokBot can't send messages to this session",
+    "error": {
+      "conflict": "That changed in the meantime. Try again.",
+      "denied": "That isn't allowed.",
+      "disconnected": "formationd isn't reachable. Try again when it's back.",
+      "exitCode": "Exited with code {{code}}",
+      "generic": "Something went wrong. Try again.",
+      "harnessUnavailable": "The harness isn't ready. Check it in Settings.",
+      "harnessUnsupported": "This agent's harness can't do that.",
+      "title": "The process exited unexpectedly"
+    },
+    "label": "Conversation",
+    "labelWith": "Conversation with {{name}}",
+    "message": "Message",
+    "notRunning": "This agent isn't running",
+    "panel": "Information panel",
+    "placeholder": "Message {{name}}",
+    "private": "Teammates never see this conversation",
+    "queued": {
+      "cancelEdit": "Cancel",
+      "edit": "Edit",
+      "editLabel": "Edit queued message",
+      "note": "Queued · delivered when this turn ends",
+      "save": "Save",
+      "steer": "Steer now",
+      "withdraw": "Withdraw"
+    },
+    "restart": "Restart",
+    "scheduled": "Scheduled",
+    "send": "Send ⌘↩",
+    "stalled": {
+      "lastStep": "Last step: {{step}}",
+      "title_one": "No activity for {{count}} minute",
+      "title_other": "No activity for {{count}} minutes"
+    },
+    "start": "Start",
+    "steps": {
+      "commands_one": "{{count}} command run",
+      "commands_other": "{{count}} commands run",
+      "count_one": "{{count}} step",
+      "count_other": "{{count}} steps",
+      "edits_one": "{{count}} file edited",
+      "edits_other": "{{count}} files edited"
+    },
+    "stop": "Stop ⌘.",
+    "stopConfirm": {
+      "afterTurn": "Stop after this turn",
+      "body": "Stopping now may leave the current change half done.",
+      "cancel": "Cancel",
+      "now": "Stop now",
+      "title": "{{name}} is in the middle of a task"
+    },
+    "waitingApproval": "Waiting for approval",
+    "working": "Working",
+    "workingOn": "Working · {{step}}"
+  },
+  "detected": {
+    "body": "This {{harness}} session in {{path}} was started outside OpenGrokBot, so OpenGrokBot can't send it messages. You can still see its activity.",
+    "capabilities": "What OpenGrokBot can do",
+    "doesNotWork": "{{capability}}: doesn't work ({{reason}})",
+    "title": "Read-only · detected agent",
+    "works": "{{capability}}: works"
+  },
+  "harness": {
+    "agent": "The agent",
+    "claudeCode": "Claude Code",
+    "claude_code": "Claude Code",
+    "codex": "Codex",
+    "detected": "Detected"
+  },
+  "history": {
+    "confirm": {
+      "body": "They're removed from this Mac's history only; teammates keep their own copies. This can't be undone.",
+      "cancel": "Cancel",
+      "delete": "Delete",
+      "deleteQuestions": "Delete the question and answer too",
+      "failed": "Couldn't delete. Try again.",
+      "manyTitle": "Delete {{count}} entries?",
+      "notFound": "Some of these were already deleted.",
+      "oneTitle": "Delete this entry?"
+    },
+    "deleteOne": "Delete {{summary}}",
+    "deleteSelected": "Delete {{count}} selected",
+    "empty": {
+      "body": "Questions, requests, approvals and results collect here.",
+      "title": "No history yet"
+    },
+    "error": {
+      "disconnected": "OpenGrokBot isn't reachable right now. Try again in a moment.",
+      "other": "Something went wrong while loading. Try again.",
+      "title": "Couldn't load history"
+    },
+    "filter": {
+      "all": "All",
+      "approval": "Approvals",
+      "question": "Questions",
+      "request": "Requests",
+      "result": "Results"
+    },
+    "filterLabel": "Show",
+    "loading": "Loading history…",
+    "me": "Me",
+    "noMatches": "Nothing matches this filter",
+    "retry": "Try again",
+    "search": "Search history",
+    "searchPlaceholder": "Search",
+    "select": "Select {{summary}}",
+    "status": {
+      "allow_all": "Allow all",
+      "allow_once": "Allow once",
+      "allowed": "Allowed",
+      "answered": "Answered",
+      "answering": "Answering",
+      "awaiting_approval": "Awaiting approval",
+      "canceled": "Canceled",
+      "completed": "Completed",
+      "denied": "Denied",
+      "deny": "Deny",
+      "expired": "Expired",
+      "failed": "Failed",
+      "keep_allowing_similar": "Keep allowing similar",
+      "pending": "Pending",
+      "queued": "Queued",
+      "received": "Received",
+      "running": "Running",
+      "sent_to_owner": "Sent to owner",
+      "unsure": "Unsure",
+      "waiting_offline": "Waiting offline"
+    },
+    "tag": {
+      "agent": "Agent",
+      "approval": "Approval",
+      "question": "Question",
+      "request": "Request",
+      "result": "Result"
+    },
+    "title": "History"
+  },
+  "inbox": {
+    "alert": {
+      "error": "Error",
+      "requestFinished": "Request finished",
+      "scheduleFailed": "Schedule",
+      "stalled": "Stalled"
+    },
+    "alerts": "Alerts",
+    "approvals": "Approvals waiting",
+    "count_one": "{{count}} item",
+    "count_other": "{{count}} items",
+    "empty": {
+      "body": "Approvals, questions, and work requests collect here.",
+      "title": "Nothing needs you"
+    },
+    "permission": "Asks for permission",
+    "questions": {
+      "answer": "Answer",
+      "answerTo": "Answer to {{asker}}",
+      "cancel": "Cancel",
+      "failed": "Couldn't send. Try again.",
+      "gone": "This question is no longer waiting for you.",
+      "handOff": "Hand to agent",
+      "handOffConfirm": "Hand off",
+      "handingOff": "Handing off…",
+      "noAgents": "None of your agents is shared",
+      "notShared": "That agent isn't shared any more. Pick another.",
+      "pickAgent": "Agent to answer",
+      "pickAgentPlaceholder": "Choose an agent",
+      "send": "Send answer",
+      "sending": "Sending…",
+      "title": "Questions sent to me",
+      "why": "OpenGrokBot wasn't sure which agent should answer; {{asker}} chose to ask you"
+    },
+    "someone": "A teammate",
+    "title": "Inbox",
+    "unknownAgent": "An agent"
+  },
+  "instructions": {
+    "changedBody": "AGENTS.md was edited elsewhere.",
+    "changedTitle": "The file changed in the folder",
+    "close": "Close",
+    "keepMine": "Keep my edits",
+    "readError": "Couldn't read the agent's files.",
+    "reload": "Reload",
+    "save": "Save",
+    "saveError": "Couldn't save. Try again.",
+    "saved": "Saved · takes effect from the next session",
+    "skillsLabel": "Skills",
+    "skills_one": "{{count}} skill",
+    "skills_other": "{{count}} skills",
+    "title": "Instructions & skills · {{name}}",
+    "unsaved": "Unsaved changes · ⌘S"
+  },
+  "member": {
+    "ask": "Ask",
+    "askAgent": "Ask {{agent}}",
+    "askPerson": "Ask {{name}}",
+    "label": "Member",
+    "missing": "This person is no longer on the team",
+    "noRequests": "No requests",
+    "noShared": "{{name}} hasn't shared any agents yet",
+    "offline": "Offline",
+    "offlineBody": "Questions you send are answered when {{name}} is back.",
+    "offlineTitle": "{{name}}'s Mac is offline",
+    "online": "Online",
+    "requestWork": "Request work",
+    "requestWorkAgent": "Request work from {{agent}}",
+    "sharedAgents": "Shared agents"
+  },
+  "menubar": {
+    "ago": {
+      "days": "{{count}}d",
+      "hours": "{{count}}h",
+      "minutes": "{{count}}m",
+      "now": "now"
+    },
+    "allClear": "Everything is running",
+    "label": "OpenGrokBot menu bar panel",
+    "myAgents": "My agents",
+    "needsYou": "Needs you",
+    "offline": {
+      "formationd": "Can't reach formationd · retrying. Agents keep running.",
+      "team": "Can't reach the team · local agents keep running"
+    },
+    "open": "Open OpenGrokBot",
+    "pauseAlerts": "Pause alerts 1 hr",
+    "pauseFailed": "Couldn't change alerts. Try again.",
+    "quit": "Quit OpenGrokBot",
+    "resumeAlerts": "Resume alerts",
+    "settings": "Settings…",
+    "summary": "{{agents}} agents · {{needs}} need you"
+  },
+  "newAgent": {
+    "avatar": "Avatar",
+    "cancel": "Cancel",
+    "color": "Color",
+    "create": "Create",
+    "error": "Couldn't create the agent. Try again.",
+    "harness": {
+      "label": "Harness",
+      "notInstalled": "Not installed",
+      "notReady": "You can create it, but it can't start until the harness is ready.",
+      "ready": "Installed · signed in",
+      "signInNeeded": "Installed · sign-in needed"
+    },
+    "instructions": "Starting instructions",
+    "lead": "Each role gets one agent and its own folder.",
+    "name": "Name",
+    "nameTaken": "An agent with this name already exists.",
+    "optional": "Optional",
+    "role": "Role",
+    "roleHint": "Any role, not only coding",
+    "shape": "Shape",
+    "startsStopped": "Starts private and stopped",
+    "title": "New agent"
+  },
+  "notify": {
+    "approval": {
+      "body": "{{requester}} wants to run {{command}}",
+      "title": "Approval needed"
+    },
+    "error": {
+      "body": "{{agent}} stopped: {{reason}}",
+      "title": "Agent stopped"
+    }
+  },
+  "panel": {
+    "agent": "Agent information",
+    "collapse": "Hide information panel",
+    "detectedNote": "Detected agent. Instructions, schedules, and sharing are for agents OpenGrokBot created.",
+    "folder": "Folder",
+    "harness": "Harness",
+    "instructions": "Instructions & skills",
+    "lastActivity": "Last activity",
+    "noSharedAgents": "No shared agents",
+    "notShared": "{{owner}} no longer shares this agent.",
+    "ownersAgent": "{{owner}}'s agent",
+    "person": "Teammate information",
+    "personNote": "When you ask a person, OpenGrokBot picks which shared agent answers.",
+    "requestWork": "Request work…",
+    "requestsAccepted": "Accepted. Actions follow {{owner}}'s approval rules.",
+    "requestsNotAccepted": "Not accepted",
+    "role": "Role",
+    "scheduleCount_one": "{{count}} schedule",
+    "scheduleCount_other": "{{count}} schedules",
+    "sharedAgents": "Shared agents",
+    "sharing": {
+      "private": "Private",
+      "requests": "Accepts work requests",
+      "shared": "Shared with team"
+    },
+    "state": "State",
+    "teammateQuestions": "Teammates' questions",
+    "workRequests": "Work requests"
+  },
+  "permission": {
+    "allow": "Allow",
+    "allowSession": "Allow for this session",
+    "decided": {
+      "all": "Allowed all for this requester and agent",
+      "allowed": "Allowed",
+      "denied": "Denied",
+      "expired": "Expired without an answer",
+      "once": "Allowed once",
+      "session": "Allowed for this session",
+      "similar": "Allowed · similar commands keep running"
+    },
+    "deny": "Deny",
+    "error": {
+      "expired": "This permission request expired.",
+      "other": "Your choice wasn't saved. Try again."
+    },
+    "note": "These are {{harness}}'s own choices. Teammates' requests follow OpenGrokBot's approval rules.",
+    "requestApproval": "Approval",
+    "review": "Review",
+    "title": "{{harness}} asks for permission",
+    "waiting": "Approval waiting"
+  },
+  "requestCard": {
+    "review": "Review",
+    "someone": "a teammate",
+    "status": {
+      "awaitingApproval": "Waiting for approval",
+      "canceled": "Canceled",
+      "completed": "Completed",
+      "denied": "Denied",
+      "expired": "Expired",
+      "failed": "Failed",
+      "queued": "Runs after this turn",
+      "received": "Received",
+      "running": "Running"
+    },
+    "title": "Work request from {{member}}",
+    "waiting_one": "{{count}} approval waiting",
+    "waiting_other": "{{count}} approvals waiting"
+  },
+  "requestStatus": {
+    "cancel": "Cancel request",
+    "cantCancel": "Started requests can't be canceled",
+    "error": {
+      "other": "The request wasn't canceled. Try again.",
+      "started": "The request already started, so it can't be canceled."
+    },
+    "failure": {
+      "denied": "The owner denied an action this request needed.",
+      "expired": "An approval got no answer for 24 hours, so the request expired.",
+      "harness": "The agent couldn't start.",
+      "notAccepted": "This agent stopped accepting work requests.",
+      "notShared": "This agent is no longer shared with you.",
+      "offline": "The owner's Mac is offline.",
+      "other": "Something went wrong while running the request."
+    },
+    "lead": "{{owner}}'s {{agent}} agent · {{prompt}}",
+    "missing": "This request is no longer available.",
+    "result": "Result",
+    "someone": "A teammate",
+    "step": {
+      "awaitingApproval": "Waiting for approval",
+      "canceled": "Canceled",
+      "completed": "Completed",
+      "denied": "Denied",
+      "expired": "Expired",
+      "failed": "Failed",
+      "queued": "Queued · waiting for the current turn",
+      "received": "Received",
+      "running": "Running"
+    },
+    "timeline": "Progress",
+    "title": "Request status",
+    "unknownAgent": "unknown"
+  },
+  "rules": {
+    "always": {
+      "body": "File reads inside an agent's folder and assigned repositories",
+      "title": "Always allowed"
+    },
+    "cancel": "Cancel",
+    "daysLeft_one": "{{count}} day left",
+    "daysLeft_other": "{{count}} days left",
+    "dismiss": "Dismiss",
+    "edit": "Edit",
+    "editLabel": "Edit limits of the rule {{rule}}",
+    "empty": {
+      "body": "Rules appear here when you choose 'Keep allowing similar' while approving.",
+      "title": "No saved rules"
+    },
+    "error": {
+      "disconnected": "OpenGrokBot isn't reachable. Try again in a moment.",
+      "invalid": "OpenGrokBot couldn't accept these limits.",
+      "notFound": "This rule no longer exists.",
+      "revoke": "The rule wasn't revoked. It still applies.",
+      "update": "The new limits weren't saved."
+    },
+    "expired": "Expired",
+    "expires": "Expires",
+    "hoursLeft_one": "{{count}} hour left",
+    "hoursLeft_other": "{{count}} hours left",
+    "in1d": "In 1 day",
+    "in30d": "In 30 days",
+    "in7d": "In 7 days",
+    "keepExpiry": "Keep ({{current}})",
+    "lead": "What runs without asking",
+    "limits": "Limits",
+    "maxUses": "Use limit",
+    "maxUsesHint": "Leave blank for no limit. Used {{count}}× so far.",
+    "maxUsesInvalid": "Enter a whole number above {{count}}, the uses so far.",
+    "noExpiry": "No expiry",
+    "noLimit": "No limit",
+    "revoke": "Revoke",
+    "revokeConfirm": {
+      "body": "{{member}}'s requests to {{agent}} will ask you again before running {{scope}}. This applies at once.",
+      "title": "Revoke this rule?"
+    },
+    "revokeLabel": "Revoke the rule {{rule}}",
+    "revoked": "Rule revoked",
+    "save": "Save limits",
+    "saved": "Saved rules",
+    "scope": {
+      "all": "Every action"
+    },
+    "someone": "A teammate",
+    "status": {
+      "expired": "Expired · no longer applies",
+      "usedUp": "Limit reached · no longer applies"
+    },
+    "title": "Rules",
+    "tryAgain": "Try again",
+    "unknownAgent": "An agent",
+    "updated": "Limits saved",
+    "used": "used {{count}}×",
+    "usedOf": "used {{count}} of {{max}}"
+  },
+  "schedules": {
+    "add": "Add",
+    "day": {
+      "fri": "Friday",
+      "mon": "Monday",
+      "sat": "Saturday",
+      "sun": "Sunday",
+      "thu": "Thursday",
+      "tue": "Tuesday",
+      "wed": "Wednesday"
+    },
+    "delete": {
+      "body": "It won't run again. Past runs stay in the agent's conversation.",
+      "confirm": "Delete schedule",
+      "deleting": "Deleting…",
+      "title": "Delete this schedule?"
+    },
+    "error": {
+      "disconnected": "OpenGrokBot isn't reachable right now. Your changes are still here; try again.",
+      "generic": "Couldn't save the schedule. Try again.",
+      "invalid": "Check the task, repeat and time, then save again.",
+      "notFound": "This schedule no longer exists."
+    },
+    "fromTime": "from {{time}}",
+    "panel": {
+      "edit": "Edit schedule: {{prompt}}",
+      "empty": "No schedules",
+      "failedNotice": "Failed: {{subject}}",
+      "next": "Next: {{when}}",
+      "noNext": "No next run",
+      "retryHint": "It runs again at the next scheduled time. Check what it needs, then edit the schedule if anything changed."
+    },
+    "paused": "Paused",
+    "rule": {
+      "daily": "Daily",
+      "everyHours_one": "Every hour",
+      "everyHours_other": "Every {{count}} hours",
+      "everyN": "Every N hours",
+      "weekdays": "Weekdays",
+      "weekly": "Weekly",
+      "weeklyOn": "Weekly on {{day}}"
+    },
+    "run": {
+      "completed": "{{when}} completed",
+      "failed": "{{when}} failed",
+      "missed": "Missed → ran on wake at {{time}}",
+      "running": "Running since {{time}}",
+      "waiting": "Waiting to run"
+    },
+    "sheet": {
+      "back": "All schedules",
+      "cancel": "Cancel",
+      "close": "Close",
+      "day": "Day",
+      "delete": "Delete",
+      "editForm": "Edit schedule",
+      "hours": "Hours between runs",
+      "hoursRange": "Use a whole number from 1 to 24.",
+      "lead": "Runs in a new session at the set time. Approval rules still apply.",
+      "new": "New schedule",
+      "newForm": "New schedule",
+      "noRuns": "No runs yet",
+      "repeat": "Repeat",
+      "retry": "Try again",
+      "runs": "Recent runs",
+      "runsError": "Couldn't load the run history.",
+      "runsLoading": "Loading runs…",
+      "save": "Save",
+      "saving": "Saving…",
+      "startTime": "Starting at",
+      "task": "Task",
+      "taskRequired": "Write what the agent should do.",
+      "time": "Time",
+      "timeRequired": "Choose a time.",
+      "title": "Schedules · {{agent}}"
+    },
+    "title": "Schedules"
+  },
+  "settings": {
+    "connecting": "Connecting to formationd…",
+    "disconnected": "Lost the connection to formationd. Changes are off until it is back.",
+    "general": {
+      "english": "English",
+      "korean": "한국어",
+      "language": "Language",
+      "system": "Follow macOS"
+    },
+    "harnesses": {
+      "check": "Check again",
+      "checkFailed": "Couldn't check the harnesses. Try again.",
+      "checking": "Checking…",
+      "detected": "Detected agent",
+      "noPath": "Not found",
+      "notInstalled": "Not installed",
+      "note": "OpenGrokBot never handles sign-in. Sign in from each harness.",
+      "signInNeeded": "Sign-in needed",
+      "signInUnknown": "Sign-in status unknown",
+      "signedIn": "Signed in"
+    },
+    "label": "Settings",
+    "notifications": {
+      "enabled": "Notify me when I'm needed",
+      "pause": "Pause notifications",
+      "pauseHour": "For 1 hour",
+      "pauseTomorrow": "Until tomorrow",
+      "pausedUntil": "Paused until {{time}}",
+      "resume": "Resume",
+      "which": "Only when you're needed: approvals, errors, stalls, failed schedules."
+    },
+    "saveFailed": "Couldn't save the change. Try again.",
+    "tab": {
+      "general": "General",
+      "harnesses": "Harnesses",
+      "notifications": "Notifications",
+      "team": "Team"
+    },
+    "team": {
+      "cancel": "Cancel",
+      "creator": "Team creator",
+      "leave": "Leave team",
+      "leaveBody": "Teammates can no longer ask your agents, and you can no longer ask theirs. Your agents keep running.",
+      "leaveConfirm": "Leave team",
+      "leaveFailed": "Couldn't leave the team. Try again.",
+      "leaveTitle": "Leave the team?",
+      "member": "Member",
+      "members": "Members",
+      "name": "{{name}}'s team",
+      "none": "You're not in a team.",
+      "offline": "Offline",
+      "online": "Online",
+      "role": "My role",
+      "team": "Team",
+      "unnamed": "Your team"
+    }
+  },
+  "sharing": {
+    "acceptRequests": "Accept work requests",
+    "acceptRequestsNote": "Actions follow your rules",
+    "answerExcerpts": "Answer and excerpts",
+    "answerOnly": "Answer only",
+    "cancel": "Cancel",
+    "close": "Close",
+    "failed": "Couldn't change sharing",
+    "offByDefault": "Off by default for new agents",
+    "preview": "Preview what teammates see",
+    "previewAnswerOnly": "The answer, the agent and an as-of time. No conversation passages.",
+    "previewAnswers": "What answers include",
+    "previewExcerpts": "The answer, the agent and an as-of time, and the conversation passages it used.",
+    "previewFailed": "Couldn't load the preview",
+    "previewLastActivity": "Last activity",
+    "previewLoading": "Loading the preview…",
+    "previewMasking": "Anything that looks like a password or key is masked. Masking is a backup, not a guarantee.",
+    "previewOwner": "Owner",
+    "previewRequests": "Work requests",
+    "previewRequestsOff": "Not accepted",
+    "previewRequestsOn": "Accepted",
+    "previewRole": "Role",
+    "previewState": "State",
+    "previewTitle": "What teammates see",
+    "privateNote": "Hidden from teammates' lists and routing.",
+    "shareWithTeam": "Share with team",
+    "stopSharing": "Stop sharing",
+    "title": "Sharing",
+    "tryAgain": "Try again",
+    "unshareBody": "New questions and requests stop now. Pending requests are canceled. A running task continues unless you stop it.",
+    "unshareTitle": "Stop sharing {{agent}}?",
+    "visibility": "Visibility",
+    "visibilityNote": "Same for every teammate"
+  },
+  "sidebar": {
+    "connect": "Connect agents",
+    "connectRunning": "Connect agents already running",
+    "conversations": "Conversations",
+    "detecting": "Looking for agents on this Mac…",
+    "empty": {
+      "body": "Pick a role, or connect agents already running.",
+      "title": "Create your first agent"
+    },
+    "history": "History",
+    "inbox": "Inbox",
+    "label": "Sidebar",
+    "latest": {
+      "request": "Work request from a teammate"
+    },
+    "myAgents": "My agents",
+    "needsYou": "{{count}} need you",
+    "new": "New",
+    "newAgent": "New agent",
+    "newQuestion": "New question",
+    "noMatches": "No matches",
+    "offline": "Offline",
+    "online": "Online",
+    "rules": "Rules",
+    "search": "Search agents and chats",
+    "team": "Team",
+    "unsharedAgent": "Agent no longer shared",
+    "withCount": "{{label}} ({{count}})"
+  },
+  "team": {
+    "cancel": "Cancel",
+    "copied": "Copied",
+    "copy": "Copy",
+    "expires": "Expires {{time}}. Send it over Slack or chat.",
+    "invitationCreated": "Invitation link created",
+    "invite": "Invite",
+    "inviteFailed": "Couldn't create an invitation",
+    "label": "Team",
+    "lead": "{{creator}}'s team · {{count}} people",
+    "me": "Me",
+    "meCreator": "Me · team creator",
+    "members": "Members",
+    "noShared": "No shared agents",
+    "offline": "Offline",
+    "online": "Online",
+    "onlyMeBody": "Invite teammates to ask each other's agents.",
+    "onlyMeTitle": "It's just you so far",
+    "remove": "Remove",
+    "removeBody": "{{name}} loses access at once: no more questions or requests, and their agents leave your lists.",
+    "removeConfirm": "Remove",
+    "removeMember": "Remove {{name}}",
+    "removeTitle": "Remove {{name}}?",
+    "sharedMany": "{{count}} shared agents",
+    "sharedOne": "1 shared agent",
+    "title": "Team",
+    "tryAgain": "Try again",
+    "viewAgents": "View agents",
+    "viewAgentsOf": "View {{name}}'s agents"
+  },
+  "time": {
+    "daysAgo": "{{count}} d ago",
+    "hoursAgo": "{{count}} h ago",
+    "justNow": "Just now",
+    "minutesAgo": "{{count}} min ago"
+  },
+  "welcome": {
+    "checkAgain": "Check again",
+    "createFailed": "Couldn't create the team. Try again.",
+    "createTeam": "Create a team",
+    "creatorOffline": "The team creator's Mac is offline. Try again when it's back.",
+    "harnesses": "Check harnesses",
+    "installed": "Installed",
+    "invitationCode": "Invitation code",
+    "inviteExpired": "This link has expired. Ask your teammate for a new one.",
+    "join": "Join",
+    "joinRateLimited": "Too many tries. Wait a few minutes, then try again.",
+    "joinUnreachable": "Couldn't reach formationd. Try again.",
+    "label": "Welcome",
+    "lead": "Teammates ask your agents directly, and you run your agents in one place.",
+    "notInstalled": "Not installed — {{name}} agents can run after you install it",
+    "notifications": "Notifications",
+    "notificationsNote": "Only when you're needed: approvals, errors, stalls.",
+    "ready": "Installed, signed in",
+    "signedOut": "Not signed in — {{name}} agents can run after you sign in",
+    "team": "Team",
+    "title": "Welcome to OpenGrokBot"
+  },
+  "workRequest": {
+    "error": {
+      "notShared": "{{agent}} is no longer shared with you.",
+      "offline": "{{owner}}'s Mac is offline. Try again when they're back.",
+      "other": "The request wasn't sent. Try again.",
+      "rateLimited": "Too many requests right now. Try again in a moment."
+    },
+    "include": "Include messages from the conversation",
+    "me": "Me",
+    "notAccepted": {
+      "body": "{{owner}} turned off work requests for this agent. You can still ask questions.",
+      "title": "{{agent}} doesn't accept work requests"
+    },
+    "notShared": {
+      "body": "{{owner}} no longer shares it.",
+      "title": "This agent isn't shared with you"
+    },
+    "note": "Runs after the current turn; actions follow {{owner}}'s approval rules.",
+    "preview": "Exact prompt to be delivered",
+    "request": "Request",
+    "send": "Send",
+    "someone": "A teammate",
+    "title": "Request work",
+    "to": "To: {{owner}}'s {{agent}} agent · accepts work requests",
+    "unknownAgent": "this agent"
+  }
+}
