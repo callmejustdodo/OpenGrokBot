@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import approvalRaised from "../../../../tools/fake-formationd/fixtures/scripts/approval-raised.json";
+import backendPermission from "../../../../tools/fake-formationd/fixtures/scripts/backend-permission.json";
 import { appStore } from "../store/store";
 import { uiStore } from "../store/ui";
 import { destinationFor, NAVIGATE, openTarget, startNavigateListener } from "./navigate";
@@ -15,6 +16,7 @@ vi.mock("@tauri-apps/api/event", () => ({
 
 const BACKEND = "01930000-0000-7000-8000-000000000101";
 const APPROVAL = "01930000-0000-7000-8000-000000000501";
+const OWN_APPROVAL = "01930000-0000-7000-8000-000000000502";
 
 beforeEach(() => {
   loadM3();
@@ -34,6 +36,14 @@ describe("opening an item in the main window", () => {
     openTarget({ kind: "approval", approval_id: APPROVAL });
     expect(uiStore.getState().view).toEqual({ kind: "agent", agentId: BACKEND });
     expect(uiStore.getState().sheet).toEqual({ kind: "approval", approvalId: APPROVAL });
+  });
+
+  it("my own agent's approval opens only its conversation, without the approval sheet", () => {
+    uiStore.setState({ sheet: { kind: "connect" } });
+    play(backendPermission);
+    openTarget({ kind: "approval", approval_id: OWN_APPROVAL });
+    expect(uiStore.getState().view).toEqual({ kind: "agent", agentId: BACKEND });
+    expect(uiStore.getState().sheet).toBeNull();
   });
 
   it("an approval not mirrored yet still opens its sheet", () => {
