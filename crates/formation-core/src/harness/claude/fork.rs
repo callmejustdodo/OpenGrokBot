@@ -70,6 +70,13 @@ impl ClaudeSupervisor {
                             .get_mut(&fork.run_id)
                             .unwrap()
                             .session_id = info.session_id.clone();
+                        let sid = info.session_id.clone();
+                        self.update_running(agent.id, |list| {
+                            list.iter_mut()
+                                .find(|r| r.run_id == fork.run_id)
+                                .map(|r| r.fork_session_id = Some(sid))
+                                .is_some()
+                        })?;
                         session = Some(info);
                     }
                 }
