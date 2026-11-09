@@ -5,6 +5,14 @@ edition.workspace = true
 license.workspace = true
 publish.workspace = true
 
+[features]
+testkit = []
+
+[[bin]]
+name = "fake-claude"
+path = "testkit/fake_claude.rs"
+required-features = ["testkit"]
+
 [dependencies]
 async-trait = "0.1.92"
 formation-proto = { version = "0.1.0", path = "../formation-proto" }
@@ -14,6 +22,7 @@ tokio = { version = "1.54.1", features = ["sync"] }
 unicode-normalization = "0.1"
 
 [dev-dependencies]
+formation-core = { path = ".", features = ["testkit"] }
 rmcp = { version = "3.9.0", features = ["server", "macros", "transport-io"] }
 schemars = "1.0"
 tokio = { version = "1", features = ["rt"] }
