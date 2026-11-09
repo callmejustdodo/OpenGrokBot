@@ -151,7 +151,7 @@ export default function MyConversation({ agentId }: { agentId: AgentId }) {
       ) : null}
 
       <div className="msgs" role="log" aria-label={t("conversation.messages", "Messages")}>
-        <Messages items={items} />
+        <Messages agentId={agentId} items={items} />
         {working ? (
           <div className="working" role="status">
             <span className="dots" aria-hidden="true">

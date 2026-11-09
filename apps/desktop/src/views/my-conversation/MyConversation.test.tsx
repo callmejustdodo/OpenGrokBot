@@ -181,6 +181,78 @@ describe("SC-005 permission and approval", () => {
   });
 });
 
+describe("SC-005 owner approvals the harness lists no item for (#198)", () => {
+  // The gate raises the approval; neither harness adds an approval item to the stream.
+  const raised = { steps: [backendPermission.steps[0]] };
+  const OWN = "01930000-0000-7000-8000-000000000502";
+  const decided = (status: string, choice: string | null) => ({
+    type: "approval.update",
+    payload: {
+      approval: {
+        ...backendPermission.steps[0].event.payload.approval,
+        status,
+        choice,
+        decided_at: "2026-11-09T01:54:00Z",
+      },
+    },
+  });
+
+  it("shows a pending owner approval as a card at the end of the agent's conversation", () => {
+    play(raised);
+    open(BACKEND);
+    const card = screen.getByRole("region", { name: "Claude Code asks for permission" });
+    expect(card).toHaveTextContent("rm -rf dist/ && npm run build");
+    expect(card.closest(".block")?.nextElementSibling?.classList.contains("block")).toBe(false);
+    expect(screen.getAllByRole("region", { name: "Claude Code asks for permission" })).toHaveLength(1);
+  });
+
+  it("does not show it in another agent's conversation", () => {
+    play(raised);
+    open(SUPPORT);
+    expect(screen.queryByRole("region", { name: "Claude Code asks for permission" })).toBeNull();
+  });
+
+  it("Allow sends approval_decide with allow_once, and the card shows the result when approval.update arrives", async () => {
+    play(raised);
+    open(BACKEND);
+    const card = screen.getByRole("region", { name: "Claude Code asks for permission" });
+    await act(async () => fireEvent.click(within(card).getByRole("button", { name: "Allow" })));
+    expect(call).toHaveBeenCalledWith("approval_decide", { approval_id: OWN, choice: "allow_once", rule: null });
+    play({ steps: [{ event: decided("allowed", "allow_once") }] });
+    expect(within(card).queryByRole("button", { name: "Allow" })).toBeNull();
+    expect(card).toHaveTextContent("Allowed");
+  });
+
+  it("Deny sends approval_decide with deny", async () => {
+    play(raised);
+    open(BACKEND);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Deny" })));
+    expect(call).toHaveBeenCalledWith("approval_decide", { approval_id: OWN, choice: "deny", rule: null });
+  });
+
+  it("shows a decided owner approval with its result", () => {
+    play({ steps: [...raised.steps, { event: decided("denied", "deny") }] });
+    open(BACKEND);
+    const card = screen.getByRole("region", { name: "Claude Code asks for permission" });
+    expect(card).toHaveTextContent("Denied");
+    expect(within(card).queryByRole("button")).toBeNull();
+  });
+
+  it("does not repeat an approval the conversation already lists", () => {
+    play(backendPermission);
+    open(BACKEND);
+    expect(screen.getAllByRole("region", { name: "Claude Code asks for permission" })).toHaveLength(1);
+  });
+
+  it("still shows a teammate's approval only through its request card", () => {
+    play({ steps: approvalRaised.steps.filter((s) => s.event.type !== "agent.stream") });
+    open(BACKEND);
+    expect(screen.getByRole("region", { name: "Work request from Minsu" })).toHaveTextContent("1 approval waiting");
+    expect(screen.queryByRole("region", { name: "Approval" })).toBeNull();
+    expect(screen.queryByRole("region", { name: /asks for permission/ })).toBeNull();
+  });
+});
+
 describe("SC-005 stalled", () => {
   it("shows the stall banner with the last step and restarts with stop now, then start", async () => {
     open(RESEARCH);
