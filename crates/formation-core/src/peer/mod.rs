@@ -45,10 +45,25 @@
 //! discovery inside a real LaunchAgent; the other members' Tailscale builds
 //! (the standalone build's token file is readable only by admins); the
 //! tailnet's IPv6 address, which the spike does not bind.
+//!
+//! TASK-018 adds the protocol itself:
+//! - [`api`] is the owner's side: the HTTP and WebSocket server on the Tailscale
+//!   address. Every call is tied to a member through WhoIs and passes policy
+//!   before it reaches the `team`, `ask`, or `requests` handler behind it.
+//! - [`client`] is the asker's side: [`client::PeerClient`] implements the
+//!   [`Peers`](crate::ports::Peers) port over HTTP and keeps one `WS /v1/events`
+//!   connection per teammate.
+//! - [`outbox`] keeps questions and work requests for a teammate whose Mac is
+//!   offline and sends them in order when it is back (FR-016).
+//! - [`presence`] turns connections opening and closing into presence events.
 
+pub mod api;
+pub mod client;
 pub mod github;
 pub(crate) mod http;
 pub mod identity;
+pub mod outbox;
+pub mod presence;
 pub(crate) mod process;
 pub mod server;
 pub mod tailscale;
@@ -59,3 +74,6 @@ pub use identity::{
 };
 pub use server::{is_tailscale_ip, is_tailscale_ipv4};
 pub use tailscale::{SelfNode, Tailscale, Via};
+
+#[cfg(test)]
+mod loopback_test;

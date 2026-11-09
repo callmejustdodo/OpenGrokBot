@@ -29,8 +29,8 @@ use super::protocol::{self, Launch, LaunchOptions, Priority};
 use crate::{
     ask::transcript,
     ports::{
-        CommandCall, CommandHandler, EventSink, ForkResult, ForkRun, Harness, Result, RunInfo,
-        Store, TurnResult,
+        CommandCall, CommandHandler, EventSink, ForkResult, ForkRun, ForkTools, Harness,
+        RequestQueue, Result, RunInfo, RunProgress, Store, TurnResult,
     },
 };
 
@@ -69,6 +69,8 @@ struct Inner {
     sink: Arc<dyn EventSink>,
     agents: Mutex<HashMap<AgentId, Running>>,
     streams: broadcast::Sender<AgentStreamEvent>,
+    requests: Option<Arc<dyn RequestQueue>>,
+    forks: Mutex<HashMap<RunId, RunInfo>>,
 }
 struct Running {
     tx: mpsc::UnboundedSender<Control>,
@@ -104,6 +106,15 @@ fn now() -> Timestamp {
 
 impl ClaudeSupervisor {
     pub fn new(config: ClaudeConfig, store: Arc<dyn Store>, sink: Arc<dyn EventSink>) -> Self {
+        Self::with_request_queue(config, store, sink, None)
+    }
+
+    pub fn with_request_queue(
+        config: ClaudeConfig,
+        store: Arc<dyn Store>,
+        sink: Arc<dyn EventSink>,
+        requests: Option<Arc<dyn RequestQueue>>,
+    ) -> Self {
         let (streams, _) = broadcast::channel(256);
         Self {
             inner: Arc::new(Inner {
@@ -112,6 +123,8 @@ impl ClaudeSupervisor {
                 sink,
                 agents: Mutex::new(HashMap::new()),
                 streams,
+                requests,
+                forks: Mutex::new(HashMap::new()),
             }),
         }
     }
@@ -319,11 +332,32 @@ impl Harness for ClaudeSupervisor {
     async fn run_turn(&self, id: AgentId, run_id: RunId, item: QueueItem) -> Result<TurnResult> {
         self.enqueue(id, run_id, item)?.await.map_err(internal)?
     }
-    async fn run_fork(&self, _: AgentId, _: ForkRun) -> Result<ForkResult> {
-        Err(error(
-            ErrorCode::HarnessUnsupported,
-            "fork execution belongs to TASK-024",
-        ))
+    async fn run_fork(&self, id: AgentId, fork: ForkRun) -> Result<ForkResult> {
+        let agent = self.agent(id)?;
+        if agent.harness != HarnessKind::ClaudeCode {
+            return Err(error(
+                ErrorCode::HarnessUnsupported,
+                "not a Claude Code agent",
+            ));
+        }
+        if fork.item.agent_id != id {
+            return Err(error(
+                ErrorCode::InvalidParams,
+                "queue item belongs to another agent",
+            ));
+        }
+        self.inner.forks.lock().unwrap().insert(
+            fork.run_id,
+            RunInfo {
+                run_id: fork.run_id,
+                agent_id: id,
+                session_id: fork.from.clone(),
+                item: fork.item.clone(),
+            },
+        );
+        let result = self.execute_fork(&agent, &fork).await;
+        self.inner.forks.lock().unwrap().remove(&fork.run_id);
+        result
     }
     async fn steer(&self, id: AgentId, item: QueueItem) -> Result<()> {
         let agent = self.agent(id)?;
@@ -381,6 +415,9 @@ impl Harness for ClaudeSupervisor {
         Ok(Some(session))
     }
     async fn run(&self, id: RunId) -> Option<RunInfo> {
+        if let Some(run) = self.inner.forks.lock().unwrap().get(&id).cloned() {
+            return Some(run);
+        }
         self.inner
             .agents
             .lock()
@@ -494,9 +531,12 @@ impl ClaudeSupervisor {
         let mut message = String::new();
         let mut steps = HashMap::new();
         let mut exit_code = None;
+        let requests = self.inner.requests.clone();
+        let mut request_run = None;
+        let mut request_blocks_main = false;
         let failure = loop {
-            if active.is_none() {
-                if stopping {
+            if active.is_none() && (!request_blocks_main || request_run.is_none()) {
+                if stopping && request_run.is_none() {
                     break None;
                 }
                 if let Some(p) = queue.pop_front() {
@@ -632,6 +672,36 @@ impl ClaudeSupervisor {
                         }
                     }
                     None => break None,
+                },
+                item = async { requests.as_ref().unwrap().next(id).await },
+                    if requests.is_some() && active.is_none() && request_run.is_none() && !stopping => {
+                    let item = match item { Ok(item) => item, Err(e) => break Some(e) };
+                    let port = requests.as_ref().unwrap();
+                    if let Err(e) = port.report(item.id, RunProgress::Started).await { break Some(e); }
+                    request_blocks_main = matches!(item.source, QueueSource::Request { .. });
+                    let supervisor = self.clone();
+                    let from = self.inner.agents.lock().unwrap()[&id].session.session_id.clone();
+                    request_run = Some(Box::pin(async move {
+                        let message_id = item.id;
+                        let result = if matches!(item.source, QueueSource::Request { .. }) {
+                            supervisor.run_fork(id, ForkRun {
+                                run_id: RunId::generate(), from, item, tools: ForkTools::Gated,
+                            }).await.map(|fork| fork.result)
+                        } else {
+                            supervisor.run_turn(id, RunId::generate(), item).await
+                        };
+                        (message_id, result)
+                    }) as std::pin::Pin<Box<dyn std::future::Future<Output = (MessageId, Result<TurnResult>)> + Send>>);
+                },
+                (message_id, result) = async { request_run.as_mut().unwrap().await }, if request_run.is_some() => {
+                    request_run = None;
+                    let progress = match result {
+                        Ok(TurnResult { outcome: TurnOutcome::Completed, result }) => RunProgress::Completed { result },
+                        Ok(TurnResult { outcome: TurnOutcome::Interrupted, .. }) => RunProgress::Interrupted,
+                        Ok(turn) => RunProgress::Failed { error: internal(turn.result.unwrap_or_else(|| "fork failed".into())) },
+                        Err(error) => RunProgress::Failed { error },
+                    };
+                    if let Err(e) = requests.as_ref().unwrap().report(message_id, progress).await { break Some(e); }
                 },
                 line = lines.next_line() => {
                     let line = match line {Ok(Some(line))=>line,Ok(None)=> {
@@ -873,3 +943,6 @@ impl CommandHandler for ClaudeSupervisor {
         }
     }
 }
+
+#[path = "fork.rs"]
+mod fork;
