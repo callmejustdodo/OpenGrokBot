@@ -110,7 +110,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 ### Phase 1 · Fakes and proofs
 
 ### TASK-003: A's fakes: fake Claude, FakeHarness, in-memory store
-- Status: pending
+- Status: complete (#41)
 - References: [integration contract](#how-the-parts-join-integration-contract)
 - Prerequisites: TASK-002
 - Change locations: `crates/formation-core/testkit/` (`fake-claude` replay binary, `FakeHarness`, in-memory `Store`, recording `EventSink`)
@@ -203,7 +203,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 ### Phase 2 · Chat with my agent (IC-1)
 
 ### TASK-010: formationd serves snapshots and events over the local socket
-- Status: pending
+- Status: complete (#43, #87, #101)
 - References: [UI ↔ formationd](4_techspec.md#ui--formationd), NFR-007
 - Prerequisites: TASK-002
 - Change locations: `crates/formation-core/src/service/`, `crates/formationd/`
@@ -213,7 +213,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: A
 
 ### TASK-011: Storage with per-role migrations
-- Status: pending
+- Status: complete (#53)
 - References: [data model](4_techspec.md#data-model), [storage](6_backend_architecture.md#storage-and-data-ownership)
 - Prerequisites: TASK-002
 - Change locations: `crates/formation-core/src/store/`, migration runner, A's migrations `1000–1999` (agents, sessions, schedules)
@@ -223,7 +223,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: A
 
 ### TASK-012: Agent folders are created and edited
-- Status: pending
+- Status: complete (#58); app check at IC-1 pending (#46)
 - References: FR-001, FR-004, US-002, US-004, SC-004, SC-006
 - Prerequisites: TASK-010, TASK-011
 - Change locations: `crates/formation-core/src/agents/`
@@ -233,7 +233,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: A
 
 ### TASK-013: Claude Code agents run, queue, and stop under formationd
-- Status: pending
+- Status: complete (#56; real Claude run in #21)
 - References: FR-003, FR-022, US-003, US-024, [Claude Code integration](4_techspec.md#claude-code-integration-first-harness), TASK-004 and TASK-005 results
 - Prerequisites: TASK-004, TASK-010, TASK-012
 - Change locations: `crates/formation-core/src/harness/claude/`
@@ -327,7 +327,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: D
 
 ### TASK-022: The real harness exposes session info for asking
-- Status: pending
+- Status: complete (#69)
 - References: FR-012, [ask pipeline](4_techspec.md#ask-pipeline)
 - Prerequisites: TASK-013
 - Change locations: `crates/formation-core/src/harness/claude/`
@@ -351,7 +351,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: B
 
 ### TASK-024: Requests run in forks
-- Status: pending
+- Status: complete (#104)
 - References: FR-014, FR-022
 - Prerequisites: TASK-013, TASK-042 (uses `FakeRequestQueue` until IC-3)
 - Change locations: `crates/formation-core/src/harness/claude/` (executor)
@@ -419,6 +419,8 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 | TASK-038 | History page and Inbox "questions sent to me" (answer, hand to agent) | C | SC-010, SC-017, US-010 | TASK-014 (fake data until TASK-037) |
 | TASK-039 | Steer now, edit and withdraw queued messages per [TASK-004 results](4_techspec.md#claude-code-integration-first-harness) | A, then C for UI | FR-022, TASK-004 results | TASK-013 |
 | TASK-040 | Preview page complete, Korean and English pass, live avatars, VoiceOver pass | D with C | NFR-009, D-033, D-042, D-050 | TASK-026 |
+
+Phase 5 status for A's tasks: TASK-030 complete (#92); TASK-032 complete (#84); TASK-034 complete (#70); TASK-039 complete (#94).
 
 Each Phase 5 task uses the same fields as the tasks above when it starts: change locations from the [ownership table](#roles-and-ownership), acceptance criteria from its stories, verification by tests plus the matching M3 states. UI tasks start against `fake-formationd` and switch to real data when the backend task merges.
 
