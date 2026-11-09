@@ -559,6 +559,45 @@ fn an_approval_expires_at_exactly_24_hours() {
 }
 
 #[test]
+fn a_restart_closes_approvals_left_by_the_previous_process() {
+    let before = World::new();
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    let request_id = before.request(RequestStatus::Running);
+    let left = before.raise(before.teammate_ticket(
+        RunId::generate(),
+        request_id,
+        bash(Some("toolu_1"), "npm test"),
+    ));
+    // A new process over the same store knows none of the old runs.
+    let after = Approvals::new(
+        before.store.clone(),
+        before.events.clone(),
+        before.notifier.clone(),
+        before.clock.clone(),
+    );
+    let closed = runtime.block_on(after.close_interrupted()).unwrap();
+    assert_eq!(closed.len(), 1);
+    assert_eq!(closed[0].id, left.id);
+    assert_eq!(before.store.stored(left.id).status, ApprovalStatus::Denied);
+    assert_eq!(after.next_expiry().unwrap(), None);
+    // Approvals this process raised are left alone.
+    let own = block_on(
+        after.raise(before.owner_ticket(RunId::generate(), bash(Some("toolu_2"), "make"))),
+    )
+    .unwrap()
+    .id;
+    assert!(
+        runtime
+            .block_on(after.close_interrupted())
+            .unwrap()
+            .is_empty()
+    );
+    assert_eq!(before.store.stored(own).status, ApprovalStatus::Pending);
+}
+
+#[test]
 fn expire_due_expires_what_is_due_and_wakes_the_waiting_call() {
     let world = World::new();
     let runtime = tokio::runtime::Builder::new_current_thread()
