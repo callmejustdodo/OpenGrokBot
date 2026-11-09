@@ -1585,3 +1585,54 @@ async fn requests_to_my_own_agents_are_read_and_canceled_locally() {
     assert!(parts.sent().is_empty());
     assert_eq!(request.requester, teammate);
 }
+
+#[tokio::test]
+async fn the_requester_sees_the_result_and_error_masked_and_the_owner_does_not() {
+    // Built at run time so secret scanners do not flag the test string.
+    let secret = format!("{}{}", "ghp_", "AbCdEfGhIjKlMnOpQrStUvWxYz012345");
+    let owner = owner();
+    let mut updates = owner.requests.subscribe();
+    let (teammate, request) = owner.queued_request("mask").await;
+    let item = owner.requests.next(owner.agent).await.unwrap();
+    owner
+        .requests
+        .report(item.id, RunProgress::Started)
+        .await
+        .unwrap();
+    owner
+        .requests
+        .report(
+            item.id,
+            RunProgress::Completed {
+                result: Some(format!("Pushed with token {secret}.")),
+            },
+        )
+        .await
+        .unwrap();
+
+    // The owner's copy keeps the original.
+    let stored = owner.collab.request(request.id).unwrap().unwrap();
+    assert!(stored.result.as_deref().unwrap().contains(&secret));
+
+    // Every path to the requester is masked.
+    let read = endpoints::get(&owner.requests, teammate, request.id).unwrap();
+    let read_result = read.result.unwrap();
+    assert!(!read_result.contains(&secret), "{read_result}");
+    assert!(read_result.starts_with("Pushed with token "));
+    let mut last = None;
+    while let Ok(update) = updates.try_recv() {
+        last = Some(update);
+    }
+    let pushed = last.expect("an update for the requester").result.unwrap();
+    assert!(!pushed.contains(&secret), "{pushed}");
+
+    let failed = super::outgoing::for_requester(&WorkRequest {
+        result: None,
+        error: Some(ApiError::new(
+            ErrorCode::Internal,
+            format!("git push used {secret}"),
+        )),
+        ..stored
+    });
+    assert!(!failed.error.unwrap().message.contains(&secret));
+}
