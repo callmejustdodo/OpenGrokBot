@@ -3,3 +3,4 @@
 
 pub mod harness;
 pub mod ports;
+pub mod service;
