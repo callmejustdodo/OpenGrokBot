@@ -39,7 +39,7 @@ pub use requests::{RequestQueue, RunProgress};
 pub use store::{
     ActivityRepo, AgentRepo, ApprovalRepo, AttentionRepo, CollabStore, MIGRATIONS_A, MIGRATIONS_B,
     Migration, QuestionRepo, RequestRepo, RuleRepo, ScheduleRepo, SessionRepo, SettingsRepo,
-    ShareRepo, Store, TeamRepo,
+    ShareRepo, Store, TeamRecord, TeamRepo,
 };
 
 pub type Result<T> = std::result::Result<T, formation_proto::common::ApiError>;

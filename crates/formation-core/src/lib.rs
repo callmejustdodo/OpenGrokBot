@@ -11,6 +11,7 @@ pub mod ports;
 pub mod requests;
 pub mod service;
 pub mod store;
+pub mod team;
 
 #[cfg(feature = "testkit")]
 #[path = "../testkit/mod.rs"]
