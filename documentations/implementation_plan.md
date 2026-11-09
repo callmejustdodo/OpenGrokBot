@@ -307,7 +307,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: B
 
 ### TASK-020: Asking screens
-- Status: pending
+- Status: in progress
 - References: SC-008, SC-013, SC-014, SC-015, SC-001; M3 states
 - Prerequisites: TASK-014
 - Change locations: `apps/desktop/src/views/{ask-conversation,member,team,sharing,welcome}/`
@@ -381,7 +381,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: B
 
 ### TASK-026: Request and approval screens
-- Status: pending
+- Status: in progress
 - References: SC-005 (approval and permission states), SC-010, SC-011, SC-016; M3 states
 - Prerequisites: TASK-014
 - Change locations: `apps/desktop/src/views/{work-request,inbox,approval,my-conversation}/`
