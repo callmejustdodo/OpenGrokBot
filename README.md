@@ -12,7 +12,7 @@ Formation is currently in the planning stage. This repository contains product d
 
 ## Documentation
 
-- [One-pager](documentations/one_pager.md): problem, core experience, differentiation, MVP, and validation plan.
+- [One-pager](documentations/0_one_pager.md): problem, core experience, differentiation, MVP, and validation plan.
 - [Product plan](documentations/product-plan.md): workflows, permissions, architecture, proposed CLI, and MVP acceptance criteria.
 - [Competitive landscape](documentations/competitive-landscape.md): feature matrix, positioning map, official links, and differentiation hypotheses.
 

@@ -1,6 +1,6 @@
 # Competitive landscape
 
-Research date: October 9, 2026. Updated November 9, 2026 with Paperclip, mco-org squad, and adjacent multi-agent tools.
+Research date: October 9, 2026. Updated November 9, 2026 with Reason Network, Paperclip, mco-org squad, and adjacent multi-agent tools.
 
 This comparison uses official product pages, documentation, and public repositories. It is not an installation-based performance or security evaluation. Documentation may describe experimental features or development branches rather than a stable release. An unverified capability is not an absent capability.
 
@@ -12,6 +12,7 @@ This comparison uses official product pages, documentation, and public repositor
 |---|:---:|:---:|:---:|:---:|:---:|
 | Formation | Planned | Planned | Planned | Planned | Planned |
 | [Happier](https://github.com/happier-dev/happier) | O | O | O | [O](https://docs.happier.dev/accounts/session-sharing) | ? |
+| [Reason Network](https://github.com/reason-machines/reason-network) | O | O | O | ? | ? |
 | [Flowpad](https://flowpad.ai/) | O | O | ? | ? | ? |
 | [Agent Relay](https://github.com/AgentWorkforce/relay) | O | O | O | ? | ? |
 | [Paperclip](https://github.com/paperclipai/paperclip) | O | O | ? | ? | ? |
@@ -39,6 +40,7 @@ quadrantChart
     quadrant-3 Personal remote control
     quadrant-4 Human team collaboration
     Agent Relay: [0.78, 0.90]
+    Reason Network: [0.88, 0.86]
     Claude Together: [0.85, 0.76]
     Happier: [0.65, 0.63]
     Paperclip: [0.62, 0.80]
@@ -52,7 +54,7 @@ quadrantChart
 
 | Positioning category | Products |
 |---|---|
-| Team workflows with agent-callable interfaces | Agent Relay, Claude Together, Happier, Paperclip; Formation's target. |
+| Team workflows with agent-callable interfaces | Agent Relay, Claude Together, Happier, Paperclip, Reason Network; Formation's target. |
 | Personal agent-to-agent coordination | mco-org squad. |
 | Human team collaboration | Flowpad and current Happy Harness. |
 | Personal remote control emphasis | HAPI and Claude Remote Control. |
@@ -68,7 +70,20 @@ Paperclip's team workflow is an organization hierarchy: agents receive delegated
 
 Supports multiple providers, session sharing, CLI and MCP control, and approval delegation. Direct sharing has view, edit, and manage levels; approval authority is a separate per-person setting. Friends, required for direct sharing, is experimental and disabled by default according to the sharing documentation.
 
-This is the closest broad comparison. Sharing, permissions, and a CLI are not sufficient differentiation on their own.
+This is one of the two closest broad comparisons, with Reason Network. Sharing, permissions, and a CLI are not sufficient differentiation on their own.
+
+### Reason Network
+
+- Landing page: [reasonmachines.com/network](https://reasonmachines.com/network).
+- Sources: [repository](https://github.com/reason-machines/reason-network), [design document](https://github.com/reason-machines/reason-network/blob/main/DESIGN.md).
+
+Connects a team's coding-agent sessions across machines so that agents can message each other. A daemon runs on each computer; on macOS a menu bar icon shows who is online and what they are doing. Agents use an MCP server (`list_team`, `send_message`, `message_status`, `ask_user`, `check_inbox`) and a `reason-network` CLI. Messages can target one session (`alice/api-claude`), a person's sessions, a repository, or everyone, and wait for offline recipients. Dual-licensed MIT OR Apache-2.0; sign-in is free.
+
+Harness coverage is broad: Claude Code, Codex, Hermes, opencode, pi, Cursor, Gemini CLI, Copilot CLI, Grok CLI, Command Code, DeepSeek Harness, and Reason, among others. Delivery timing differs by harness: push into a running or idle session (Claude Code, Codex, opencode, pi, Reason), at the next tool call or turn end (Cursor, Gemini CLI, Copilot CLI, Grok CLI, Command Code), or only when the agent checks its inbox. `reason-network setup` detects installed agents and wires their hooks and MCP configuration. Claude Code sessions are discovered from local session files, so they appear with busy or idle state even without the MCP server. Teammates see each session's repository, branch, and status; folders can be excluded from the network.
+
+Connections are end-to-end encrypted and peer to peer through iroh, with a relay fallback that teams can self-host. Permission controls documented in the design are an inbound policy per machine (`accept`, `hold`, or `refuse`, overridable per person), membership limits, guards against agent-to-agent loops and group broadcasts, and an `ask_user` pop-up through which the owner approves or denies a request. Command-level grants and delegating approval authority to a collaborator were not found in the reviewed documentation.
+
+The design describes peer messages entering the recipient's existing session, labeled as peer input; a separate side conversation isolated from the main session was not described. This overlaps directly with Formation's core direction (asking a teammate's agent), with multi-harness detection, and with discovering the agents running on one machine. Treat it as a primary hands-on comparison and as a possible extension or integration base; its permissive license allows reuse.
 
 ### Flowpad
 
@@ -158,7 +173,7 @@ These are hypotheses, not claims that competitors lack these features. In partic
 
 ## Next comparison experiment
 
-Run the same two-person workflow in Happier, Flowpad, Agent Relay, and Paperclip: share a session, ask about an implementation decision, query from another agent, submit a test request, approve it, and revoke access.
+Run the same two-person workflow in Happier, Reason Network, Flowpad, Agent Relay, and Paperclip: share a session, ask about an implementation decision, query from another agent, submit a test request, approve it, and revoke access.
 
 For Paperclip, also check whether its approvals reach coding agents' local tool calls. Check too whether a teammate can ask a question without creating a task in the organization.
 
