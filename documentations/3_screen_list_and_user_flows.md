@@ -118,7 +118,7 @@ Interfaces without screens:
 - **States:** private; shared; preview (sheet with a sample answer); unshare confirmation.
 
 ### SC-009 Connect detected agent (sheet)
-- **Shows:** what was detected (harness, folder, state); which operations work and which do not, with reasons; a note that OpenGrokBot will not change the agent's own configuration.
+- **Shows:** what was detected (harness, folder, state), grouped by folder, with "Find in a folder…" to search one folder's sessions however old; which operations work and which do not, with reasons; a note that OpenGrokBot will not change the agent's own configuration.
 - **States:** connectable; read-only; not supported.
 
 ### SC-010 Inbox (center)

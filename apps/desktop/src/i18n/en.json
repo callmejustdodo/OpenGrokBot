@@ -185,6 +185,7 @@
       "harness_unsupported": "OpenGrokBot doesn't support this harness yet.",
       "other": "Couldn't connect this agent. Try again."
     },
+    "findInFolder": "Find in a folder…",
     "found": "Detected agents",
     "harness": {
       "claude_code": "Claude Code",
@@ -198,11 +199,15 @@
     "noActivity": "No activity yet",
     "noChange": "OpenGrokBot won't change this agent's own configuration.",
     "none": "No agents are running outside OpenGrokBot on this Mac.",
+    "noneInFolder": "No Claude Code or Codex sessions ran in this folder.",
     "notSupported": "OpenGrokBot can't connect this agent yet.",
     "open": "Open",
     "path": "Folder",
+    "pickFailed": "Couldn't open the folder picker. Try again.",
     "readOnly": "Read-only: OpenGrokBot can show this agent's activity but can't use it for teammates.",
+    "recent": "Back to recent",
     "retry": "Try again",
+    "searching": "Sessions in {{folder}}",
     "title": "Connect agents",
     "works": "Works"
   },

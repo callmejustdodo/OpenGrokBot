@@ -11,7 +11,11 @@ export type DetectedAgent = {
 /**
  * Stable key for this detection, used by `agent_connect`.
  */
-key: string, harness: DetectedHarness, name: string, path: string, session_id: SessionId | null, last_activity_at: string | null, capabilities: DetectedCapabilities, 
+key: string, harness: DetectedHarness, name: string, path: string, 
+/**
+ * The session's working folder, or the installation's folder; `name` is its last part.
+ */
+folder: string, session_id: SessionId | null, last_activity_at: string | null, capabilities: DetectedCapabilities, 
 /**
  * Set when this detection is already connected.
  */
