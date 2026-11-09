@@ -2,6 +2,7 @@
 import type { AgentId } from "./AgentId";
 import type { MemberId } from "./MemberId";
 import type { QuestionId } from "./QuestionId";
+import type { RunId } from "./RunId";
 
 export type RequestCreate = { owner: MemberId, agent_id: AgentId, prompt: string, idempotency_key: string, 
 /**
@@ -10,6 +11,6 @@ export type RequestCreate = { owner: MemberId, agent_id: AgentId, prompt: string
 from_question: QuestionId | null, 
 /**
  * Set by the CLI and MCP server when one of my agents sends the request; see
- * [`Ask::from_agent`](crate::ask::Ask::from_agent).
+ * [`Ask::from_run`](crate::ask::Ask::from_run).
  */
-from_agent: AgentId | null, };
+from_run: RunId | null, };

@@ -4,6 +4,6 @@ import type { RequestId } from "./RequestId";
 import type { ScheduleId } from "./ScheduleId";
 
 /**
- * Who wrote a user message in the main session.
+ * Who wrote a user message in a conversation.
  */
 export type Author = { "kind": "owner" } | { "kind": "teammate", member_id: MemberId, via_agent: string | null, request_id: RequestId, } | { "kind": "schedule", schedule_id: ScheduleId, };
