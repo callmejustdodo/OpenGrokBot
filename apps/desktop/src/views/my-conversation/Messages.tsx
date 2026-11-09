@@ -1,7 +1,8 @@
 // SC-005 message list: my bubbles on the right, the agent's on the left, steps
-// grouped into collapsible rows, cards for teammate requests and permission
+// grouped into rows collapsed by default (a ▸ button expands them), cards for teammate requests and permission
 // prompts, notices, and a date separator whenever the day changes.
 import type { TFunction } from "i18next";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import PermissionCard from "../../components/cards/PermissionCard";
 import RequestCard from "../../components/cards/RequestCard";
@@ -44,19 +45,26 @@ function stepSummary(t: TFunction, steps: StepItem[]): string {
   return parts.length > 0 ? `${head} · ${parts.join(", ")}` : head;
 }
 
-function StepGroup({ steps }: { steps: StepItem[] }) {
+function StepGroup({ id, steps }: { id: string; steps: StepItem[] }) {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
   const running = steps.some((s) => s.step.status === "running");
+  const listId = `steps-${id}`;
   return (
-    <details className="steps" open={running} data-running={running}>
-      <summary>{stepSummary(t, steps)}</summary>
-      {steps.map(({ id, step }) => (
-        <div key={id} className="step" data-kind={step.kind} data-status={step.status}>
-          <span className="mono">{stepLine(t, step)}</span>
-          {step.detail ? <pre className="detail">{step.detail}</pre> : null}
-        </div>
-      ))}
-    </details>
+    <div className="steps" data-open={open} data-running={running}>
+      <button type="button" className="steps-toggle" aria-expanded={open} aria-controls={listId} onClick={() => setOpen((o) => !o)}>
+        <span className="chev" aria-hidden="true" />
+        {stepSummary(t, steps)}
+      </button>
+      <div id={listId} hidden={!open}>
+        {steps.map(({ id: stepId, step }) => (
+          <div key={stepId} className="step" data-kind={step.kind} data-status={step.status}>
+            <span className="mono">{stepLine(t, step)}</span>
+            {step.detail ? <pre className="detail">{step.detail}</pre> : null}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -132,7 +140,7 @@ export default function Messages({ items }: { items: readonly ConversationItem[]
               </time>
             </div>
           ) : null}
-          {block.kind === "steps" ? <StepGroup steps={block.steps} /> : <Item item={block.item} />}
+          {block.kind === "steps" ? <StepGroup id={block.id} steps={block.steps} /> : <Item item={block.item} />}
         </div>
       ))}
     </>
