@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capability for the main window and the menu bar panel",
-  "windows": ["main", "menubar"],
+  "description": "Capability for the main window, the menu bar panel and the Settings window",
+  "windows": ["main", "menubar", "settings"],
   "permissions": ["core:default"]
 }

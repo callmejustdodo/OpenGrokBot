@@ -1,15 +1,25 @@
-//! Windows and the menu bar icon (frontend architecture, "Windows"): the main
-//! window, the menu bar panel (SC-002) under the tray icon, and the icon itself.
+//! Windows, menus and the menu bar icon (frontend architecture, "Windows"):
+//! the main window, the menu bar panel (SC-002) under the tray icon, the
+//! Settings window (SC-018), the app menu, and the icon itself.
 //!
 //! The tray icon is created here only, never also in `tauri.conf.json`: defining
 //! it in both places shows two icons (tauri#10912).
 
+use serde_json::Value;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::{AppHandle, Manager, PhysicalPosition, Rect, Window, WindowEvent};
+use tauri::{
+    AppHandle, Emitter, Manager, PhysicalPosition, Rect, WebviewUrl, WebviewWindowBuilder, Window,
+    WindowEvent,
+};
 
 pub const MAIN: &str = "main";
 pub const PANEL: &str = "menubar";
+pub const SETTINGS: &str = "settings";
+
+/// Tauri event asking the main window to open an item; the payload is an
+/// `AttentionTarget` (`src/notifications/navigate.ts` handles it).
+pub const NAVIGATE: &str = "app://navigate";
 
 pub fn show_main_window(app: &AppHandle) {
     if let Some(window) = app.get_webview_window(MAIN) {
@@ -20,6 +30,50 @@ pub fn show_main_window(app: &AppHandle) {
     if let Some(panel) = app.get_webview_window(PANEL) {
         let _ = panel.hide();
     }
+}
+
+/// Opens the main window on one item (an `AttentionTarget`), for the menu
+/// bar panel's rows and notification clicks.
+pub fn focus_item(app: &AppHandle, target: Value) {
+    show_main_window(app);
+    let _ = app.emit_to(MAIN, NAVIGATE, target);
+}
+
+/// Shows the Settings window, creating it if it was closed.
+pub fn show_settings_window(app: &AppHandle) -> tauri::Result<()> {
+    if let Some(panel) = app.get_webview_window(PANEL) {
+        let _ = panel.hide();
+    }
+    let window = match app.get_webview_window(SETTINGS) {
+        Some(window) => window,
+        None => WebviewWindowBuilder::new(app, SETTINGS, WebviewUrl::App("settings.html".into()))
+            .title("Settings")
+            .inner_size(620.0, 460.0)
+            .resizable(false)
+            .minimizable(false)
+            .build()?,
+    };
+    window.show()?;
+    window.set_focus()
+}
+
+/// The app menu: the standard macOS menus, with "Settings…" (⌘,) in the app
+/// menu after "About".
+pub fn create_app_menu(app: &AppHandle) -> tauri::Result<()> {
+    let menu = Menu::default(app)?;
+    #[cfg(target_os = "macos")]
+    if let Some(tauri::menu::MenuItemKind::Submenu(app_menu)) = menu.items()?.into_iter().next() {
+        let settings = MenuItem::with_id(app, "settings", "Settings…", true, Some("CmdOrCtrl+,"))?;
+        let separator = tauri::menu::PredefinedMenuItem::separator(app)?;
+        app_menu.insert_items(&[&separator, &settings], 1)?;
+    }
+    app.set_menu(menu)?;
+    app.on_menu_event(|app, event| {
+        if event.id() == "settings" {
+            let _ = show_settings_window(app);
+        }
+    });
+    Ok(())
 }
 
 /// The menu bar icon: a left click toggles the panel; a right click shows a
