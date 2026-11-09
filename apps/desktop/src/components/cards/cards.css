@@ -10,3 +10,8 @@
 .icard .decision { margin: 8px 0 0; color: var(--text); font-size: 13px; }
 /* v2 Sky Glass: white cards with a hairline border and soft shadow. */
 .icard { border-radius: 16px; border: 1px solid var(--sep); background: var(--card); box-shadow: var(--soft); }
+/* v2 fidelity (SC-005): borderless white card on a soft lift, bold dark
+   tag pill, flat code well. */
+.icard { border: 0; border-radius: 14px; padding: 14px 16px; box-shadow: 0 4px 18px rgba(47,80,140,.08), 0 0 0 1px color-mix(in srgb, var(--sep) 60%, transparent); }
+.tagpill { color: var(--text); font-weight: 700; padding: 3px 10px; }
+.icard .code, .code { border: 0; border-radius: 10px; }

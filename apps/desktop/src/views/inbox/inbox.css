@@ -16,3 +16,14 @@
 .page .composer textarea { flex: 1; border: 0; outline: none; resize: none; background: transparent; min-height: 36px; max-height: 120px; padding: 8px 4px; line-height: 1.4; font-size: 15px; }
 /* v2 Sky Glass: each inbox group is a white rounded card. */
 .page .list { border-radius: 16px; border: 1px solid var(--sep); background: var(--card); box-shadow: var(--soft); }
+/* v2 fidelity (SC-010): tighter title with a quiet count, dark group labels,
+   borderless cards with a soft lift and ~58px rows. */
+.page { padding: 24px 30px; }
+.page h1 { font-size: 20px; }
+.page .page-head { margin-bottom: 14px; }
+.page .page-head .muted { font-size: 13px; color: var(--text2); }
+.grp { color: var(--text); font-size: 12.5px; margin: 16px 4px 8px; }
+.grp:first-of-type { margin-top: 4px; }
+.page .list { border: 0; border-radius: 14px; box-shadow: 0 4px 18px rgba(47,80,140,.08), 0 0 0 1px color-mix(in srgb, var(--sep) 60%, transparent); }
+.page .list .row { padding: 13px 16px; min-height: 58px; }
+.page .list .row .t small { margin-top: 3px; }

@@ -21,3 +21,11 @@
 .timeline .mark .ic { width: 11px; height: 11px; }
 /* v2 Sky Glass: brand-blue focus ring on fields. */
 .input:focus, .textarea:focus { outline: none; border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 18%, transparent); }
+/* v2 fidelity (SC-016): rounder fields, brand-blue checkboxes, flat grey
+   prompt preview. */
+.field > span { font-size: 13.5px; }
+.input, .textarea { border-radius: 12px; padding: 10px 12px; }
+.textarea { min-height: 72px; }
+.check input { accent-color: var(--brand, var(--focus)); width: 15px; height: 15px; }
+.code { border: 0; border-radius: 12px; padding: 12px 14px; line-height: 1.55; }
+.timeline .done .mark { border-color: var(--brand, var(--focus)); color: var(--brand, var(--focus)); }
