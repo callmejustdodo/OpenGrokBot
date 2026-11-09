@@ -353,6 +353,7 @@ fn wiring(
             bus.clone(),
         )
         .with_owner_pipeline(Arc::new(pipeline()))
+        .with_owner_asks((*owner_asks).clone())
         .with_share_hook(share_hook),
     );
     let peer_server = peer_client.as_ref().map(|_| PeerServer {

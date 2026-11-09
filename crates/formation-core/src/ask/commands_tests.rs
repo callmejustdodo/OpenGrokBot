@@ -681,13 +681,27 @@ async fn an_owner_update_during_a_delete_does_not_bring_the_question_back() {
 }
 
 #[tokio::test]
-async fn only_the_owner_calls_and_the_in_person_commands_are_left_out() {
-    let methods = mac().commands.methods();
-    // Left for the owner-side handler, so it can register them beside this one.
-    assert!(!methods.contains(&"question_handoff"));
-    assert!(!methods.contains(&"question_answer"));
-
+async fn only_the_owner_calls_and_the_in_person_commands_need_the_owner_side() {
     let mac = mac();
+    let methods = mac.commands.methods();
+    assert!(methods.contains(&"question_handoff"));
+    assert!(methods.contains(&"question_answer"));
+    // Without the owner's side of questions both are refused, not dropped.
+    let id = QuestionId::generate();
+    for (method, params) in [
+        (
+            "question_answer",
+            json!({ "question_id": id, "text": "Done." }),
+        ),
+        (
+            "question_handoff",
+            json!({ "question_id": id, "agent_id": mac.api.agent_id }),
+        ),
+    ] {
+        let err = mac.commands.handle(call(method, params)).await.unwrap_err();
+        assert_eq!(err.code, ErrorCode::Internal, "{method}");
+    }
+
     let mut teammate_call = call("ask", json!({}));
     teammate_call.caller = member_caller(mac.teammate.id);
     assert_eq!(
@@ -743,10 +757,6 @@ impl CommandHandler for OtherHandlers {
             "team_invite",
             "team_join",
             "team_remove",
-            // The owner's in-person question commands, for the handler that
-            // will serve them beside AskCommands
-            "question_handoff",
-            "question_answer",
         ]
     }
 
@@ -784,7 +794,7 @@ fn the_router_takes_these_methods_beside_the_other_handlers() {
         mac.events.clone(),
     );
     let methods = mac.commands.methods();
-    assert_eq!(methods.len(), 8);
+    assert_eq!(methods.len(), 10);
     let router = Router::new(vec![
         Arc::new(mac.commands),
         Arc::new(requests),

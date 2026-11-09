@@ -31,7 +31,7 @@ use formation_proto::ask::{
     Answer, AskTarget, Question, QuestionStatus, QuestionUpdateEvent, RouteChoice,
 };
 use formation_proto::common::{
-    AgentId, ApiError, ErrorCode, MessageId, QuestionId, RunId, SessionId, Timestamp,
+    AgentId, AnswerId, ApiError, ErrorCode, MessageId, QuestionId, RunId, SessionId, Timestamp,
 };
 use formation_proto::events::Event;
 use formation_proto::harness::{SessionInfo, TurnOutcome};
@@ -209,6 +209,30 @@ impl AskPipeline {
                 self.store(repo, question)
             }
         }
+    }
+
+    /// The owner answers a question sent to them in person (US-010). The answer
+    /// names no agent and has no excerpts; its text is masked like an agent's
+    /// (NFR-003), and it is stored and published like any answer.
+    pub fn answer_in_person<R>(&self, repo: &R, question: &mut Question, text: &str) -> Result<()>
+    where
+        R: QuestionRepo + ?Sized,
+    {
+        let at = (self.clock)();
+        question.status = QuestionStatus::Answered;
+        question.agent_id = None;
+        question.candidates.clear();
+        question.error = None;
+        question.answer = Some(Answer {
+            id: AnswerId::generate(),
+            agent_id: None,
+            text: self.masker.mask(text),
+            excerpts: Vec::new(),
+            as_of: at,
+            possibly_stale: false,
+            answered_at: at,
+        });
+        self.store(repo, question)
     }
 
     /// Answers the question again from the agent's latest session content, in a
