@@ -21,6 +21,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 libc = "0.2"
 tokio = { version = "1", features = ["net", "io-util", "sync", "time", "rt", "macros"] }
+tauri-plugin-notification = "2"
 
 [dev-dependencies]
 # tests/typescript_commands.rs generates the TypeScript method map from the contract.

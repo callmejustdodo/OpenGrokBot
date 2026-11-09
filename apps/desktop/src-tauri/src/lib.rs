@@ -1,5 +1,6 @@
 pub mod formationd;
 mod launch_agent;
+mod notifications;
 mod shell;
 
 use serde_json::Value;
@@ -61,6 +62,35 @@ fn show_main_window(app: AppHandle) {
     shell::show_main_window(&app);
 }
 
+/// Opens the main window on one item (an `AttentionTarget`).
+#[tauri::command]
+fn focus_item(app: AppHandle, target: Value) {
+    shell::focus_item(&app, target);
+}
+
+/// Opens the Settings window (SC-018). Async, since it may create a window.
+#[tauri::command]
+async fn show_settings_window(app: AppHandle) -> Result<(), String> {
+    shell::show_settings_window(&app).map_err(|e| e.to_string())
+}
+
+/// Shows a macOS notification that opens `target` when clicked (SC-019).
+#[tauri::command]
+fn show_notification(
+    app: AppHandle,
+    title: String,
+    body: String,
+    target: Value,
+) -> Result<(), String> {
+    notifications::show(&app, title, body, target)
+}
+
+/// Quits the app; formationd and every agent keep running (D-048).
+#[tauri::command]
+fn quit_app(app: AppHandle) {
+    app.exit(0);
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let hidden = starts_hidden(std::env::args());
@@ -68,10 +98,16 @@ pub fn run() {
     let fake_daemon = uses_fake_daemon(fake.as_deref());
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_notification::init())
+        .manage(notifications::Shown::default())
         .invoke_handler(tauri::generate_handler![
             formationd_call,
             formationd_status,
-            show_main_window
+            show_main_window,
+            focus_item,
+            show_settings_window,
+            show_notification,
+            quit_app
         ])
         .setup(move |app| {
             if fake_daemon {
@@ -96,7 +132,9 @@ pub fn run() {
             let conn = tauri::async_runtime::block_on(async move { Connection::start(path, sink) });
             app.manage(conn);
 
+            shell::create_app_menu(app.handle())?;
             shell::create_tray(app.handle())?;
+            notifications::on_click(app.handle());
             if !hidden {
                 shell::show_main_window(app.handle());
             }
