@@ -27,9 +27,12 @@ use tokio::{
     time::Instant,
 };
 
-use crate::ports::{
-    CommandCall, CommandHandler, EventSink, ForkResult, ForkRun, Harness, PermissionGate,
-    PermissionRequest, Result, RunInfo, Store, TurnResult,
+use crate::{
+    history,
+    ports::{
+        CommandCall, CommandHandler, EventSink, ForkResult, ForkRun, Harness, PermissionGate,
+        PermissionRequest, Result, RunInfo, Store, TurnResult,
+    },
 };
 
 #[derive(Clone, Debug)]
@@ -675,6 +678,14 @@ impl Harness for CodexSupervisor {
             );
         }
         self.state(agent.id, AgentState::Idle, None, None);
+        let _ = history::record(
+            self.inner.store.as_ref(),
+            ActivityKind::AgentStarted,
+            Some(agent.id),
+            None,
+            now(),
+            agent.name.clone(),
+        );
         let supervisor = self.clone();
         let id = agent.id;
         tokio::spawn(async move {
@@ -795,6 +806,54 @@ impl Harness for CodexSupervisor {
     }
 }
 
+/// The `agent.state` reason, and so the inbox subject, of a turn that failed on a
+/// Codex usage limit, worded like Claude's (#188): Codex's text on one line, the
+/// reset time, then the error code in parentheses. `None` for other failures.
+/// `limit` is the last `account/rateLimits/updated` snapshot that named a reached
+/// limit.
+fn usage_limit_reason(error: &Value, limit: Option<&Value>) -> Option<String> {
+    let info = error["codexErrorInfo"].as_str();
+    let reached = limit.and_then(|l| l["rateLimitReachedType"].as_str());
+    let code = match info {
+        Some("usageLimitExceeded" | "rateLimitExceeded") => info,
+        Some(_) => return None,
+        None => reached,
+    }?;
+    let text = error["message"]
+        .as_str()
+        .and_then(|t| t.lines().map(str::trim).find(|l| !l.is_empty()))
+        .map(|l| match l.char_indices().nth(200) {
+            Some((i, _)) => format!("{}…", &l[..i]),
+            None => l.to_owned(),
+        });
+    let resets = limit.and_then(resets_at).map(|at| {
+        format!(
+            " · resets {}",
+            at.with_timezone(&chrono::Local)
+                .format("%Y-%m-%d %H:%M %:z")
+        )
+    });
+    let resets = resets.unwrap_or_default();
+    Some(match text {
+        Some(text) => format!("Codex usage limit: {text}{resets} ({code})"),
+        None => format!("Codex usage limit{resets} ({code})"),
+    })
+}
+
+/// When the reached window resets: the latest `resetsAt` of the full windows, or of
+/// any window when none reports full use.
+fn resets_at(limit: &Value) -> Option<Timestamp> {
+    let windows = [&limit["primary"], &limit["secondary"]];
+    let latest = |full: bool| {
+        windows
+            .iter()
+            .filter(|w| !full || w["usedPercent"].as_i64().is_some_and(|p| p >= 100))
+            .filter_map(|w| w["resetsAt"].as_i64())
+            .max()
+    };
+    chrono::DateTime::from_timestamp(latest(true).or_else(|| latest(false))?, 0)
+}
+
 fn queue_error(message_id: MessageId, started: &HashSet<MessageId>) -> ApiError {
     if started.contains(&message_id) {
         error(ErrorCode::Conflict, "message already started")
@@ -885,6 +944,8 @@ impl CodexSupervisor {
         let mut last = Instant::now();
         let mut exit_code = None;
         let mut kill_at: Option<Instant> = None;
+        // The last rate-limit snapshot naming a reached limit, until a turn completes.
+        let mut rate_limit: Option<Value> = None;
         let failure = loop {
             if active.is_none() {
                 if stopping {
@@ -1098,7 +1159,8 @@ impl CodexSupervisor {
                                     }
                                     Err(e) => {
                                         if let Some(a) = active.take() {
-                                            self.end_turn(id, a, TurnOutcome::Failed, Some(e.to_string()), &mut steered);
+                                            let reason = usage_limit_reason(&msg["error"], rate_limit.as_ref()).unwrap_or_else(|| e.to_string());
+                                            self.end_turn(id, a, TurnOutcome::Failed, Some(reason), &mut steered);
                                         }
                                     }
                                 },
@@ -1163,6 +1225,12 @@ impl CodexSupervisor {
                                 self.state(id, state, None, None);
                             }
                         }
+                        (Some("account/rateLimits/updated"), None) => {
+                            let limits = &params["rateLimits"];
+                            if limits["rateLimitReachedType"].is_string() {
+                                rate_limit = Some(limits.clone());
+                            }
+                        }
                         (Some("turn/completed"), None) => {
                             let turn = &params["turn"];
                             let ours = active.as_ref().is_some_and(|a| {
@@ -1174,7 +1242,14 @@ impl CodexSupervisor {
                                     Some("interrupted") => TurnOutcome::Interrupted,
                                     _ => TurnOutcome::Failed,
                                 };
-                                let reason = turn["error"]["message"].as_str().map(str::to_owned);
+                                let reason = match outcome {
+                                    TurnOutcome::Failed => usage_limit_reason(&turn["error"], rate_limit.as_ref()),
+                                    _ => None,
+                                }
+                                .or_else(|| turn["error"]["message"].as_str().map(str::to_owned));
+                                if outcome == TurnOutcome::Completed {
+                                    rate_limit = None;
+                                }
                                 self.end_turn(id, active.take().unwrap(), outcome, reason, &mut steered);
                                 items_started.clear();
                                 stalled = false;
@@ -1246,6 +1321,26 @@ impl CodexSupervisor {
             },
             failure.as_ref().map(ToString::to_string),
             exit_code,
+        );
+        let (kind, summary) = match &failure {
+            Some(failure) => (ActivityKind::AgentFailed, failure.message.clone()),
+            None => (
+                ActivityKind::AgentStopped,
+                self.inner
+                    .store
+                    .agent(id)
+                    .ok()
+                    .flatten()
+                    .map_or_else(|| id.to_string(), |agent| agent.name),
+            ),
+        };
+        let _ = history::record(
+            self.inner.store.as_ref(),
+            kind,
+            Some(id),
+            None,
+            now(),
+            summary,
         );
         self.inner
             .agents
