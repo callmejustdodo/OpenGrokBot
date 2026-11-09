@@ -29,6 +29,7 @@ use super::protocol::{self, Launch, LaunchOptions, Priority};
 use crate::{
     agents::{ClaudeReadiness, HarnessReadiness},
     ask::transcript,
+    history,
     ports::{
         CommandCall, CommandHandler, EventSink, ForkResult, ForkRun, ForkTools, Harness,
         RequestQueue, Result, RunInfo, RunProgress, Store, TurnResult,
@@ -486,6 +487,14 @@ impl Harness for ClaudeSupervisor {
         );
         drop(agents);
         self.state(agent.id, AgentState::Idle, None, None);
+        let _ = history::record(
+            self.inner.store.as_ref(),
+            ActivityKind::AgentStarted,
+            Some(agent.id),
+            None,
+            now(),
+            agent.name.clone(),
+        );
         let supervisor = self.clone();
         let id = agent.id;
         tokio::spawn(async move {
@@ -1054,6 +1063,26 @@ impl ClaudeSupervisor {
             },
             failure.as_ref().map(ToString::to_string),
             exit_code,
+        );
+        let (kind, summary) = match &failure {
+            Some(failure) => (ActivityKind::AgentFailed, failure.message.clone()),
+            None => (
+                ActivityKind::AgentStopped,
+                self.inner
+                    .store
+                    .agent(id)
+                    .ok()
+                    .flatten()
+                    .map_or_else(|| id.to_string(), |agent| agent.name),
+            ),
+        };
+        let _ = history::record(
+            self.inner.store.as_ref(),
+            kind,
+            Some(id),
+            None,
+            now(),
+            summary,
         );
         self.inner
             .agents

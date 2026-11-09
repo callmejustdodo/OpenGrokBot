@@ -13,6 +13,7 @@ use formation_core::harness::claude::{ClaudeConfig, ClaudeSupervisor};
 use formation_core::harness::codex::{CodexConfig, CodexSupervisor};
 use formation_core::harness::detect::{Detect, DetectPaths};
 use formation_core::harness::dispatch::HarnessDispatcher;
+use formation_core::history::History;
 use formation_core::notify::{AttentionNotifier, monitor, reconcile};
 use formation_core::permission::{Gate, PermissionCommands};
 use formation_core::policy::TeamPolicy;
@@ -248,6 +249,7 @@ fn wiring(directory: &Path, fake_list: &str, detect_paths: DetectPaths) -> Resul
             permissions,
             team,
             request_client,
+            Arc::new(History::new(store.clone())),
         ])
         .map_err(io::Error::other)?,
     );
