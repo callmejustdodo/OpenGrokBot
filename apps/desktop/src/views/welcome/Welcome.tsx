@@ -65,7 +65,7 @@ export default function Welcome() {
   return (
     <section className="page welcome" aria-label={t("welcome.label", "Welcome")} data-state={state}>
       <div className="wbody">
-        <h2>{t("welcome.title", "Welcome to OpenGrokBot")}</h2>
+        <h2 aria-level={1}>{t("welcome.title", "Welcome to OpenGrokBot")}</h2>
         <p className="muted">
           {t("welcome.lead", "Teammates ask your agents directly, and you run your agents in one place.")}
         </p>

@@ -56,9 +56,9 @@ function StepGroup({ id, steps }: { id: string; steps: StepItem[] }) {
         <span className="chev" aria-hidden="true" />
         {stepSummary(t, steps)}
       </button>
-      <div id={listId} hidden={!open}>
+      <div id={listId} role="list" hidden={!open}>
         {steps.map(({ id: stepId, step }) => (
-          <div key={stepId} className="step" data-kind={step.kind} data-status={step.status}>
+          <div key={stepId} role="listitem" className="step" data-kind={step.kind} data-status={step.status}>
             <span className="mono">{stepLine(t, step)}</span>
             {step.detail ? <pre className="detail">{step.detail}</pre> : null}
           </div>

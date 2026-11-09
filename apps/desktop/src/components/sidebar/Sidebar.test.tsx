@@ -20,7 +20,7 @@ describe("SC-003 default", () => {
 
   it("lists my agents with their state, teammates' agents with the owner, and people", () => {
     render(<Sidebar />);
-    expect(screen.getByRole("complementary", { name: "Sidebar" })).toHaveAttribute("data-state", "default");
+    expect(screen.getByRole("navigation", { name: "Sidebar" })).toHaveAttribute("data-state", "default");
     expect(row("Backend")).toHaveAttribute("data-state", "waiting_for_approval");
     expect(within(row("Backend")).getByText("Waiting for approval")).toHaveClass("attn");
     expect(row("Research")).toHaveAttribute("data-state", "stalled");
@@ -99,7 +99,7 @@ describe("SC-003 empty", () => {
   it("offers to create the first agent or connect running ones", () => {
     loadWorld(empty as unknown as Snapshot);
     render(<Sidebar />);
-    expect(screen.getByRole("complementary", { name: "Sidebar" })).toHaveAttribute("data-state", "empty");
+    expect(screen.getByRole("navigation", { name: "Sidebar" })).toHaveAttribute("data-state", "empty");
     expect(screen.getByText("Create your first agent")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /need you/ })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "New agent" }));
@@ -115,7 +115,7 @@ describe("SC-003 detecting", () => {
     expect(screen.queryByText("Looking for agents on this Mac…")).toBeNull();
     act(() => appStore.getState().beginPending("agents_detect"));
     expect(screen.getByRole("status")).toHaveTextContent("Looking for agents on this Mac…");
-    expect(screen.getByRole("complementary", { name: "Sidebar" })).toHaveAttribute("data-state", "detecting");
+    expect(screen.getByRole("navigation", { name: "Sidebar" })).toHaveAttribute("data-state", "detecting");
     act(() => appStore.getState().endPending("agents_detect"));
     expect(screen.queryByRole("status")).toBeNull();
   });
