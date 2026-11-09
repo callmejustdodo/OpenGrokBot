@@ -96,7 +96,7 @@ async fn auth_failure_reports_signed_out_until_a_turn_succeeds() {
         .unwrap();
     assert_eq!(failed.outcome, TurnOutcome::Failed);
     assert!(sink.events().iter().any(|(_, e)| matches!(e,
-        Event::AgentState(s) if s.state == AgentState::Error && s.reason.as_deref() == Some("api_error"))));
+        Event::AgentState(s) if s.state == AgentState::Error && s.reason.as_deref() == Some("Failed to authenticate: OAuth session expired and could not be refreshed (api_error)"))));
     until(|| !updates(&sink).is_empty()).await;
     let update = &updates(&sink)[0];
     assert_eq!(update.signed_in, Some(false));

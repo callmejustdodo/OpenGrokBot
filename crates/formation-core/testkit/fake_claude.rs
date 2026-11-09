@@ -37,13 +37,30 @@ fn write_line(out: &mut impl Write, line: &Value) -> io::Result<()> {
 }
 
 /// A turn whose OAuth session expired: Claude answers with the error text and an
-/// error result, which the agent shows as `error` with reason `api_error`.
+/// error result, which the agent shows as `error`.
 fn auth_failure(session: &str) -> VecDeque<Value> {
-    let text = "Failed to authenticate: OAuth session expired and could not be refreshed";
+    failed_turn(
+        session,
+        "Failed to authenticate: OAuth session expired and could not be refreshed",
+        Value::Null,
+    )
+}
+
+/// A turn stopped by the usage limit (#185). The wording is assumed from the QA
+/// report; no real usage-limit failure is recorded in the fixtures.
+fn usage_limit(session: &str) -> VecDeque<Value> {
+    failed_turn(
+        session,
+        "You've hit your 5-hour usage limit · resets 3:40pm (Asia/Seoul)",
+        json!(429),
+    )
+}
+
+fn failed_turn(session: &str, text: &str, status: Value) -> VecDeque<Value> {
     let id = formation_proto::common::RunId::generate().to_string();
     VecDeque::from([
         json!({"type":"assistant","session_id":session,"parent_tool_use_id":null,"uuid":id,"timestamp":"2026-11-09T00:00:00Z","message":{"id":format!("msg_{id}"),"type":"message","role":"assistant","content":[{"type":"text","text":text}]}}),
-        json!({"type":"result","session_id":session,"subtype":"success","is_error":true,"terminal_reason":"api_error","result":text}),
+        json!({"type":"result","session_id":session,"subtype":"success","is_error":true,"terminal_reason":"api_error","api_error_status":status,"result":text}),
     ])
 }
 
@@ -123,6 +140,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     // The first N turns fail to authenticate as in the IC-1 run, before any recorded turn.
     let mut auth_failures =
         env::var("FAKE_CLAUDE_AUTH_FAILURES").map_or(Ok(0), |v| v.parse::<usize>())?;
+    // Then the next N turns stop on the usage limit.
+    let mut usage_limits =
+        env::var("FAKE_CLAUDE_USAGE_LIMITS").map_or(Ok(0), |v| v.parse::<usize>())?;
     let delay = env::var("FAKE_CLAUDE_LINE_DELAY_MS").map_or(Ok(0), |v| v.parse::<u64>())?;
     let transcript = fs::read_to_string(env::var("FAKE_CLAUDE_TRANSCRIPT")?)?;
     let mut turns = VecDeque::new();
@@ -166,6 +186,9 @@ fn main() -> Result<(), Box<dyn Error>> {
             active = if auth_failures > 0 {
                 auth_failures -= 1;
                 Some(auth_failure(&session))
+            } else if usage_limits > 0 {
+                usage_limits -= 1;
+                Some(usage_limit(&session))
             } else {
                 turns.pop_front()
             };
