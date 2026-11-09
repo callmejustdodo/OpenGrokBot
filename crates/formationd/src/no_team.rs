@@ -30,6 +30,12 @@ impl TeamRepo for NoTeam {
     fn set_me(&self, _id: MemberId) -> Result<()> {
         unavailable()
     }
+    fn team(&self) -> Result<Option<TeamRecord>> {
+        Ok(None)
+    }
+    fn put_team(&self, _team: Option<&TeamRecord>) -> Result<()> {
+        unavailable()
+    }
     fn members(&self) -> Result<Vec<Member>> {
         Ok(vec![])
     }
