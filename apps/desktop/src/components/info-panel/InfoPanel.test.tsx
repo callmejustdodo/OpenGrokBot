@@ -24,7 +24,7 @@ describe("SC-020 my-agent", () => {
     expect(within(panel).getByText("Working")).toHaveAttribute("data-state", "working");
     expect(panel.querySelector(".ava")).toHaveAttribute("data-shape", "rocket");
     expect(panel.querySelector(".ava")).toHaveAttribute("data-color", "#3a6df0");
-    expect(within(panel).getByLabelText("SchedulesPanelSection")).toBeInTheDocument();
+    expect(within(panel).getByRole("region", { name: "Schedules" })).toBeInTheDocument();
     expect(within(panel).getByLabelText("SharingSection")).toBeInTheDocument();
     fireEvent.click(within(panel).getByRole("button", { name: /Instructions & skills/ }));
     expect(uiStore.getState().sheet).toEqual({ kind: "instructions", agentId: BACKEND });
