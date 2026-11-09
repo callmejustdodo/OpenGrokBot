@@ -181,7 +181,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: B
 
 ### TASK-008: The Tauri shell shows the tray, the window, and fake data
-- Status: pending
+- Status: in progress
 - References: [windows](5_frontend_architecture.md#windows), SC-002, SC-003
 - Prerequisites: TASK-043
 - Change locations: `apps/desktop/src-tauri/`, `apps/desktop/src/main.tsx`, `menubar.tsx`

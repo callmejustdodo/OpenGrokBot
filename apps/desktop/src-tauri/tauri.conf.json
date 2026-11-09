@@ -10,15 +10,42 @@
     "frontendDist": "../dist"
   },
   "app": {
+    "macOSPrivateApi": true,
     "windows": [
       {
         "label": "main",
         "title": "Formation",
+        "url": "index.html",
         "width": 1180,
         "height": 740,
         "minWidth": 900,
         "minHeight": 560,
-        "visible": false
+        "visible": false,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "transparent": true,
+        "windowEffects": {
+          "effects": ["sidebar"],
+          "state": "followsWindowActiveState"
+        }
+      },
+      {
+        "label": "menubar",
+        "title": "Formation",
+        "url": "menubar.html",
+        "width": 340,
+        "height": 440,
+        "visible": false,
+        "decorations": false,
+        "resizable": false,
+        "alwaysOnTop": true,
+        "skipTaskbar": true,
+        "transparent": true,
+        "windowEffects": {
+          "effects": ["popover"],
+          "state": "active",
+          "radius": 10
+        }
       }
     ],
     "security": {

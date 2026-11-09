@@ -31,6 +31,16 @@ export default defineConfig(() => ({
     },
   },
 
+  // One page per window (frontend architecture, "Windows").
+  build: {
+    rollupOptions: {
+      input: {
+        main: "index.html",
+        menubar: "menubar.html",
+      },
+    },
+  },
+
   test: {
     environment: "jsdom",
     setupFiles: ["./src/test-setup.ts"],
