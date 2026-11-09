@@ -24,7 +24,7 @@
 
 mod caller;
 mod error;
-mod events;
+pub(crate) mod events;
 mod handlers;
 mod routes;
 

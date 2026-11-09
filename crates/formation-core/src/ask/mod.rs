@@ -10,6 +10,9 @@
 //!   [`scorer`] is the real one, a short isolated Claude Code call.
 //! - [`answer`] post-processes a forked answer: excerpts, `as_of`,
 //!   `possibly_stale`, visibility, and masking ([`mask`]).
+//! - [`endpoints`] serves teammates' `POST /v1/ask` and question actions with
+//!   the pipeline ([`OwnerAsks`]), answering in the background and publishing
+//!   every change to the asker.
 //!
 //! Sharing and visibility settings live in [`crate::policy::sharing`].
 //!
@@ -106,6 +109,7 @@
 //!   call ([`scorer`]), which resumes no session, uses this runner.
 
 pub mod answer;
+pub mod endpoints;
 pub(crate) mod excerpts;
 pub mod fork;
 pub mod mask;
@@ -115,6 +119,7 @@ pub mod scorer;
 pub mod stream;
 pub mod transcript;
 
+pub use endpoints::OwnerAsks;
 pub use fork::{ANSWER_SYSTEM_PROMPT, AskError, ForkAnswer, ForkRequest, QUESTION_LEAD_IN};
 pub use stream::{StreamEvent, StreamResult, StreamSummary};
 pub use transcript::{
