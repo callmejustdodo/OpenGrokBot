@@ -3,4 +3,3 @@
 .connect-body .list { list-style: none; margin: 0; padding: 0; }
 /* The mockup marks the chosen agent with an inline var(--sel) background; the app uses aria-pressed. */
 .connect-body .row[aria-pressed="true"] { background: var(--sel); }
-.ok { color: var(--green); }

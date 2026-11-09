@@ -1,14 +1,9 @@
-/* SC-005 Conversation with my agent: screen rules copied from documentations/mockups/index.html. */
-.conversation { display: flex; flex-direction: column; min-width: 0; min-height: 0; position: relative; flex: 1; height: 100%; }
-.c-head { height: 64px; flex: none; display: flex; align-items: center; justify-content: center; position: relative; padding: 0 16px; }
-.c-head .right { position: absolute; right: 14px; top: 16px; display: flex; gap: 4px; align-items: center; }
-.msgs { flex: 1; overflow: auto; padding: 4px 28px 18px; display: flex; flex-direction: column; gap: 10px; }
-/* Messages wraps each item (and its time separator) in a .block; keep the mockup's flat flex column. */
-.msgs .block { display: contents; }
-.sep-t { align-self: center; color: var(--text2); font-size: 12.5px; margin: 6px 0; }
-.ag, .me { max-width: 78%; padding: 10px 15px; border-radius: 20px; line-height: 1.55; font-size: 15px; }
-.ag { align-self: flex-start; background: var(--bub); }
-.me { align-self: flex-end; background: var(--me); color: var(--me-fg); }
+/* SC-005 Conversation with my agent: screen rules copied from documentations/mockups/index.html.
+   The shared layer (src/styles/) owns .conversation, .c-head, .msgs, .sep-t, .ag, .me, .working, .dots,
+   .composer, .cbtn, .c-note, .tagpill and .code. */
+/* Conversation items are wrapped in .block (and .q in question conversations); flatten them so bubbles
+   align left and right in the .msgs flex column, as in the mockup. */
+.msgs .block, .msgs .q { display: contents; }
 .ag .src { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--sep); color: var(--text2); font-size: 12.5px; }
 .steps { align-self: flex-start; width: 78%; }
 .steps summary { list-style: none; cursor: pointer; color: var(--text2); font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px; border-radius: 6px; }
@@ -16,24 +11,7 @@
 .steps summary:hover { background: var(--hover); }
 .step { display: flex; align-items: center; gap: 8px; padding: 4px 6px 4px 10px; color: var(--text2); font-size: 13px; border-left: 2px solid var(--sep); margin-left: 8px; }
 .step .mono { color: var(--text); }
-.working { align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; color: var(--text2); font-size: 13px; padding: 4px 6px; }
-.dots { display: inline-flex; gap: 3px; }
-.dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--text3); animation: blink 1.2s infinite; }
-.dots i:nth-child(2) { animation-delay: .2s; }
-.dots i:nth-child(3) { animation-delay: .4s; }
-@keyframes blink { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
-.tagpill { margin-left: auto; font-size: 11px; font-weight: 600; background: var(--sec); border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
 .queued { margin: 0 24px 8px; display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 14px; border-radius: 14px; background: var(--card); box-shadow: var(--soft); font-size: 13px; }
 .queued .qt { flex: 1; min-width: 0; }
 .queued .qt small { display: block; color: var(--text2); font-size: 12px; }
-.composer { margin: 0 20px 18px; display: flex; align-items: flex-end; gap: 8px; padding: 8px; border-radius: 26px; background: var(--card); box-shadow: var(--soft); }
-.composer textarea { flex: 1; border: 0; outline: none; resize: none; background: transparent; min-height: 36px; max-height: 120px; padding: 8px 4px; line-height: 1.4; font-size: 15px; }
-.composer.off { opacity: .55; }
-.cbtn { width: 36px; height: 36px; border-radius: 50%; border: 0; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none; }
-.cbtn.add { background: var(--sec); color: var(--text2); }
-/* The mockup draws Stop with the same .cbtn.go look as Send. */
-.cbtn.go, .cbtn.stop { background: var(--primary); color: var(--primary-fg); }
-.cbtn[disabled] { opacity: .35; cursor: not-allowed; }
-.c-note { text-align: center; color: var(--text3); font-size: 11.5px; margin: -10px 0 12px; }
 .stopped-bar { margin: 0 20px 18px; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 14px; border-radius: 26px; background: var(--card); box-shadow: var(--soft); color: var(--text2); }
-.code { font-family: var(--mono); font-size: 12.5px; background: var(--sec); border-radius: 10px; padding: 9px 12px; white-space: pre-wrap; word-break: break-word; }

@@ -1,15 +1,5 @@
-/* SC-004 New agent: screen rules copied from documentations/mockups/index.html. */
-.pop { position: absolute; z-index: 6; background: var(--card); border-radius: 12px; box-shadow: var(--shadow); padding: 6px; width: 220px; }
-.pop button { display: flex; align-items: center; gap: 8px; width: 100%; border: 0; background: transparent; padding: 8px 10px; border-radius: 8px; cursor: pointer; text-align: left; }
-.pop button:hover { background: var(--sel); }
-.pop kbd { margin-left: auto; font-family: var(--font); opacity: .5; font-size: 12px; }
-.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-.field > span { font-weight: 600; font-size: 13px; }
-.field small { color: var(--text2); font-weight: 400; }
-.input, .textarea { border: 1px solid var(--sep); background: var(--field); border-radius: 12px; padding: 8px 12px; width: 100%; }
-.textarea { min-height: 76px; resize: none; line-height: 1.45; }
-.input.invalid, .textarea.invalid { border-color: var(--red); }
-.err { color: var(--red); font-size: 12.5px; }
+/* SC-004 New agent: screen rules copied from documentations/mockups/index.html.
+   The shared layer (src/styles/) owns .pop, .field, .input, .textarea and .err. */
 .harness { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; border: 1.5px solid var(--sep); background: var(--field); cursor: pointer; width: 100%; text-align: left; margin-bottom: 6px; }
 .harness[aria-checked="true"] { border-color: var(--text); }
 .harness .hn { flex: 1; }
