@@ -158,7 +158,10 @@ fn render(entries: &[Entry]) -> String {
          export type Params<M extends Method> = Commands[M][\"params\"];\n\
          export type Result<M extends Method> = Commands[M][\"result\"];\n\n\
          /** The JSON-RPC notification whose params is an `EventEnvelope`. */\n\
-         export const EVENT_NOTIFICATION = \"{EVENT_NOTIFICATION}\";\n"
+         export const EVENT_NOTIFICATION = \"{EVENT_NOTIFICATION}\";\n\n\
+         /** The contract version the app was built with; compare with `Snapshot.daemon.protocol`. */\n\
+         export const PROTOCOL_VERSION = {PROTOCOL_VERSION};\n",
+        PROTOCOL_VERSION = snapshot::PROTOCOL_VERSION
     ));
     out
 }

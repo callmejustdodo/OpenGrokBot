@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import approvalRaised from "../../../tools/fake-formationd/fixtures/scripts/approval-raised.json";
 import inboxCleared from "../../../tools/fake-formationd/fixtures/scripts/inbox-cleared.json";
+import tailnetOffline from "../../../tools/fake-formationd/fixtures/scripts/tailnet-offline.json";
 import "./i18n";
 import type { Settings } from "./ipc/generated/Settings";
 import MenubarPanel from "./MenubarPanel";
@@ -130,6 +131,17 @@ describe("menu bar panel (SC-002)", () => {
     expect(panel()).toHaveAttribute("data-offline", "team");
     expect(screen.getByText("Can't reach the team · local agents keep running")).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Needs you" })).toBeInTheDocument();
+  });
+
+  it("offline: this Mac is off the tailnet (tailnet-offline)", () => {
+    render(<MenubarPanel />);
+    act(() => play(tailnetOffline));
+    expect(panel()).toHaveAttribute("data-state", "offline");
+    expect(panel()).toHaveAttribute("data-offline", "tailnet");
+    expect(screen.getByText("Not on the tailnet · local agents keep running")).toBeInTheDocument();
+    expect(screen.getByText("Backend")).toBeInTheDocument();
+    act(() => send({ type: "network.update", payload: { network: { tailnet: true } } }));
+    expect(panel()).toHaveAttribute("data-state", "default");
   });
 
   it("pauses alerts for an hour, then resumes them", async () => {

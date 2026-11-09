@@ -3,7 +3,9 @@ import type { Agent } from "./Agent";
 import type { Approval } from "./Approval";
 import type { Attention } from "./Attention";
 import type { Conversation } from "./Conversation";
+import type { DaemonInfo } from "./DaemonInfo";
 import type { HarnessStatus } from "./HarnessStatus";
+import type { NetworkStatus } from "./NetworkStatus";
 import type { Question } from "./Question";
 import type { Rule } from "./Rule";
 import type { Schedule } from "./Schedule";
@@ -38,4 +40,13 @@ questions: Array<Question>,
 /**
  * Requests I sent and requests to my agents.
  */
-requests: Array<WorkRequest>, approvals: Array<Approval>, rules: Array<Rule>, harnesses: Array<HarnessStatus>, settings: Settings, };
+requests: Array<WorkRequest>, approvals: Array<Approval>, rules: Array<Rule>, harnesses: Array<HarnessStatus>, settings: Settings, 
+/**
+ * The formationd that took this snapshot. The app compares `protocol` with its
+ * own [`PROTOCOL_VERSION`] on connect.
+ */
+daemon: DaemonInfo, 
+/**
+ * Whether this Mac can reach the tailnet; kept current by `network.update`.
+ */
+network: NetworkStatus, };

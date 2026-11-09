@@ -90,10 +90,11 @@ export function agentStateLabel(t: TFunction, state: AgentState): string {
 
 export type PanelState = "default" | "all-clear" | "offline";
 /** Why the panel is offline: formationd is unreachable, or every teammate is. */
-export type OfflineReason = "formationd" | "team" | null;
+export type OfflineReason = "formationd" | "tailnet" | "team" | null;
 
 export function offlineReason(connected: boolean, mirror: MirrorState | null): OfflineReason {
   if (!connected) return "formationd";
+  if (mirror && !mirror.network.tailnet) return "tailnet";
   const team = mirror?.team;
   const teammates = team?.members.filter((m) => m.id !== team.me) ?? [];
   return teammates.length > 0 && teammates.every((m) => !m.online) ? "team" : null;

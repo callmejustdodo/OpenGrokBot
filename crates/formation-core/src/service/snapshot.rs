@@ -3,7 +3,7 @@ use std::sync::Arc;
 use formation_proto::common::{ApiError, ErrorCode, Seq};
 use formation_proto::events::EventEnvelope;
 use formation_proto::harness::Conversation;
-use formation_proto::snapshot::Snapshot;
+use formation_proto::snapshot::{DaemonInfo, NetworkStatus, Snapshot};
 use formation_proto::team::Team;
 use tokio::sync::broadcast;
 
@@ -133,6 +133,10 @@ impl SnapshotBuilder {
                 rules: self.collab.rules(None)?,
                 harnesses: vec![],
                 settings: self.store.settings()?,
+                daemon: DaemonInfo::current(env!("CARGO_PKG_VERSION")),
+                // The peers port does not report tailnet reachability yet; assume
+                // online until it does (left for A/B).
+                network: NetworkStatus { tailnet: true },
             },
             conversations,
         ))

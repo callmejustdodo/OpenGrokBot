@@ -206,6 +206,10 @@
     "title": "Connect agents",
     "works": "Works"
   },
+  "connection": {
+    "protocolMismatch": "It speaks contract version {{daemon}}; this app needs version {{app}}. Restart formationd to update it.",
+    "restartNeeded": "formationd needs restarting"
+  },
   "conversation": {
     "detectedPlaceholder": "OpenGrokBot can't send messages to this session",
     "error": {
@@ -429,6 +433,7 @@
     "needsYou": "Needs you",
     "offline": {
       "formationd": "Can't reach formationd · retrying. Agents keep running.",
+      "tailnet": "Not on the tailnet · local agents keep running",
       "team": "Can't reach the team · local agents keep running"
     },
     "open": "Open OpenGrokBot",

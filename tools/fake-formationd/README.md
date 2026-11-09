@@ -76,7 +76,7 @@ Any other contract method answers with an `internal` error saying the fake does 
 
 ## M3 states covered
 
-Every M3 state of SC-003, SC-005, SC-010, SC-011, SC-012, SC-015 and SC-016 has an entry in `states.json`. A test fails if one goes missing. Run `list` for the full set with the app steps.
+Every M3 state of SC-003, SC-005, SC-010, SC-011, SC-012, SC-015 and SC-016 has an entry in `states.json`. A test fails if one goes missing. `SC-002/offline` plays `tailnet-offline`, a `network.update` that takes this Mac off the tailnet. Run `list` for the full set with the app steps.
 
 ## Limits
 
