@@ -1,1 +1,911 @@
-{}
+{
+  "agent": {
+    "harness": {
+      "detected": "탐지됨"
+    },
+    "state": {
+      "error": "오류",
+      "idle": "대기",
+      "stalled": "진행 멈춤",
+      "stopped": "중지됨",
+      "unknown": "알 수 없음",
+      "waiting_for_approval": "승인 대기",
+      "working": "작업 중"
+    },
+    "step": {
+      "command": "{{target}} 실행 중",
+      "edit": "{{target}} 수정 중",
+      "read": "{{target}} 읽는 중",
+      "tool": "{{target}}에 {{tool}} 사용 중",
+      "web": "{{target}} 여는 중"
+    }
+  },
+  "agentState": {
+    "error": "오류",
+    "idle": "대기",
+    "stalled": "진행 멈춤",
+    "stopped": "중지됨",
+    "unknown": "알 수 없음",
+    "waiting_for_approval": "승인 대기",
+    "working": "작업 중"
+  },
+  "approval": {
+    "action": {
+      "command": "명령 실행",
+      "network": "네트워크 사용",
+      "other": "{{tool}} 사용",
+      "write": "파일 쓰기"
+    },
+    "allowAll": "{{member}} · {{agent}}에 모두 허용",
+    "allowAllHint": "이 요청자와 에이전트",
+    "allowOnce": "한 번 허용",
+    "allowOnceHint": "이 명령만",
+    "back": "뒤로",
+    "choice": "어떻게 할까요?",
+    "command": "실행할 명령",
+    "decided": {
+      "all": "이 요청자와 에이전트에 모두 허용했어요",
+      "denied": "거절했어요",
+      "once": "한 번 허용했어요",
+      "similar": "허용했어요 · 비슷한 명령은 계속 실행돼요"
+    },
+    "deny": "거절",
+    "denyConfirm": {
+      "body": "{{member}}에게 거절됐다고 알려요. 에이전트는 이 명령을 실행하지 않아요.",
+      "title": "이 동작을 거절할까요?"
+    },
+    "error": {
+      "conflict": "이미 처리된 승인이에요.",
+      "disconnected": "OpenGrokBot에 연결할 수 없어요. 잠시 후 다시 시도하세요.",
+      "expired": "선택이 전달되기 전에 요청이 만료됐어요.",
+      "invalid": "OpenGrokBot이 이 선택을 받을 수 없어요. 한 번 허용하거나 거절하세요.",
+      "other": "선택이 저장되지 않았어요. 다시 시도하세요."
+    },
+    "expired": {
+      "body": "24시간 동안 응답이 없어 만료됐고, {{member}}에게 알렸어요.",
+      "title": "요청이 만료됐어요"
+    },
+    "expiredLead": "만료됨",
+    "expiresIn": "{{minutes}}분 후 만료",
+    "keepSimilar": "비슷한 명령 계속 허용…",
+    "keepSimilarHint": "규칙을 보고 저장",
+    "keepSimilarNone": "이 동작에 맞는 규칙이 없어요",
+    "missing": "더 이상 볼 수 없는 승인이에요.",
+    "noReturn": "실수 방지를 위해 Return 키로는 아무것도 선택되지 않아요.",
+    "purpose": "목적",
+    "requestedBy": "요청한 사람",
+    "rule": {
+      "agent": "에이전트",
+      "arguments": "허용 인수",
+      "expires": "만료",
+      "folder": "폴더",
+      "inDays": "{{count}}일 후",
+      "noExpiry": "만료 없음",
+      "note": "명령 연결(&&, ;)이나 다른 폴더는 허용하지 않아요.",
+      "program": "프로그램",
+      "requester": "요청자",
+      "title": "저장할 규칙"
+    },
+    "saveRule": "규칙 저장하고 허용",
+    "someone": "팀원",
+    "targetAgent": "대상 에이전트",
+    "timeLeft": "{{hours}}시간 {{minutes}}분 남음",
+    "title": "승인이 필요해요",
+    "unknownAgent": "이 에이전트",
+    "viaAgent": "{{member}}의 에이전트가 CLI로 보냄"
+  },
+  "ask": {
+    "actionFailed": "처리하지 못했어요",
+    "agentChoice": "{{owner}} · {{agent}}",
+    "agentTitle": "{{agent}} · {{owner}}",
+    "anotherTitle": "어느 에이전트에게 대신 물을까요?",
+    "answering": "답하는 중… {{owner}}의 작업은 끊기지 않아요",
+    "answeringAgent": "{{agent}} 에이전트가 답하는 중… {{owner}}의 작업은 끊기지 않아요",
+    "askAgain": "다시 묻기",
+    "askAnotherAgent": "다른 에이전트에게",
+    "askOwner": "{{owner}}에게 질문",
+    "askOwnerDirectly": "{{owner}}에게 직접 묻기",
+    "bestGuess": "가장 가능성 높음",
+    "cancelQuestion": "질문 취소",
+    "canceled": "이 질문을 취소했어요.",
+    "composerAgent": "{{agent}} 에이전트에게 질문",
+    "composerPerson": "{{owner}}에게 질문",
+    "composerUnshared": "공유가 꺼져서 물을 수 없어요",
+    "errorDropped": "연결이 끊겼어요. 질문은 저장돼 있어요.",
+    "errorHarness": "{{owner}}의 에이전트가 지금 실행될 수 없어요.",
+    "errorNotMember": "더 이상 {{owner}}의 팀원이 아니에요.",
+    "errorNotShared": "이 에이전트는 더 이상 공유되지 않아요.",
+    "errorRateLimited": "지금 질문이 너무 많아요. 잠시 후 다시 시도하세요.",
+    "errorTitle": "답을 가져오지 못했어요",
+    "excerptAgent": "에이전트",
+    "excerptsMany": "근거 대화 {{count}}개",
+    "excerptsOne": "근거 대화 1개",
+    "newTitle": "새 질문",
+    "offlineBody": "{{owner}}이(가) 돌아오면 공유와 권한을 다시 확인한 뒤 답하고 알려드릴게요.",
+    "offlineTitle": "{{owner}}의 맥이 오프라인이에요",
+    "ownerInbox": "{{owner}}의 받은함으로 보내요",
+    "people": "사람",
+    "personNote": "사람에게 묻기 · OpenGrokBot이 에이전트를 골라요",
+    "possiblyStale": "오래된 정보일 수 있어요",
+    "questionInput": "질문",
+    "received": "받았어요 · 답을 준비하는 중",
+    "refresh": "새로고침",
+    "requestWork": "작업 요청…",
+    "retry": "다시 시도",
+    "send": "보내기 ⌘↩",
+    "sentBody": "{{owner}}이(가) 답하거나 에이전트에게 넘기면 여기에 표시돼요.",
+    "sentTitle": "{{owner}}에게 질문을 보냈어요",
+    "sharedAgents": "공유된 에이전트",
+    "source": "{{owner}}의 {{agent}} 에이전트 · {{time}} 기준",
+    "sourceOwner": "{{owner}} · {{time}} 기준",
+    "tryAgain": "다시 시도",
+    "unknownAgent": "공유된",
+    "unknownMember": "팀원",
+    "unsharedAgent": "에이전트",
+    "unsharedBody": "{{owner}}이(가) 공유를 껐어요. 이전 대화는 볼 수 있지만 새로 물을 수는 없어요.",
+    "unsharedTitle": "이 에이전트는 더 이상 공유되지 않아요",
+    "unsureBody": "고르면 그 에이전트가 답해요.",
+    "unsureTitle": "어느 에이전트에게 물을지 확실하지 않아요",
+    "whoBody": "사람을 고르면 OpenGrokBot이 답할 에이전트를 골라요. 에이전트를 바로 고를 수도 있어요.",
+    "whoTitle": "누구에게 물을까요?"
+  },
+  "attention": {
+    "kind": {
+      "agent_error": "오류",
+      "agent_stalled": "진행 멈춤",
+      "approval": "승인 대기",
+      "question_for_you": "나에게 온 질문",
+      "request_finished": "요청 완료",
+      "schedule_failed": "정기 작업 실패",
+      "schedule_missed": "정기 작업 놓침"
+    }
+  },
+  "common": {
+    "cancel": "취소",
+    "close": "닫기"
+  },
+  "connect": {
+    "cancel": "취소",
+    "capabilities": "OpenGrokBot이 할 수 있는 일",
+    "capability": {
+      "answer_teammates": "팀원 질문에 답하기",
+      "read_conversation": "대화 읽기",
+      "receive_requests": "메시지 보내기·작업 요청 받기",
+      "state": "상태 보기",
+      "unsupported": "지원하지 않아요"
+    },
+    "connect": "연결",
+    "connected": "연결됨",
+    "connecting": "연결하는 중…",
+    "detectFailed": "에이전트를 찾지 못했어요. formationd가 실행 중인지 확인하세요.",
+    "detecting": "이 맥에서 실행 중인 에이전트를 찾는 중…",
+    "doesNotWork": "안 돼요",
+    "error": {
+      "harness_unsupported": "OpenGrokBot은 아직 이 하네스를 지원하지 않아요.",
+      "other": "이 에이전트를 연결하지 못했어요. 다시 시도하세요."
+    },
+    "found": "탐지된 에이전트",
+    "harness": {
+      "claude_code": "Claude Code",
+      "codex": "Codex",
+      "hermes": "Hermes",
+      "open_claw": "OpenClaw"
+    },
+    "harnessLabel": "하네스",
+    "lastActivity": "마지막 활동",
+    "lead": "이 맥에서 OpenGrokBot 밖에서 실행 중인 에이전트를 찾았어요. 연결하면 대화 목록에 비공개로 추가돼요.",
+    "noActivity": "아직 활동이 없어요",
+    "noChange": "OpenGrokBot은 이 에이전트의 설정을 바꾸지 않아요.",
+    "none": "이 맥에서 OpenGrokBot 밖에서 실행 중인 에이전트가 없어요.",
+    "notSupported": "OpenGrokBot은 아직 이 에이전트를 연결할 수 없어요.",
+    "open": "열기",
+    "path": "폴더",
+    "readOnly": "읽기 전용: OpenGrokBot에서 이 에이전트의 활동은 볼 수 있지만 팀원을 위해 쓸 수는 없어요.",
+    "retry": "다시 시도",
+    "title": "에이전트 연결",
+    "works": "돼요"
+  },
+  "conversation": {
+    "detectedPlaceholder": "OpenGrokBot에서 이 세션에 메시지를 보낼 수 없어요",
+    "error": {
+      "conflict": "그사이에 바뀌었어요. 다시 시도하세요.",
+      "denied": "허용되지 않은 동작이에요.",
+      "disconnected": "formationd에 연결할 수 없어요. 다시 연결되면 시도하세요.",
+      "exitCode": "종료 코드 {{code}}",
+      "generic": "문제가 생겼어요. 다시 시도하세요.",
+      "harnessUnavailable": "하네스가 준비되지 않았어요. 설정에서 확인하세요.",
+      "harnessUnsupported": "이 에이전트의 하네스로는 할 수 없어요.",
+      "title": "프로세스가 예기치 않게 종료됐어요"
+    },
+    "label": "대화",
+    "labelWith": "{{name}}와(과)의 대화",
+    "message": "메시지",
+    "notRunning": "에이전트가 실행 중이 아니에요",
+    "panel": "정보 패널",
+    "placeholder": "{{name}}에게 메시지",
+    "private": "이 대화는 팀원에게 보이지 않아요",
+    "queued": {
+      "cancelEdit": "취소",
+      "edit": "편집",
+      "editLabel": "대기 중인 메시지 편집",
+      "note": "대기 중 · 이번 차례가 끝나면 전달돼요",
+      "save": "저장",
+      "steer": "지금 끼어들기",
+      "withdraw": "취소"
+    },
+    "restart": "재시작",
+    "scheduled": "정기 작업",
+    "send": "보내기 ⌘↩",
+    "stalled": {
+      "lastStep": "마지막 단계: {{step}}",
+      "title_other": "{{count}}분째 활동이 없어요"
+    },
+    "start": "시작",
+    "steps": {
+      "commands_other": "명령 {{count}}개 실행",
+      "count_other": "단계 {{count}}개",
+      "edits_other": "파일 {{count}}개 수정"
+    },
+    "stop": "멈추기 ⌘.",
+    "stopConfirm": {
+      "afterTurn": "이번 차례가 끝나면 멈추기",
+      "body": "지금 멈추면 진행 중인 변경이 중간에 멈출 수 있어요.",
+      "cancel": "취소",
+      "now": "지금 멈추기",
+      "title": "{{name}}이(가) 작업 중이에요"
+    },
+    "waitingApproval": "승인 대기",
+    "working": "작업 중",
+    "workingOn": "작업 중 · {{step}}"
+  },
+  "detected": {
+    "body": "{{path}}의 이 {{harness}} 세션은 OpenGrokBot 밖에서 시작해서 OpenGrokBot에서 메시지를 보낼 수 없어요. 활동은 볼 수 있어요.",
+    "capabilities": "OpenGrokBot이 할 수 있는 일",
+    "doesNotWork": "{{capability}}: 안 돼요 ({{reason}})",
+    "title": "읽기 전용 · 탐지된 에이전트",
+    "works": "{{capability}}: 돼요"
+  },
+  "harness": {
+    "agent": "에이전트",
+    "claudeCode": "Claude Code",
+    "claude_code": "Claude Code",
+    "codex": "Codex",
+    "detected": "탐지됨"
+  },
+  "history": {
+    "confirm": {
+      "body": "이 맥의 기록에서만 지워지고, 팀원의 기록은 그대로 남아요. 되돌릴 수 없어요.",
+      "cancel": "취소",
+      "delete": "삭제",
+      "deleteQuestions": "질문과 답도 함께 삭제",
+      "failed": "삭제하지 못했어요. 다시 시도하세요.",
+      "manyTitle": "기록 {{count}}개를 지울까요?",
+      "notFound": "일부는 이미 삭제됐어요.",
+      "oneTitle": "이 기록을 지울까요?"
+    },
+    "deleteOne": "{{summary}} 삭제",
+    "deleteSelected": "선택한 {{count}}개 삭제",
+    "empty": {
+      "body": "질문, 작업 요청, 승인, 결과가 여기에 모여요.",
+      "title": "아직 기록이 없어요"
+    },
+    "error": {
+      "disconnected": "지금 OpenGrokBot에 연결할 수 없어요. 잠시 후 다시 시도하세요.",
+      "other": "불러오는 중에 문제가 생겼어요. 다시 시도하세요.",
+      "title": "기록을 불러오지 못했어요"
+    },
+    "filter": {
+      "all": "전체",
+      "approval": "승인",
+      "question": "질문",
+      "request": "작업 요청",
+      "result": "결과"
+    },
+    "filterLabel": "보기",
+    "loading": "기록을 불러오는 중…",
+    "me": "나",
+    "noMatches": "조건에 맞는 기록이 없어요",
+    "retry": "다시 시도",
+    "search": "기록 검색",
+    "searchPlaceholder": "검색",
+    "select": "{{summary}} 선택",
+    "status": {
+      "allow_all": "모두 허용",
+      "allow_once": "한 번 허용",
+      "allowed": "허용됨",
+      "answered": "답변 완료",
+      "answering": "답하는 중",
+      "awaiting_approval": "승인 대기",
+      "canceled": "취소됨",
+      "completed": "완료",
+      "denied": "거절됨",
+      "deny": "거절",
+      "expired": "만료됨",
+      "failed": "실패",
+      "keep_allowing_similar": "비슷한 명령 계속 허용",
+      "pending": "대기 중",
+      "queued": "대기열",
+      "received": "받음",
+      "running": "실행 중",
+      "sent_to_owner": "주인에게 보냄",
+      "unsure": "답할 에이전트 확인 필요",
+      "waiting_offline": "오프라인이라 기다리는 중"
+    },
+    "tag": {
+      "agent": "에이전트",
+      "approval": "승인",
+      "question": "질문",
+      "request": "작업 요청",
+      "result": "결과"
+    },
+    "title": "기록"
+  },
+  "inbox": {
+    "alert": {
+      "error": "오류",
+      "requestFinished": "요청 완료",
+      "scheduleFailed": "정기 작업",
+      "stalled": "진행 멈춤"
+    },
+    "alerts": "알림",
+    "approvals": "승인 대기",
+    "count_other": "{{count}}개",
+    "empty": {
+      "body": "승인, 질문, 작업 요청이 오면 여기에 모여요.",
+      "title": "지금은 처리할 일이 없어요"
+    },
+    "permission": "권한을 요청해요",
+    "questions": {
+      "answer": "답하기",
+      "answerTo": "{{asker}}에게 답하기",
+      "cancel": "취소",
+      "failed": "보내지 못했어요. 다시 시도하세요.",
+      "gone": "이 질문은 더 이상 답을 기다리지 않아요.",
+      "handOff": "에이전트에게 넘기기",
+      "handOffConfirm": "넘기기",
+      "handingOff": "넘기는 중…",
+      "noAgents": "공유된 내 에이전트가 없어요",
+      "notShared": "그 에이전트는 더 이상 공유되지 않아요. 다른 에이전트를 고르세요.",
+      "pickAgent": "답할 에이전트",
+      "pickAgentPlaceholder": "에이전트 선택",
+      "send": "답 보내기",
+      "sending": "보내는 중…",
+      "title": "나에게 온 질문",
+      "why": "답할 에이전트를 확실히 찾지 못해 {{asker}}이(가) 직접 묻기를 골랐어요"
+    },
+    "someone": "팀원",
+    "title": "받은함",
+    "unknownAgent": "에이전트"
+  },
+  "instructions": {
+    "changedBody": "다른 편집기에서 AGENTS.md를 수정했어요.",
+    "changedTitle": "폴더에서 파일이 바뀌었어요",
+    "close": "닫기",
+    "keepMine": "내 편집 유지",
+    "readError": "에이전트 파일을 읽지 못했어요.",
+    "reload": "다시 불러오기",
+    "save": "저장",
+    "saveError": "저장하지 못했어요. 다시 시도하세요.",
+    "saved": "저장됨 · 다음 세션부터 적용돼요",
+    "skillsLabel": "스킬",
+    "skills_other": "스킬 {{count}}개",
+    "title": "지시문·스킬 · {{name}}",
+    "unsaved": "저장하지 않은 변경 · ⌘S"
+  },
+  "member": {
+    "ask": "묻기",
+    "askAgent": "{{agent}}에게 묻기",
+    "askPerson": "{{name}}에게 묻기",
+    "label": "팀원",
+    "missing": "더 이상 팀에 없는 사람이에요",
+    "noRequests": "요청 안 받음",
+    "noShared": "{{name}}은(는) 아직 공유한 에이전트가 없어요",
+    "offline": "오프라인",
+    "offlineBody": "질문을 보내면 {{name}}이(가) 돌아왔을 때 답해요.",
+    "offlineTitle": "{{name}}의 맥이 오프라인이에요",
+    "online": "온라인",
+    "requestWork": "작업 요청",
+    "requestWorkAgent": "{{agent}}에게 작업 요청",
+    "sharedAgents": "공유된 에이전트"
+  },
+  "menubar": {
+    "ago": {
+      "days": "{{count}}일",
+      "hours": "{{count}}시간",
+      "minutes": "{{count}}분",
+      "now": "지금"
+    },
+    "allClear": "모두 잘 돌아가고 있어요",
+    "label": "OpenGrokBot 메뉴바 패널",
+    "myAgents": "내 에이전트",
+    "needsYou": "나에게 필요한 일",
+    "offline": {
+      "formationd": "formationd에 연결할 수 없어요 · 다시 시도하는 중. 에이전트는 계속 실행돼요.",
+      "team": "팀에 연결할 수 없어요 · 내 에이전트는 계속 실행 중"
+    },
+    "open": "OpenGrokBot 열기",
+    "pauseAlerts": "알림 1시간 끄기",
+    "pauseFailed": "알림 설정을 바꾸지 못했어요. 다시 시도하세요.",
+    "quit": "OpenGrokBot 종료",
+    "resumeAlerts": "알림 다시 켜기",
+    "settings": "설정…",
+    "summary": "에이전트 {{agents}}개 · {{needs}}개 확인 필요"
+  },
+  "newAgent": {
+    "avatar": "아바타",
+    "cancel": "취소",
+    "color": "색상",
+    "create": "만들기",
+    "error": "에이전트를 만들지 못했어요. 다시 시도하세요.",
+    "harness": {
+      "label": "하네스",
+      "notInstalled": "설치되지 않음",
+      "notReady": "만들 수는 있지만 하네스가 준비되기 전까지 실행할 수 없어요.",
+      "ready": "설치됨 · 로그인됨",
+      "signInNeeded": "설치됨 · 로그인 필요"
+    },
+    "instructions": "시작 지시문",
+    "lead": "역할마다 에이전트 하나, 전용 폴더 하나가 생겨요.",
+    "name": "이름",
+    "nameTaken": "같은 이름의 에이전트가 이미 있어요.",
+    "optional": "선택",
+    "role": "역할",
+    "roleHint": "코딩만이 아니라 어떤 역할이든",
+    "shape": "모양",
+    "startsStopped": "만들면 비공개·중지 상태로 시작해요",
+    "title": "새 에이전트"
+  },
+  "notify": {
+    "approval": {
+      "body": "{{requester}}이(가) {{command}}을(를) 실행하려고 해요",
+      "title": "승인이 필요해요"
+    },
+    "error": {
+      "body": "{{agent}}이(가) 멈췄어요: {{reason}}",
+      "title": "에이전트가 멈췄어요"
+    }
+  },
+  "panel": {
+    "agent": "에이전트 정보",
+    "collapse": "정보 패널 숨기기",
+    "detectedNote": "탐지된 에이전트예요. 지시문·정기 작업·공유는 OpenGrokBot이 만든 에이전트에서 쓸 수 있어요.",
+    "folder": "폴더",
+    "harness": "하네스",
+    "instructions": "지시문·스킬",
+    "lastActivity": "마지막 활동",
+    "noSharedAgents": "공유 에이전트 없음",
+    "notShared": "{{owner}}이(가) 더 이상 이 에이전트를 공유하지 않아요.",
+    "ownersAgent": "{{owner}}의 에이전트",
+    "person": "팀원 정보",
+    "personNote": "사람에게 물으면 OpenGrokBot이 공유된 에이전트 중 답할 에이전트를 골라요.",
+    "requestWork": "작업 요청…",
+    "requestsAccepted": "받아요. 실행은 {{owner}}의 승인 규칙을 따라요.",
+    "requestsNotAccepted": "받지 않아요",
+    "role": "역할",
+    "scheduleCount_other": "정기 작업 {{count}}개",
+    "sharedAgents": "공유된 에이전트",
+    "sharing": {
+      "private": "비공개",
+      "requests": "작업 요청 받음",
+      "shared": "팀에 공유됨"
+    },
+    "state": "상태",
+    "teammateQuestions": "팀원 질문",
+    "workRequests": "작업 요청"
+  },
+  "permission": {
+    "allow": "허용",
+    "allowSession": "이 세션 동안 허용",
+    "decided": {
+      "all": "이 요청자와 에이전트에 모두 허용했어요",
+      "allowed": "허용했어요",
+      "denied": "거절했어요",
+      "expired": "응답 없이 만료됐어요",
+      "once": "한 번 허용했어요",
+      "session": "이 세션 동안 허용했어요",
+      "similar": "허용했어요 · 비슷한 명령은 계속 실행돼요"
+    },
+    "deny": "거절",
+    "error": {
+      "expired": "권한 요청이 만료됐어요.",
+      "other": "선택이 저장되지 않았어요. 다시 시도하세요."
+    },
+    "note": "{{harness}}의 권한 선택이에요. 팀원 요청은 OpenGrokBot 승인 규칙을 따라요.",
+    "requestApproval": "승인",
+    "review": "검토",
+    "title": "{{harness}}가 권한을 요청해요",
+    "waiting": "승인 대기"
+  },
+  "requestCard": {
+    "review": "검토",
+    "someone": "팀원",
+    "status": {
+      "awaitingApproval": "승인 대기",
+      "canceled": "취소됨",
+      "completed": "완료",
+      "denied": "거절됨",
+      "expired": "만료됨",
+      "failed": "실패",
+      "queued": "이번 차례 다음 실행",
+      "received": "받음",
+      "running": "실행 중"
+    },
+    "title": "{{member}}의 작업 요청",
+    "waiting_other": "승인 {{count}}건 대기"
+  },
+  "requestStatus": {
+    "cancel": "요청 취소",
+    "cantCancel": "시작된 요청은 취소할 수 없어요",
+    "error": {
+      "other": "요청을 취소하지 못했어요. 다시 시도하세요.",
+      "started": "요청이 이미 시작돼서 취소할 수 없어요."
+    },
+    "failure": {
+      "denied": "이 요청에 필요한 동작을 주인이 거절했어요.",
+      "expired": "승인 요청에 24시간 동안 응답이 없어 요청이 만료됐어요.",
+      "harness": "에이전트를 시작하지 못했어요.",
+      "notAccepted": "이 에이전트가 작업 요청을 더 이상 받지 않아요.",
+      "notShared": "이 에이전트는 더 이상 나에게 공유되지 않아요.",
+      "offline": "주인의 맥이 오프라인이에요.",
+      "other": "요청을 실행하는 중에 문제가 생겼어요."
+    },
+    "lead": "{{owner}}의 {{agent}} 에이전트 · {{prompt}}",
+    "missing": "더 이상 볼 수 없는 요청이에요.",
+    "result": "결과",
+    "someone": "팀원",
+    "step": {
+      "awaitingApproval": "승인 대기",
+      "canceled": "취소됨",
+      "completed": "완료",
+      "denied": "거절됨",
+      "expired": "만료됨",
+      "failed": "실패",
+      "queued": "대기열 · 현재 차례가 끝나길 기다림",
+      "received": "받음",
+      "running": "실행 중"
+    },
+    "timeline": "진행 상황",
+    "title": "작업 요청 상태",
+    "unknownAgent": "알 수 없는"
+  },
+  "rules": {
+    "always": {
+      "body": "에이전트 폴더와 지정된 레포 안에서 파일 읽기",
+      "title": "기본 허용"
+    },
+    "cancel": "취소",
+    "daysLeft_other": "{{count}}일 남음",
+    "dismiss": "닫기",
+    "edit": "편집",
+    "editLabel": "{{rule}} 규칙의 한도 편집",
+    "empty": {
+      "body": "승인할 때 '비슷한 명령 계속 허용'을 고르면 여기에 생겨요.",
+      "title": "저장된 규칙이 없어요"
+    },
+    "error": {
+      "disconnected": "OpenGrokBot에 연결할 수 없어요. 잠시 후 다시 시도하세요.",
+      "invalid": "OpenGrokBot이 이 한도를 받을 수 없어요.",
+      "notFound": "더 이상 없는 규칙이에요.",
+      "revoke": "규칙을 취소하지 못했어요. 규칙은 계속 적용돼요.",
+      "update": "새 한도를 저장하지 못했어요."
+    },
+    "expired": "만료됨",
+    "expires": "만료",
+    "hoursLeft_other": "{{count}}시간 남음",
+    "in1d": "1일 후",
+    "in30d": "30일 후",
+    "in7d": "7일 후",
+    "keepExpiry": "유지 ({{current}})",
+    "lead": "승인 없이 실행되는 범위",
+    "limits": "한도",
+    "maxUses": "사용 한도",
+    "maxUsesHint": "비워 두면 한도가 없어요. 지금까지 {{count}}회 사용했어요.",
+    "maxUsesInvalid": "지금까지 사용한 {{count}}회보다 큰 정수를 입력하세요.",
+    "noExpiry": "만료 없음",
+    "noLimit": "한도 없음",
+    "revoke": "취소",
+    "revokeConfirm": {
+      "body": "{{member}}이(가) {{agent}}에게 보낸 요청이 {{scope}}을(를) 실행하기 전에 다시 승인을 받아요. 바로 적용돼요.",
+      "title": "이 규칙을 취소할까요?"
+    },
+    "revokeLabel": "{{rule}} 규칙 취소",
+    "revoked": "규칙을 취소했어요",
+    "save": "한도 저장",
+    "saved": "저장된 규칙",
+    "scope": {
+      "all": "모든 동작"
+    },
+    "someone": "팀원",
+    "status": {
+      "expired": "만료됨 · 더 이상 적용되지 않아요",
+      "usedUp": "한도 도달 · 더 이상 적용되지 않아요"
+    },
+    "title": "규칙",
+    "tryAgain": "다시 시도",
+    "unknownAgent": "에이전트",
+    "updated": "한도를 저장했어요",
+    "used": "{{count}}회 사용",
+    "usedOf": "{{max}}회 중 {{count}}회 사용"
+  },
+  "schedules": {
+    "add": "추가",
+    "day": {
+      "fri": "금요일",
+      "mon": "월요일",
+      "sat": "토요일",
+      "sun": "일요일",
+      "thu": "목요일",
+      "tue": "화요일",
+      "wed": "수요일"
+    },
+    "delete": {
+      "body": "더 이상 실행되지 않아요. 지난 실행 내용은 에이전트 대화에 남아요.",
+      "confirm": "정기 작업 삭제",
+      "deleting": "삭제하는 중…",
+      "title": "이 정기 작업을 삭제할까요?"
+    },
+    "error": {
+      "disconnected": "지금 OpenGrokBot에 연결할 수 없어요. 변경 내용은 그대로 있으니 다시 시도하세요.",
+      "generic": "정기 작업을 저장하지 못했어요. 다시 시도하세요.",
+      "invalid": "할 일, 반복, 시간을 확인하고 다시 저장하세요.",
+      "notFound": "더 이상 없는 정기 작업이에요."
+    },
+    "fromTime": "{{time}}부터",
+    "panel": {
+      "edit": "정기 작업 편집: {{prompt}}",
+      "empty": "정기 작업 없음",
+      "failedNotice": "실패: {{subject}}",
+      "next": "다음: {{when}}",
+      "noNext": "다음 실행 없음",
+      "retryHint": "다음 예정 시간에 다시 실행돼요. 필요한 것을 확인하고, 바뀐 게 있으면 정기 작업을 편집하세요."
+    },
+    "paused": "일시 중지됨",
+    "rule": {
+      "daily": "매일",
+      "everyHours_other": "{{count}}시간마다",
+      "everyN": "N시간마다",
+      "weekdays": "평일",
+      "weekly": "매주",
+      "weeklyOn": "매주 {{day}}"
+    },
+    "run": {
+      "completed": "{{when}} 완료",
+      "failed": "{{when}} 실패",
+      "missed": "놓침 → 깨어난 뒤 {{time}} 실행",
+      "running": "{{time}}부터 실행 중",
+      "waiting": "실행 대기 중"
+    },
+    "sheet": {
+      "back": "모든 정기 작업",
+      "cancel": "취소",
+      "close": "닫기",
+      "day": "요일",
+      "delete": "삭제",
+      "editForm": "정기 작업 편집",
+      "hours": "실행 간격(시간)",
+      "hoursRange": "1부터 24까지의 정수를 쓰세요.",
+      "lead": "정해진 시간에 새 세션으로 실행돼요. 승인 규칙은 똑같이 적용돼요.",
+      "new": "새 정기 작업",
+      "newForm": "새 정기 작업",
+      "noRuns": "아직 실행한 적이 없어요",
+      "repeat": "반복",
+      "retry": "다시 시도",
+      "runs": "최근 실행",
+      "runsError": "실행 기록을 불러오지 못했어요.",
+      "runsLoading": "실행 기록을 불러오는 중…",
+      "save": "저장",
+      "saving": "저장하는 중…",
+      "startTime": "시작 시간",
+      "task": "할 일",
+      "taskRequired": "에이전트가 할 일을 적어 주세요.",
+      "time": "시간",
+      "timeRequired": "시간을 골라 주세요.",
+      "title": "정기 작업 · {{agent}}"
+    },
+    "title": "정기 작업"
+  },
+  "settings": {
+    "connecting": "formationd에 연결하는 중…",
+    "disconnected": "formationd와 연결이 끊겼어요. 다시 연결될 때까지 변경할 수 없어요.",
+    "general": {
+      "english": "English",
+      "korean": "한국어",
+      "language": "언어",
+      "system": "macOS 설정 따르기"
+    },
+    "harnesses": {
+      "check": "다시 확인",
+      "checkFailed": "하네스를 확인하지 못했어요. 다시 시도하세요.",
+      "checking": "확인하는 중…",
+      "detected": "탐지된 에이전트",
+      "noPath": "찾을 수 없음",
+      "notInstalled": "설치되지 않음",
+      "note": "OpenGrokBot은 로그인 정보를 다루지 않아요. 각 하네스에서 직접 로그인하세요.",
+      "signInNeeded": "로그인 필요",
+      "signInUnknown": "로그인 상태 알 수 없음",
+      "signedIn": "로그인됨"
+    },
+    "label": "설정",
+    "notifications": {
+      "enabled": "내가 필요할 때 알림 받기",
+      "pause": "알림 일시 중지",
+      "pauseHour": "1시간 동안",
+      "pauseTomorrow": "내일까지",
+      "pausedUntil": "{{time}}까지 일시 중지됨",
+      "resume": "다시 켜기",
+      "which": "승인, 오류, 멈춤, 정기 작업 실패처럼 내가 필요할 때만 알려요."
+    },
+    "saveFailed": "변경을 저장하지 못했어요. 다시 시도하세요.",
+    "tab": {
+      "general": "일반",
+      "harnesses": "하네스",
+      "notifications": "알림",
+      "team": "팀"
+    },
+    "team": {
+      "cancel": "취소",
+      "creator": "팀을 만든 사람",
+      "leave": "팀 나가기",
+      "leaveBody": "팀원은 더 이상 내 에이전트에게 물을 수 없고, 나도 팀원의 에이전트에게 물을 수 없어요. 내 에이전트는 계속 실행돼요.",
+      "leaveConfirm": "팀 나가기",
+      "leaveFailed": "팀에서 나가지 못했어요. 다시 시도하세요.",
+      "leaveTitle": "팀에서 나갈까요?",
+      "member": "팀원",
+      "members": "팀원",
+      "name": "{{name}}의 팀",
+      "none": "팀에 속해 있지 않아요.",
+      "offline": "오프라인",
+      "online": "온라인",
+      "role": "내 역할",
+      "team": "팀",
+      "unnamed": "내 팀"
+    }
+  },
+  "sharing": {
+    "acceptRequests": "작업 요청 받기",
+    "acceptRequestsNote": "실행은 승인 규칙을 따라요",
+    "answerExcerpts": "답과 근거 대화",
+    "answerOnly": "답만",
+    "cancel": "취소",
+    "close": "닫기",
+    "failed": "공유 설정을 바꾸지 못했어요",
+    "offByDefault": "새 에이전트는 기본으로 꺼져 있어요",
+    "preview": "팀원에게 보이는 모습 미리보기",
+    "previewAnswerOnly": "답, 답한 에이전트, 기준 시각이 보여요. 대화 내용은 보이지 않아요.",
+    "previewAnswers": "답에 담기는 내용",
+    "previewExcerpts": "답, 답한 에이전트, 기준 시각과 답에 쓴 대화 내용이 보여요.",
+    "previewFailed": "미리보기를 불러오지 못했어요",
+    "previewLastActivity": "마지막 활동",
+    "previewLoading": "미리보기를 불러오는 중…",
+    "previewMasking": "비밀번호·키처럼 보이는 내용은 가려져요. 가리기는 보조 수단이에요.",
+    "previewOwner": "주인",
+    "previewRequests": "작업 요청",
+    "previewRequestsOff": "받지 않아요",
+    "previewRequestsOn": "받아요",
+    "previewRole": "역할",
+    "previewState": "상태",
+    "previewTitle": "팀원에게 보이는 모습",
+    "privateNote": "팀원 목록과 답할 에이전트 고르기에서 보이지 않아요.",
+    "shareWithTeam": "팀에 공유",
+    "stopSharing": "공유 끄기",
+    "title": "공유",
+    "tryAgain": "다시 시도",
+    "unshareBody": "새 질문과 요청은 바로 막혀요. 대기 중인 요청은 취소되고, 이미 실행 중인 작업은 직접 멈추기 전까지 계속돼요.",
+    "unshareTitle": "{{agent}} 공유를 끌까요?",
+    "visibility": "보이는 범위",
+    "visibilityNote": "모든 팀원에게 같아요"
+  },
+  "sidebar": {
+    "connect": "에이전트 연결",
+    "connectRunning": "이미 실행 중인 에이전트 연결",
+    "conversations": "대화 목록",
+    "detecting": "이 맥에서 에이전트를 찾는 중…",
+    "empty": {
+      "body": "역할을 정해 에이전트를 만들거나, 이미 실행 중인 에이전트를 연결하세요.",
+      "title": "첫 에이전트를 만들어요"
+    },
+    "history": "기록",
+    "inbox": "받은함",
+    "label": "사이드바",
+    "latest": {
+      "request": "팀원의 작업 요청"
+    },
+    "myAgents": "내 에이전트",
+    "needsYou": "{{count}}개 확인 필요",
+    "new": "새로 만들기",
+    "newAgent": "새 에이전트",
+    "newQuestion": "새 질문",
+    "noMatches": "일치하는 항목이 없어요",
+    "offline": "오프라인",
+    "online": "온라인",
+    "rules": "규칙",
+    "search": "에이전트와 대화 검색",
+    "team": "팀",
+    "unsharedAgent": "더 이상 공유되지 않는 에이전트",
+    "withCount": "{{label}} ({{count}})"
+  },
+  "team": {
+    "cancel": "취소",
+    "copied": "복사했어요",
+    "copy": "복사",
+    "expires": "{{time}}에 만료돼요. 슬랙이나 메신저로 보내세요.",
+    "invitationCreated": "초대 링크를 만들었어요",
+    "invite": "초대",
+    "inviteFailed": "초대 링크를 만들지 못했어요",
+    "label": "팀",
+    "lead": "{{creator}}의 팀 · {{count}}명",
+    "me": "나",
+    "meCreator": "나 · 팀을 만든 사람",
+    "members": "팀원",
+    "noShared": "공유 에이전트 없음",
+    "offline": "오프라인",
+    "online": "온라인",
+    "onlyMeBody": "팀원을 초대하면 서로의 에이전트에게 물을 수 있어요.",
+    "onlyMeTitle": "아직 혼자예요",
+    "remove": "제거",
+    "removeBody": "{{name}}은(는) 바로 접근할 수 없게 돼요. 더 이상 질문이나 요청을 보낼 수 없고, {{name}}의 에이전트는 내 목록에서 사라져요.",
+    "removeConfirm": "제거",
+    "removeMember": "{{name}} 제거",
+    "removeTitle": "{{name}}을(를) 제거할까요?",
+    "sharedMany": "공유 에이전트 {{count}}개",
+    "sharedOne": "공유 에이전트 1개",
+    "title": "팀",
+    "tryAgain": "다시 시도",
+    "viewAgents": "에이전트 보기",
+    "viewAgentsOf": "{{name}}의 에이전트 보기"
+  },
+  "time": {
+    "daysAgo": "{{count}}일 전",
+    "hoursAgo": "{{count}}시간 전",
+    "justNow": "방금",
+    "minutesAgo": "{{count}}분 전"
+  },
+  "welcome": {
+    "checkAgain": "다시 확인",
+    "createFailed": "팀을 만들지 못했어요. 다시 시도하세요.",
+    "createTeam": "새 팀 만들기",
+    "creatorOffline": "팀을 만든 사람의 맥이 오프라인이에요. 다시 온라인이 되면 시도하세요.",
+    "harnesses": "하네스 확인",
+    "installed": "설치됨",
+    "invitationCode": "초대 코드",
+    "inviteExpired": "만료된 링크예요. 팀원에게 새 링크를 요청하세요.",
+    "join": "합류",
+    "joinRateLimited": "시도가 너무 많아요. 몇 분 뒤 다시 시도하세요.",
+    "joinUnreachable": "formationd에 연결하지 못했어요. 다시 시도하세요.",
+    "label": "시작하기",
+    "lead": "팀원이 내 에이전트에게 직접 묻고, 나는 에이전트를 한곳에서 굴려요.",
+    "notInstalled": "설치되지 않음 — {{name}} 에이전트는 설치 후 실행할 수 있어요",
+    "notifications": "알림",
+    "notificationsNote": "승인, 오류, 멈춤처럼 내가 필요할 때만 알려요.",
+    "ready": "설치됨, 로그인됨",
+    "signedOut": "로그인 안 됨 — {{name}} 에이전트는 로그인 후 실행할 수 있어요",
+    "team": "팀",
+    "title": "OpenGrokBot 시작하기"
+  },
+  "workRequest": {
+    "error": {
+      "notShared": "{{agent}}은(는) 더 이상 나에게 공유되지 않아요.",
+      "offline": "{{owner}}의 맥이 오프라인이에요. 다시 온라인이 되면 시도하세요.",
+      "other": "요청을 보내지 못했어요. 다시 시도하세요.",
+      "rateLimited": "지금 요청이 너무 많아요. 잠시 후 다시 시도하세요."
+    },
+    "include": "대화에서 함께 보낼 메시지",
+    "me": "나",
+    "notAccepted": {
+      "body": "{{owner}}이(가) 이 에이전트의 작업 요청을 꺼 두었어요. 질문은 할 수 있어요.",
+      "title": "{{agent}} 에이전트는 작업 요청을 받지 않아요"
+    },
+    "notShared": {
+      "body": "{{owner}}이(가) 더 이상 공유하지 않아요.",
+      "title": "나에게 공유되지 않은 에이전트예요"
+    },
+    "note": "현재 차례가 끝난 뒤 실행되고, 명령은 {{owner}}의 승인 규칙을 따라요.",
+    "preview": "전달될 프롬프트 미리보기",
+    "request": "작업 요청",
+    "send": "보내기",
+    "someone": "팀원",
+    "title": "작업 요청",
+    "to": "받는 에이전트: {{owner}}의 {{agent}} · 작업 요청 받음",
+    "unknownAgent": "이 에이전트"
+  }
+}

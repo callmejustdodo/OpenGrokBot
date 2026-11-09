@@ -27,7 +27,7 @@ function harnessName(t: TFunction, kind: HarnessKind): string {
     case "codex":
       return t("harness.codex", "Codex");
     case "detected":
-      return t("harness.detected", "Detected agent");
+      return t("settings.harnesses.detected", "Detected agent");
   }
 }
 
