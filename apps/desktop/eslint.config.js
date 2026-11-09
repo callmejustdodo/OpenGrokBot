@@ -6,7 +6,8 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default defineConfig([
-  globalIgnores(["dist", "src-tauri"]),
+  // src/ipc/generated is written by ts-rs (`pnpm ipc:generate`); tsc still checks it.
+  globalIgnores(["dist", "src-tauri", "src/ipc/generated"]),
   {
     files: ["**/*.{ts,tsx}"],
     extends: [

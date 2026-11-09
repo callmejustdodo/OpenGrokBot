@@ -46,7 +46,12 @@ flowchart LR
   V -- "commands via ipc/" --> T["src-tauri client"] --> D
 ```
 
-- **Types:** request, event, and error types are written once in Rust (`formation-proto`) and generated into TypeScript with `ts-rs` (proposed in TASK-002: `cargo test` writes the bindings; C decides where the app build reads them), so the UI and core cannot drift apart.
+- **Types:** request, event, and error types are written once in Rust (`formation-proto`) and generated into TypeScript with `ts-rs`, so the UI and core cannot drift apart.
+  - `cargo test` writes one file per type into `src/ipc/generated/`: `.cargo/config.toml` sets `TS_RS_EXPORT_DIR`.
+  - `src/ipc/generated/commands.ts` maps every socket method to its params and result type. It is generated from the Rust `Command` trait by `src-tauri/tests/typescript_commands.rs`, which fails if a method is missing from the map.
+  - The generated files are committed, so the UI can be built and typechecked without a Rust toolchain, and contract changes show in pull request diffs.
+  - `pnpm -C apps/desktop ipc:generate` regenerates the folder from scratch. CI's `rust` job runs it and fails when the committed files are stale.
+  - `pnpm typecheck` covers the generated files; ESLint skips them.
 - **Store:** a single reducer over normalized slices (`agents`, `conversations` keyed by agent, `questions`, `requests`, `approvals`, `team`, `inbox`, `ui`). A small library such as Zustand holds it; selectors feed views.
 - **Snapshot then events:** on connect or reconnect the store replaces its contents with formationd's snapshot, then applies events in sequence order. A gap in sequence numbers triggers a new snapshot.
 - **Immediate feedback:** every action shows a pending state within 100 ms (doc 3 direction), then settles on the confirming event or shows the mapped error.

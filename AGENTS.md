@@ -9,20 +9,23 @@ Formation is a proposed open-source macOS app and CLI for collaborating through 
 - `crates/`: the Rust workspace (`formation-proto`, `formation-core`, `formationd`, `formation-cli`), described in the [tech spec](documentations/4_techspec.md#code-layout).
 - `apps/desktop/`: the Tauri 2 app, with the React and TypeScript UI in `src/` and the Rust side in `src-tauri/` (a member of the Cargo workspace), described in the [frontend architecture](documentations/5_frontend_architecture.md#code-layout).
 - `THIRD_PARTY_NOTICES.md`: every file copied or generated from another project, with its source and license.
-- `scripts/`: repository tooling, currently the documentation link checker.
+- `scripts/`: repository tooling: the documentation link checker and the pull request issue-link checker, with its tests.
 
 ## Checks
 
-The documentation check needs Node.js 18 or later and no packages. The Rust checks need a stable Rust toolchain with Clippy and rustfmt. The desktop checks need pnpm (the version is pinned in `apps/desktop/package.json`); run `pnpm -C apps/desktop install` first. CI runs them as the `documentation`, `rust` and `desktop` checks.
+The documentation and issue-link checks need Node.js 18 or later and no packages; the issue-link check also needs the GitHub CLI. The Rust checks need a stable Rust toolchain with Clippy and rustfmt. The desktop checks need pnpm (the version is pinned in `apps/desktop/package.json`); run `pnpm -C apps/desktop install` first. CI runs them as the `documentation`, `rust` and `desktop` checks, and runs the `issue-link` check, with the script tests, on every pull request.
 
 ```sh
 node scripts/check-documentation.mjs    # local Markdown links and heading anchors resolve
+node --test scripts/*.test.mjs          # tests for the repository scripts
+gh pr view <N> --json body,closingIssuesReferences | node scripts/check-issue-link.mjs  # pull request <N> links its issue
 cargo test --workspace                  # Rust unit and integration tests, including the app's Rust side
 cargo fmt --all -- --check              # Rust formatting; run `cargo fmt --all` to fix
 cargo clippy --workspace -- -D warnings # Rust lint
 pnpm -C apps/desktop lint               # ESLint
 pnpm -C apps/desktop typecheck          # TypeScript
 pnpm -C apps/desktop test               # Vitest
+pnpm -C apps/desktop ipc:generate       # regenerate src/ipc/generated after changing formation-proto; commit the result
 pnpm -C apps/desktop tauri dev          # run the app in development
 ```
 
@@ -55,7 +58,7 @@ The team uses GitHub Flow, starting from an issue: issue -> `main` -> short-live
 
 - Before starting work or opening an issue, check whether the work is already tracked or under way: search open and closed issues (`gh issue list --state all --search "<words>"`) and open pull requests (`gh pr list --search "<words>"`). Reuse a matching open issue instead of opening a duplicate. When a closed issue or merged pull request already covers the work, confirm the problem remains before reopening the issue or opening a new one.
 - Start every piece of work from an issue, so the team can see who is doing what and two people do not do the same work. Assign yourself when you start (`gh issue edit <N> --add-assignee @me`). If someone else holds the issue or has a pull request open for it, ask them before taking it over.
-- Link every pull request to its issue with `Closes #N`, or with `Part of #N` when more pull requests follow. Only a hotfix, an urgent fix for a broken `main` or deployment, may go without an issue, and its description says it is a hotfix.
+- Link every pull request to its issue with `Closes #N`, or with `Part of #N` when more pull requests follow. Only a hotfix, an urgent fix for a broken `main` or deployment, may go without an issue, and its description says it is a hotfix. The `issue-link` check fails a pull request that has none of these and no issue linked in its Development sidebar. It ignores HTML comments and code, so the template's own examples do not count. Linking an issue only in the sidebar does not re-run the check; edit the description or re-run the check afterwards.
 - Do not commit directly to `main`; every change reaches it through a pull request. Merge once the relevant checks pass. Teammate review is welcome but not required, so the author may merge their own pull request.
 - Keep pull requests small and separate unrelated changes. Describe the resulting behavior, rationale and validation, including any checks that could not run. Bring in new changes from `main` regularly and resolve conflicts before merging.
 - Write the pull request description with the sections of [`.github/pull_request_template.md`](.github/pull_request_template.md). GitHub fills it in on the web, but `gh pr create --body` does not, so agents copy its sections themselves.

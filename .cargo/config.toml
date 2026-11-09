@@ -1,0 +1,5 @@
+[env]
+# ts-rs writes formation-proto's TypeScript bindings straight into the app, so
+# `cargo test` keeps them current (frontend architecture, "Data flow").
+# Regenerate from scratch with `pnpm -C apps/desktop ipc:generate`.
+TS_RS_EXPORT_DIR = { value = "apps/desktop/src/ipc/generated", relative = true }
