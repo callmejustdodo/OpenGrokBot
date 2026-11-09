@@ -19,5 +19,5 @@ Add one entry per copied file or file group: the path in this repository, the up
 
 - **Upstream:** [DominikScholz/open-bot-avatar](https://github.com/DominikScholz/open-bot-avatar), gallery shapes as embedded in the approved mockup `documentations/mockups/index.html` (the mockup does not record the upstream commit)
 - **License:** MIT. Copyright (c) 2026 Dominik Scholz.
-- **Files:** `apps/desktop/src/components/sidebar/avatarShapes.ts` (the license text is kept in the file header)
-- **Changes:** copied the mockup's `OBA` map of body paths and eye positions into a typed TypeScript constant; `AgentAvatar.tsx` draws them as flat stills the way the mockup does.
+- **Files:** `apps/desktop/src/components/sidebar/avatarShapes.ts` (the license text is kept in the file header); `.github/assets/readme-header.html` and the `readme-header-light.png` and `readme-header-dark.png` images rendered from it
+- **Changes:** copied the mockup's `OBA` map of body paths and eye positions into a typed TypeScript constant; `AgentAvatar.tsx` draws them as flat stills the way the mockup does. The README header embeds eight of the shapes and draws them the same way.
