@@ -17,8 +17,10 @@
 //! - The requester is told through their work request: it moves to
 //!   `awaiting_approval` while an approval is pending, back to `running` once
 //!   none is, and ends as `denied` or `expired` with the matching error. Each
-//!   change is stored and published as `request.update`, which the peer server
-//!   forwards to the requester's Mac. When a request ends, its other pending
+//!   change is stored and published as `request.update` for this Mac's clients,
+//!   and handed to the [`RequestWatcher`] (formationd passes
+//!   [`Requests`](crate::requests::Requests)), which carries it to the
+//!   requester's Mac through the peer server. When a request ends, its other pending
 //!   approvals are denied with it, and its later tool calls are denied at once
 //!   without raising an approval.
 //!
@@ -77,6 +79,20 @@ pub trait ApprovalStore: ApprovalRepo + RequestRepo + Send + Sync {}
 
 impl<T: ApprovalRepo + RequestRepo + Send + Sync> ApprovalStore for T {}
 
+/// Told of every change approvals make to a work request, after it is stored.
+///
+/// Approvals move a request (`awaiting_approval`, back to `running`, `denied`,
+/// `expired`) by writing it to the store directly, so the request queue does
+/// not see these changes. The queue is what sends each change to the
+/// requester's Mac, so formationd hands it to [`Approvals::with_request_watcher`];
+/// without it, the requester sees these changes only when they read the
+/// request or reconnect.
+pub trait RequestWatcher: Send + Sync {
+    /// `request` as stored, unmasked; called with the approvals lock held, so it
+    /// must not call back into [`Approvals`].
+    fn request_changed(&self, request: &WorkRequest);
+}
+
 /// One tool call that needs the owner.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ApprovalTicket {
@@ -105,6 +121,7 @@ pub struct Approvals {
     events: Arc<dyn EventSink>,
     notifier: Arc<dyn Notifier>,
     clock: Arc<dyn Clock>,
+    request_watcher: Option<Arc<dyn RequestWatcher>>,
     /// Serializes every status change, and holds what lives only while
     /// formationd runs.
     state: Mutex<State>,
@@ -144,8 +161,16 @@ impl Approvals {
             events,
             notifier,
             clock,
+            request_watcher: None,
             state: Mutex::default(),
         }
+    }
+
+    /// Tells `watcher` of every request change approvals make
+    /// ([`RequestWatcher`]).
+    pub fn with_request_watcher(mut self, watcher: Arc<dyn RequestWatcher>) -> Self {
+        self.request_watcher = Some(watcher);
+        self
     }
 
     /// The gate's answer once the policy has spoken (`PermissionGate::decide`
@@ -270,8 +295,7 @@ impl Approvals {
                 approval: approval.clone(),
             }));
             if let Some(request) = request {
-                self.events
-                    .publish(Event::RequestUpdate(RequestUpdateEvent { request }));
+                self.publish_request(request);
             }
             approval
         };
@@ -597,9 +621,19 @@ impl Approvals {
             approval: change.approval.clone(),
         }));
         if let Some(request) = change.request.take() {
-            self.events
-                .publish(Event::RequestUpdate(RequestUpdateEvent { request }));
+            self.publish_request(request);
         }
+    }
+
+    /// `request.update` for clients, and the change for the requester through
+    /// the [`RequestWatcher`]. Call with the lock held, so changes leave in the
+    /// order they were stored.
+    fn publish_request(&self, request: WorkRequest) {
+        if let Some(watcher) = &self.request_watcher {
+            watcher.request_changed(&request);
+        }
+        self.events
+            .publish(Event::RequestUpdate(RequestUpdateEvent { request }));
     }
 
     /// Wakes the waiters and resolves the attention item, after the lock is

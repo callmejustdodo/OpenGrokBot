@@ -48,6 +48,7 @@ struct Data {
     shares: Vec<ShareSettings>,
     requests: Vec<WorkRequest>,
     queue: Vec<QueueItem>,
+    approvals: Vec<Approval>,
 }
 
 impl MemoryCollab {
@@ -224,15 +225,26 @@ impl QuestionRepo for MemoryCollab {
     }
 }
 
+/// For the tests that drive approvals of a running request.
 impl ApprovalRepo for MemoryCollab {
-    fn approval(&self, _: ApprovalId) -> Result<Option<Approval>> {
-        unimplemented!("{UNUSED}")
+    fn approval(&self, id: ApprovalId) -> Result<Option<Approval>> {
+        let data = self.data.lock().unwrap();
+        Ok(data.approvals.iter().find(|a| a.id == id).cloned())
     }
-    fn approvals(&self, _: Option<ApprovalStatus>) -> Result<Vec<Approval>> {
-        unimplemented!("{UNUSED}")
+    fn approvals(&self, status: Option<ApprovalStatus>) -> Result<Vec<Approval>> {
+        let data = self.data.lock().unwrap();
+        Ok(data
+            .approvals
+            .iter()
+            .filter(|a| status.is_none_or(|s| a.status == s))
+            .cloned()
+            .collect())
     }
-    fn put_approval(&self, _: &Approval) -> Result<()> {
-        unimplemented!("{UNUSED}")
+    fn put_approval(&self, approval: &Approval) -> Result<()> {
+        let mut data = self.data.lock().unwrap();
+        data.approvals.retain(|a| a.id != approval.id);
+        data.approvals.push(approval.clone());
+        Ok(())
     }
 }
 

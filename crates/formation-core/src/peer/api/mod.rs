@@ -45,6 +45,8 @@ use crate::ports::{Policy, Result, TeamRepo};
 
 pub use caller::{BlockingIdentity, CallerIdentity, not_member};
 pub use error::{PeerError, status_for};
+#[cfg(test)]
+pub(crate) use events::HubMessage;
 pub use events::{Audience, PeerEventHub};
 pub use handlers::{AskEndpoints, JoinEndpoint, RequestEndpoints};
 

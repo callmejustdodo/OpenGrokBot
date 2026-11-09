@@ -7,6 +7,9 @@
 //!   the "accepts requests" check; cancel before start; restart recovery.
 //! - [`endpoints`]: the handlers for `POST /v1/requests`, `GET /v1/requests/{id}`,
 //!   and `POST /v1/requests/{id}/cancel` that the peer server calls.
+//! - [`peer`]: [`RequestEndpoints`](crate::peer::api::RequestEndpoints) over
+//!   [`Requests`] for the peer server, and [`peer::forward_updates`], which sends
+//!   each change to its requester's events connection.
 //! - [`RequestClient`], on the requester's Mac: the `request_create`,
 //!   `request_get`, and `request_cancel` commands, sent through the
 //!   [`Peers`](crate::ports::Peers) port, with the chain taken from `from_run`.
@@ -19,6 +22,7 @@
 mod client;
 pub mod endpoints;
 pub mod outgoing;
+pub mod peer;
 mod queue;
 pub mod status;
 
