@@ -279,14 +279,18 @@ mod tests {
     }
 
     #[test]
-    fn the_tray_glyph_is_a_bubble_with_clear_eyes() {
+    fn the_tray_glyph_is_three_linked_rings() {
         let glyph = tray_glyph().expect("icons/tray-icon.png decodes");
         let (width, height) = (glyph.width(), glyph.height());
         assert_eq!((width, height), (44, 44));
-        // A template image: the corner is clear, the bubble opaque, the eyes cut out.
+        // A template image of the Figma mark: the corner is clear, the link between the
+        // top rings and a ring's stroke are opaque, a ring's center and the gap below
+        // the bottom ring are clear.
         assert_eq!(alpha(glyph.rgba(), width, 0, 0), 0);
-        assert_eq!(alpha(glyph.rgba(), width, 22, 12), 255);
-        assert_eq!(alpha(glyph.rgba(), width, 15, 22), 0);
+        assert_eq!(alpha(glyph.rgba(), width, 22, 14), 255);
+        assert_eq!(alpha(glyph.rgba(), width, 17, 14), 255);
+        assert_eq!(alpha(glyph.rgba(), width, 12, 14), 0);
+        assert_eq!(alpha(glyph.rgba(), width, 22, 30), 0);
     }
 
     #[test]
