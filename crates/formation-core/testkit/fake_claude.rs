@@ -40,6 +40,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
     let session = session.ok_or("requires --session-id or --resume")?;
+    let accept_steer = env::var_os("FAKE_CLAUDE_ACCEPT_STEER").is_some();
     let delay = env::var("FAKE_CLAUDE_LINE_DELAY_MS").map_or(Ok(0), |v| v.parse::<u64>())?;
     let transcript = fs::read_to_string(env::var("FAKE_CLAUDE_TRANSCRIPT")?)?;
     let mut turns = VecDeque::new();
@@ -100,16 +101,23 @@ fn main() -> Result<(), Box<dyn Error>> {
         };
         if let Some(line) = input {
             // The protocol decoder preserves stdin-only shapes as Unknown values.
-            let value = match protocol::decode_stdout_line(&line?)? {
+            let line = line?;
+            let value = match protocol::decode_stdout_line(&line)? {
                 Event::Unknown(value) => value,
-                Event::User(_) => {
-                    queued += 1;
-                    continue;
-                }
+                Event::User(_) => serde_json::from_str(&line)?,
                 _ => continue,
             };
+            if let Ok(path) = env::var("FAKE_CLAUDE_INPUT_LOG") {
+                let mut log = fs::OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(path)?;
+                writeln!(log, "{value}")?;
+            }
             if value["type"] == "user" {
-                queued += 1;
+                if !accept_steer || active.is_none() || value["priority"] == "later" {
+                    queued += 1;
+                }
             } else if value["type"] == "control_request"
                 && value["request"]["subtype"] == "interrupt"
             {
