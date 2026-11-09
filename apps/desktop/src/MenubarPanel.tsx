@@ -1,8 +1,10 @@
 // The menu bar panel (SC-002): a one-line summary, what needs me, my agents
 // with their state, and ways into the app. States: default (something needs
 // me), all-clear, and offline (formationd unreachable, or every teammate
-// offline; local agents are still listed).
+// offline; local agents are still listed). Rows show how long ago each item
+// came in, and the window tells the tray icon whether to show its dot.
 import { invoke } from "@tauri-apps/api/core";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { showMainWindow } from "./ipc/client";
 import type { AttentionTarget } from "./ipc/generated/AttentionTarget";
@@ -14,9 +16,10 @@ import {
   type NeedsYouItem,
   type PanelState,
 } from "./notifications/attention";
+import { shortAgo, useMinuteClock } from "./notifications/ago";
 import { isMuted } from "./notifications/decide";
+import { setTrayAttention } from "./notifications/tray";
 import { useAppStore } from "./store/store";
-import { useNow } from "./views/settings/useNow";
 import { useSettingsUpdate } from "./views/settings/useSettingsUpdate";
 
 /** How long "Pause alerts" mutes notifications. */
@@ -38,7 +41,11 @@ export default function MenubarPanel() {
   const agents = Object.values(mirror?.agents ?? {}).filter((a) => a.detected === null);
   const offline = offlineReason(connected, mirror);
   const state: PanelState = offline ? "offline" : needs.length > 0 ? "default" : "all-clear";
-  const now = useNow();
+  const now = useMinuteClock();
+  const attention = needs.length > 0;
+  useEffect(() => {
+    void setTrayAttention(attention);
+  }, [attention]);
   const paused = settings.notifications.enabled && isMuted(settings.notifications, now);
 
   let summary: string;
@@ -81,6 +88,9 @@ export default function MenubarPanel() {
                 <button type="button" className="mb-row" onClick={() => void focusItem(item.target)}>
                   <span>{item.subject}</span>
                   <span className="r">{attentionKindLabel(t, item.kind)}</span>
+                  <time className="ago" dateTime={item.at}>
+                    {shortAgo(t, item.at, now)}
+                  </time>
                 </button>
               </li>
             ))}
