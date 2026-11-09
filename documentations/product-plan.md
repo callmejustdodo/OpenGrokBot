@@ -192,4 +192,4 @@ Measure Formation separately from provider processes: idle memory and CPU, one q
 
 Decide the first provider, default history scope, execution defaults, transport, and applicable provider account and usage conditions. Billing and large-team administration are proposed exclusions from the first MVP.
 
-Before building the full app, test the same workflow in Happier, Flowpad, and Agent Relay. If an existing product already meets the need, an extension may be a better starting point. See the [competitive landscape](competitive-landscape.md).
+Before building the full app, test the same workflow in Happier, Reason Network, Flowpad, Agent Relay, and Paperclip. If an existing product already meets the need, an extension may be a better starting point. See the [competitive landscape](competitive-landscape.md).
