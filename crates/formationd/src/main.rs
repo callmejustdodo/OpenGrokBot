@@ -1,5 +1,6 @@
 mod fake_commands;
 mod no_team;
+mod owner_only;
 
 use std::io;
 use std::path::Path;
@@ -10,6 +11,8 @@ use formation_core::harness::claude::{ClaudeConfig, ClaudeSupervisor};
 use formation_core::harness::detect::{Detect, DetectPaths};
 use formation_core::harness::dispatch::HarnessDispatcher;
 use formation_core::notify::{AttentionNotifier, monitor, reconcile};
+use formation_core::permission::{Gate, PermissionCommands};
+use formation_core::policy::approvals::{Approvals, SystemClock};
 use formation_core::ports::{
     CollabStore, CommandHandler, Harness, Notifier, Peers, PermissionGate, Policy, RequestQueue,
     Store,
@@ -29,6 +32,7 @@ use tokio::signal::unix::{SignalKind, signal};
 
 use fake_commands::FakeCommands;
 use no_team::NoTeam;
+use owner_only::OwnerOnly;
 
 type Error = Box<dyn std::error::Error + Send + Sync>;
 
@@ -40,7 +44,6 @@ struct Service {
     store: Arc<dyn Store>,
     notifier: Arc<dyn Notifier>,
     schedules: Arc<Schedules>,
-    _policy: Option<Arc<dyn Policy>>,
     _gate: Option<Arc<dyn PermissionGate>>,
     _requests: Option<Arc<dyn RequestQueue>>,
 }
@@ -99,6 +102,23 @@ fn wiring(directory: &Path, fake_list: &str, detect_paths: DetectPaths) -> Resul
         if let Some(binary) = std::env::var_os("FORMATION_CLAUDE_BIN") {
             config.binary = binary.into();
         }
+        // The permission tool and hook (`formation`) must reach this daemon's socket.
+        config.env.insert(
+            "FORMATION_SOCKET".into(),
+            default_socket_path()?.to_string_lossy().into_owned(),
+        );
+        // Prefer the `formation` built next to this executable (development and
+        // bundles); otherwise `formation` is looked up on PATH.
+        let sibling = std::env::current_exe()?.with_file_name("formation");
+        if sibling.is_file() {
+            let path = sibling.to_string_lossy();
+            config.mcp_config = serde_json::json!({"mcpServers": {"formation": {
+                "command": path, "args": ["mcp", "--permission"]
+            }}})
+            .to_string();
+            config.pre_tool_use_command =
+                format!("'{}' hook pre-tool-use", path.replace('\'', "'\\''"));
+        }
         // Without the `requests` fake this stays `None` until the real queue has its
         // SQLite collaboration repositories.
         let supervisor = Arc::new(ClaudeSupervisor::with_request_queue(
@@ -125,8 +145,11 @@ fn wiring(directory: &Path, fake_list: &str, detect_paths: DetectPaths) -> Resul
         readiness,
     )?);
     let no_team = Arc::new(NoTeam::new());
+    // Approvals live in memory until B's SQLite collaboration repositories exist,
+    // so pending approvals are lost when formationd restarts.
+    let memory = Arc::new(MemoryCollabStore::new());
     let collab: Arc<dyn CollabStore> = if fakes.contains(&"collab") || fakes.contains(&"peers") {
-        Arc::new(MemoryCollabStore::new())
+        memory.clone()
     } else {
         no_team.clone()
     };
@@ -154,6 +177,25 @@ fn wiring(directory: &Path, fake_list: &str, detect_paths: DetectPaths) -> Resul
         bus.clone(),
         notifier.clone(),
     ));
+    let policy: Arc<dyn Policy> = if fakes.contains(&"policy") {
+        Arc::new(FakePolicy::new())
+    } else {
+        Arc::new(OwnerOnly)
+    };
+    let approvals = Arc::new(Approvals::new(
+        memory.clone(),
+        bus.clone(),
+        notifier.clone(),
+        Arc::new(SystemClock),
+    ));
+    let gate = Arc::new(Gate::new(
+        harness.clone(),
+        store.clone(),
+        memory,
+        policy,
+        approvals.clone(),
+    ));
+    let permissions = Arc::new(PermissionCommands::new(gate, approvals));
     let detect = Arc::new(Detect::new(detect_paths, store.clone(), bus.clone()));
     let snapshots = Arc::new(SnapshotBuilder::new(
         store.clone(),
@@ -162,7 +204,14 @@ fn wiring(directory: &Path, fake_list: &str, detect_paths: DetectPaths) -> Resul
         peers,
     ));
     let router = Arc::new(
-        Router::new(vec![agents, commands, detect, schedules.clone()]).map_err(io::Error::other)?,
+        Router::new(vec![
+            agents,
+            commands,
+            detect,
+            schedules.clone(),
+            permissions,
+        ])
+        .map_err(io::Error::other)?,
     );
     Ok(Service {
         router,
@@ -172,9 +221,6 @@ fn wiring(directory: &Path, fake_list: &str, detect_paths: DetectPaths) -> Resul
         store,
         notifier,
         schedules,
-        _policy: fakes
-            .contains(&"policy")
-            .then(|| Arc::new(FakePolicy::new()) as Arc<dyn Policy>),
         _gate: fakes
             .contains(&"gate")
             .then(|| Arc::new(FakePermissionGate::new()) as Arc<dyn PermissionGate>),

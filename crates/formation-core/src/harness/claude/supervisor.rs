@@ -40,6 +40,11 @@ pub const RUN_ID_ENV: &str = "FORMATION_RUN_ID";
 /// Names the agent of a Claude Code process for the permission tool and hook.
 pub const AGENT_ID_ENV: &str = "FORMATION_AGENT_ID";
 
+/// Added to every gated launch (with `--permission-mode default`), so no user,
+/// project or local allow rule or mode lets a tool call skip the permission tool
+/// (#136, `PermissionVerdict::Defer`). `--settings` still loads the hook.
+pub(super) const GATED_ARGS: [&str; 2] = ["--setting-sources", ""];
+
 /// Gate transport configuration is supplied by formationd; this adapter only installs flags.
 #[derive(Clone, Debug)]
 pub struct ClaudeConfig {
@@ -382,7 +387,7 @@ impl Harness for ClaudeSupervisor {
             last_activity_at: stored.and_then(|s| s.last_activity_at),
         };
         let settings = json!({"hooks":{"PreToolUse":[{"matcher":"","hooks":[{"type":"command","command":config.pre_tool_use_command}]}]}}).to_string();
-        let args = protocol::launch_args(
+        let mut args = protocol::launch_args(
             if resume.is_some() {
                 Launch::Resume { session_id: &sid.0 }
             } else {
@@ -392,9 +397,10 @@ impl Harness for ClaudeSupervisor {
                 permission_prompt_tool: Some("mcp__formation__permission"),
                 mcp_config: Some(&config.mcp_config),
                 settings: Some(&settings),
-                permission_mode: None,
+                permission_mode: Some("default"),
             },
         );
+        args.extend(GATED_ARGS.map(String::from));
         let process_run = RunId::generate();
         let mut child = Command::new(&config.binary)
             .args(args)

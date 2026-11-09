@@ -33,6 +33,7 @@ fn agent(slug: &str, harness: HarnessKind) -> Agent {
         created_at: time(),
         last_activity_at: None,
         detected: None,
+        running_requests: vec![],
     }
 }
 
