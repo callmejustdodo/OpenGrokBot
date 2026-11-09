@@ -5,6 +5,7 @@ pub mod agents;
 pub mod ask;
 pub mod harness;
 pub mod ports;
+pub mod requests;
 pub mod service;
 pub mod store;
 
