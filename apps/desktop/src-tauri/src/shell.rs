@@ -155,9 +155,9 @@ impl TrayIcons {
     }
 }
 
-/// The menu bar glyph: the app icon's chat bubble with its eyes cut out, black
-/// on clear (icons/source/tray-icon.svg). The app icon itself is a filled
-/// square, which as a template image would draw as a solid block.
+/// The menu bar glyph: the lead agent avatar (the rocket) with its eyes cut
+/// out, black on clear (icons/source/tray-icon.svg). The app icon itself is a
+/// filled square, which as a template image would draw as a solid block.
 fn tray_glyph() -> Option<Image<'static>> {
     Image::from_bytes(include_bytes!("../icons/tray-icon.png"))
         .ok()
@@ -279,18 +279,14 @@ mod tests {
     }
 
     #[test]
-    fn the_tray_glyph_is_three_linked_rings() {
+    fn the_tray_glyph_is_the_rocket_with_clear_eyes() {
         let glyph = tray_glyph().expect("icons/tray-icon.png decodes");
         let (width, height) = (glyph.width(), glyph.height());
         assert_eq!((width, height), (44, 44));
-        // A template image of the Figma mark: the corner is clear, the link between the
-        // top rings and a ring's stroke are opaque, a ring's center and the gap below
-        // the bottom ring are clear.
+        // A template image: the corner is clear, the body opaque, the eyes cut out.
         assert_eq!(alpha(glyph.rgba(), width, 0, 0), 0);
-        assert_eq!(alpha(glyph.rgba(), width, 22, 14), 255);
-        assert_eq!(alpha(glyph.rgba(), width, 17, 14), 255);
-        assert_eq!(alpha(glyph.rgba(), width, 12, 14), 0);
-        assert_eq!(alpha(glyph.rgba(), width, 22, 30), 0);
+        assert_eq!(alpha(glyph.rgba(), width, 22, 12), 255);
+        assert_eq!(alpha(glyph.rgba(), width, 18, 20), 0);
     }
 
     #[test]
