@@ -113,7 +113,7 @@ async fn failed_turn_keeps_error_in_snapshot_until_start() {
     })
     .await
     .expect("agent.state error");
-    assert_eq!(error.reason.as_deref(), Some("api_error"));
+    assert_eq!(error.reason.as_deref(), Some("API Error: 500 (api_error)"));
     // The snapshot matches the last event, and keeps it while the process lives.
     assert_eq!(snapshot_state().await, AgentState::Error);
     tokio::time::sleep(Duration::from_millis(50)).await;

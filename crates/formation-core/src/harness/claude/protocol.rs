@@ -192,6 +192,9 @@ pub struct ResultEvent {
     pub is_error: bool,
     pub result: Option<String>,
     pub terminal_reason: Option<String>,
+    /// The HTTP status of a failed API call, or null. Kept raw because only `null`
+    /// is recorded in the fixtures.
+    pub api_error_status: Option<Value>,
     pub total_cost_usd: Option<f64>,
     pub usage: Option<Value>,
 }
