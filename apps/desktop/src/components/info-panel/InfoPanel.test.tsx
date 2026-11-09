@@ -24,10 +24,31 @@ describe("SC-020 my-agent", () => {
     expect(within(panel).getByText("Working")).toHaveAttribute("data-state", "working");
     expect(panel.querySelector(".ava")).toHaveAttribute("data-shape", "rocket");
     expect(panel.querySelector(".ava")).toHaveAttribute("data-color", "#3a6df0");
-    expect(within(panel).getByRole("region", { name: "Schedules" })).toBeInTheDocument();
-    expect(within(panel).getByRole("region", { name: "Sharing" })).toBeInTheDocument();
     fireEvent.click(within(panel).getByRole("button", { name: /Instructions & skills/ }));
     expect(uiStore.getState().sheet).toEqual({ kind: "instructions", agentId: BACKEND });
+  });
+
+  it("opens the schedules sheet from the compact Schedules card", () => {
+    show({ kind: "agent", agentId: BACKEND });
+    render(<InfoPanel />);
+    const card = screen.getByRole("button", { name: /^Schedules/ });
+    expect(card.querySelector(".chev")).toBeInTheDocument();
+    fireEvent.click(card);
+    expect(uiStore.getState().sheet).toEqual({ kind: "schedules", agentId: BACKEND });
+  });
+
+  it("expands the sharing controls inline from the compact Sharing card", () => {
+    show({ kind: "agent", agentId: BACKEND });
+    render(<InfoPanel />);
+    const card = screen.getByRole("button", { name: /^Sharing/ });
+    expect(card).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("region", { name: "Sharing" })).toBeNull();
+    fireEvent.click(card);
+    expect(card).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("region", { name: "Sharing" })).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: /Share with team/ })).toBeInTheDocument();
+    fireEvent.click(card);
+    expect(screen.queryByRole("region", { name: "Sharing" })).toBeNull();
   });
 
   it("for a detected agent, explains that instructions, schedules and sharing don't apply", () => {
