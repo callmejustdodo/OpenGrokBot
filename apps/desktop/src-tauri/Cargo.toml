@@ -20,3 +20,8 @@ tauri = { version = "2", features = [] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 libc = "0.2"
+
+[dev-dependencies]
+# tests/typescript_commands.rs generates the TypeScript method map from the contract.
+formation-proto = { path = "../../../crates/formation-proto" }
+ts-rs = "12.0.1"
