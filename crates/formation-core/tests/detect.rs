@@ -132,10 +132,23 @@ async fn detects_recent_external_sessions_skips_owned_projects_and_connects_read
         f.store.agent(connected.id).unwrap(),
         Some(connected.clone())
     );
+    // The reason the state is unknown is readable from the snapshot and from `agent.state`.
+    let reason = connected
+        .detected
+        .as_ref()
+        .unwrap()
+        .capabilities
+        .state
+        .reason
+        .clone();
+    assert!(reason.as_ref().is_some_and(|s| !s.is_empty()));
     let events = f.events.events();
-    assert_eq!(events.len(), 1);
+    assert_eq!(events.len(), 2);
     assert!(
         matches!(&events[0].1, Event::AgentUpdate(AgentUpdateEvent::Upsert { agent }) if **agent == connected)
+    );
+    assert!(
+        matches!(&events[1].1, Event::AgentState(s) if s.agent_id == connected.id && s.state == AgentState::Unknown && s.reason == reason)
     );
     // Move the source into another project directory: exclusion must still use its session ID.
     let other = original
@@ -180,7 +193,7 @@ async fn reports_only_present_installations_with_capability_reasons() {
             serde_json::from_value(f.call("agent_connect", json!({"key":d.key})).await).unwrap();
         assert_eq!(again.id, agent.id);
     }
-    assert_eq!(f.events.events().len(), 2);
+    assert_eq!(f.events.events().len(), 4);
     assert!(
         f.detected()
             .await
