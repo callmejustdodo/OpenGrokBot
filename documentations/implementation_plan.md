@@ -243,7 +243,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: A
 
 ### TASK-014: The app's store mirrors formationd
-- Status: in progress
+- Status: complete
 - References: [data flow](5_frontend_architecture.md#data-flow)
 - Prerequisites: TASK-008
 - Change locations: `apps/desktop/src/ipc/`, `apps/desktop/src/store/`, `apps/desktop/src-tauri/` (socket client)
