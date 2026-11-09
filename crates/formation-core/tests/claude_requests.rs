@@ -106,6 +106,12 @@ impl Setup {
             .collect()
     }
 }
+/// Whether `args` contains `flag` (`--permission-prompt-tool` on every gated run;
+/// `--setting-sources` and `--permission-mode` only on a teammate's request fork).
+fn has(args: &Value, flag: &str) -> bool {
+    args.as_array().unwrap().contains(&Value::from(flag))
+}
+
 impl Drop for Setup {
     fn drop(&mut self) {
         let _ = fs::remove_dir_all(&self.root);
@@ -223,6 +229,25 @@ async fn requests_wait_for_turn_then_fork_in_order_and_report_to_requester() {
     let launches = s.launches();
     assert_eq!(launches.len(), 3);
     assert_ne!(launches[1]["session"], launches[2]["session"]);
+    let main_args = &launches[0]["args"];
+    assert!(has(main_args, "--permission-prompt-tool"));
+    assert!(!has(main_args, "--setting-sources"));
+    assert!(!has(main_args, "--permission-mode"));
+    for launch in &launches[1..] {
+        let args = &launch["args"];
+        assert!(
+            args.as_array()
+                .unwrap()
+                .windows(2)
+                .any(|w| w == [Value::from("--setting-sources"), Value::from("")])
+        );
+        assert!(
+            args.as_array()
+                .unwrap()
+                .windows(2)
+                .any(|w| w == [Value::from("--permission-mode"), Value::from("default")])
+        );
+    }
     for launch in &launches[1..] {
         let args = launch["args"].as_array().unwrap();
         assert!(args.contains(&Value::from("--fork-session")));
@@ -292,5 +317,43 @@ async fn tool_free_fork_preserves_main_and_stores_result() {
             .any(|w| w == [Value::from("--tools"), Value::from("")])
     );
     assert!(!args.contains(&Value::from("--permission-prompt-tool")));
+    s.supervisor.stop(s.agent.id, StopMode::Now).await.unwrap();
+}
+
+#[tokio::test]
+async fn schedule_fork_loads_the_owner_settings_and_keeps_the_gate() {
+    let s = Setup::new();
+    let main = s.supervisor.start(&s.agent, None).await.unwrap();
+    let item = QueueItem {
+        source: QueueSource::Schedule {
+            schedule_id: ScheduleId::generate(),
+        },
+        ..s.owner()
+    };
+    let result = s
+        .supervisor
+        .run_fork(
+            s.agent.id,
+            ForkRun {
+                run_id: RunId::generate(),
+                from: main.session_id.clone(),
+                item,
+                tools: ForkTools::Gated,
+            },
+        )
+        .await
+        .unwrap();
+    assert_eq!(result.result.outcome, TurnOutcome::Completed);
+    let launches = s.launches();
+    assert_eq!(launches.len(), 2);
+    for launch in &launches {
+        let args = &launch["args"];
+        assert!(has(args, "--permission-prompt-tool"));
+        assert!(has(args, "--mcp-config"));
+        assert!(has(args, "--settings"));
+        assert!(!has(args, "--setting-sources"));
+        assert!(!has(args, "--permission-mode"));
+    }
+    assert!(has(&launches[1]["args"], "--fork-session"));
     s.supervisor.stop(s.agent.id, StopMode::Now).await.unwrap();
 }
