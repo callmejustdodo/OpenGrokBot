@@ -8,6 +8,11 @@ pub const MIGRATIONS: &[Migration] = &[
         sql: include_str!("schema.sql"),
     },
     Migration {
+        version: 1002,
+        name: "owner queues",
+        sql: "CREATE TABLE owner_queues (agent_id TEXT PRIMARY KEY NOT NULL, items TEXT NOT NULL);",
+    },
+    Migration {
         version: 1003,
         name: "schedule run error",
         sql: "ALTER TABLE schedule_runs ADD COLUMN error TEXT;",

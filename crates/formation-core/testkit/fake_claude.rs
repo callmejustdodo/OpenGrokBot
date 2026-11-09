@@ -37,7 +37,18 @@ fn write_line(out: &mut impl Write, line: &Value) -> io::Result<()> {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let mut args = env::args().skip(1);
+    let argv: Vec<_> = env::args().skip(1).collect();
+    if argv == ["--version"] {
+        println!("0.0.0 (fake-claude)");
+        return Ok(());
+    }
+    if argv == ["auth", "status", "--json"] {
+        // The shape ClaudeReadiness parses: signed out prints `loggedIn: false`, exit 1.
+        let signed_in = env::var_os("FAKE_CLAUDE_SIGNED_OUT").is_none();
+        println!("{}", json!({ "loggedIn": signed_in }));
+        std::process::exit(if signed_in { 0 } else { 1 });
+    }
+    let mut args = argv.into_iter();
     let mut session = None;
     let mut fork = false;
     let mut no_tools = false;
@@ -78,6 +89,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         log.write_all(format!("{record}\n").as_bytes())?;
     }
     let accept_steer = env::var_os("FAKE_CLAUDE_ACCEPT_STEER").is_some();
+    let ignore_interrupt = env::var_os("FAKE_CLAUDE_IGNORE_INTERRUPT").is_some();
     let delay = env::var("FAKE_CLAUDE_LINE_DELAY_MS").map_or(Ok(0), |v| v.parse::<u64>())?;
     let transcript = fs::read_to_string(env::var("FAKE_CLAUDE_TRANSCRIPT")?)?;
     let mut turns = VecDeque::new();
@@ -160,6 +172,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
             } else if value["type"] == "control_request"
                 && value["request"]["subtype"] == "interrupt"
+                && !ignore_interrupt
             {
                 let request_id = value["request_id"].as_str().ok_or("missing request_id")?;
                 write_line(
