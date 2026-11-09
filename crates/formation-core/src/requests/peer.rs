@@ -7,12 +7,20 @@
 //! `POST /v1/requests/{id}/cancel`, and [`forward_updates`] carries
 //! [`Requests::subscribe`] onto the [`PeerEventHub`]. [`PeerRequests`] does not
 //! publish anything itself, so a request is published once per change, by the
-//! forwarder, whichever path changed it (a teammate, the owner, or the executor).
+//! forwarder. [`Requests::subscribe`] carries the changes the queue makes (a
+//! teammate, the owner, or the executor) and, once formationd builds
+//! [`Approvals`] with [`Approvals::with_request_watcher`] given the same
+//! [`Requests`], the approval moves too (`awaiting_approval`, back to `running`,
+//! `denied`, `expired`), which approvals store without the queue.
 //!
 //! What reaches the requester is masked exactly once
 //! ([`for_requester`], #165): [`Requests::subscribe`] and the [`endpoints`]
 //! already mask, so only the requests read here straight from the store
-//! ([`Requests::owned`]) are masked here.
+//! ([`Requests::owned`]) and the one [`PeerRequests::create`] returns are masked
+//! here.
+//!
+//! [`Approvals`]: crate::policy::approvals::Approvals
+//! [`Approvals::with_request_watcher`]: crate::policy::approvals::Approvals::with_request_watcher
 
 use std::sync::{Arc, Weak};
 
@@ -30,17 +38,10 @@ use super::Requests;
 use super::endpoints;
 use super::outgoing::for_requester;
 use super::queue::now;
+#[cfg(doc)]
+use crate::peer::api::AskEndpoints;
 use crate::peer::api::{PeerEventHub, RequestEndpoints, not_member};
 use crate::ports::Result;
-
-/// How long a request that ended stays in what a reconnecting requester is sent
-/// again. The owner's store has no per-member "last delivered" mark, so
-/// [`PeerRequests::requests_to_resend`] cannot tell which final updates a member
-/// missed; it re-sends every one that ended within this window instead. A week
-/// covers a teammate whose Mac was off over a weekend or a holiday; sending one
-/// they already have is harmless (they keep the newest by `updated_at`), and
-/// past the window they can still read it with `GET /v1/requests/{id}`.
-pub const RESEND_FINAL_WITHIN: TimeDelta = TimeDelta::days(7);
 
 /// After the forwarder falls behind, how far before the last update it sent it
 /// looks again, so a wall clock stepping back a little loses nothing.
@@ -61,8 +62,10 @@ impl PeerRequests {
 impl RequestEndpoints for PeerRequests {
     /// The member, their agent, and the chain come from `caller`, the identity
     /// the server checked with the policy, rather than from the body. A repeated
-    /// (requester, idempotency key) returns the original
-    /// ([`Requests::create`]).
+    /// (requester, idempotency key) returns the original. The server has already
+    /// run [`Policy::check_request`](crate::ports::Policy::check_request), which
+    /// counts against the member's per-minute limit, so this goes through
+    /// [`Requests::create_authorized`] and the request is counted once.
     async fn create(&self, caller: Caller, request: PeerRequestCreate) -> Result<WorkRequest> {
         let Caller::Member {
             member_id,
@@ -79,7 +82,10 @@ impl RequestEndpoints for PeerRequests {
             chain,
             ..request
         };
-        endpoints::create(&self.requests, member_id, body).await
+        self.requests
+            .create_authorized(member_id, body)
+            .await
+            .map(|request| for_requester(&request))
     }
 
     async fn get(&self, member: MemberId, id: RequestId) -> Result<WorkRequest> {
@@ -90,15 +96,18 @@ impl RequestEndpoints for PeerRequests {
         endpoints::cancel(&self.requests, member, id)
     }
 
-    /// Every request of `member` that has not ended, and every one that ended
-    /// within [`RESEND_FINAL_WITHIN`], oldest change first, masked for them.
+    /// Every request of `member`, ended or not, oldest change first, masked for
+    /// them. The owner's store has no per-member "last delivered" mark, so it
+    /// cannot tell which final updates the member missed while away, however
+    /// long that was ([`AskEndpoints::questions_to_resend`]); it sends them all,
+    /// and the requester keeps the newest by `updated_at`, so one they already
+    /// have changes nothing.
     async fn requests_to_resend(&self, member: MemberId) -> Result<Vec<WorkRequest>> {
-        let since = now() - RESEND_FINAL_WITHIN;
         let mut out: Vec<WorkRequest> = self
             .requests
             .owned()?
             .into_iter()
-            .filter(|request| request.requester == member && worth_sending(request, since))
+            .filter(|request| request.requester == member)
             .map(|request| for_requester(&request))
             .collect();
         out.sort_by_key(|request| request.updated_at);
@@ -170,20 +179,23 @@ mod tests {
     use tokio::sync::broadcast;
     use tokio::time::timeout;
 
-    use formation_proto::common::{AgentId, ChainId, ErrorCode};
-    use formation_proto::policy::Chain;
+    use formation_proto::agent::{Attention, AttentionKind, AttentionTarget};
+    use formation_proto::common::{AgentId, AttentionId, ChainId, ErrorCode, RunId};
+    use formation_proto::policy::{ApprovalChoice, ApprovalDecide, Chain, ToolCall};
     use formation_proto::request::RequestStatus;
 
     use super::super::testing::{MemoryCollab, ScriptedPolicy};
     use super::*;
     use crate::ask::mask::Masker;
     use crate::peer::api::{Audience, HubMessage};
-    use crate::ports::{RequestQueue, RequestRepo, RunProgress};
+    use crate::policy::approvals::{ApprovalTicket, Approvals, SystemClock};
+    use crate::ports::{Notifier, RequestQueue, RequestRepo, RunProgress};
     use crate::testkit::RecordingEventSink;
 
     struct Owner {
         agent: AgentId,
         collab: Arc<MemoryCollab>,
+        policy: Arc<ScriptedPolicy>,
         requests: Arc<Requests>,
         endpoints: PeerRequests,
         hub: PeerEventHub,
@@ -193,14 +205,16 @@ mod tests {
         let agent = AgentId::generate();
         let collab = Arc::new(MemoryCollab::new(MemberId::generate()));
         collab.share_agent(agent, true);
+        let policy = Arc::new(ScriptedPolicy::default());
         let requests = Arc::new(Requests::new(
             collab.clone(),
-            Arc::new(ScriptedPolicy::default()),
+            policy.clone(),
             Arc::new(RecordingEventSink::default()),
         ));
         Owner {
             agent,
             collab,
+            policy,
             endpoints: PeerRequests::new(requests.clone()),
             requests,
             hub: PeerEventHub::new(),
@@ -309,8 +323,42 @@ mod tests {
         assert_eq!(canceled.status, RequestStatus::Canceled);
     }
 
+    /// The server checks the policy before calling `create`; checking again would
+    /// count one request twice against the member's per-minute limit.
     #[tokio::test]
-    async fn resends_open_and_recently_ended_requests_of_that_member_masked() {
+    async fn create_leaves_the_policy_check_to_the_server() {
+        let owner = owner();
+        owner
+            .endpoints
+            .create(member(MemberId::generate()), body(owner.agent, "k1"))
+            .await
+            .unwrap();
+        assert!(owner.policy.checked.lock().unwrap().is_empty());
+
+        // The local entry point still checks.
+        owner
+            .requests
+            .create(MemberId::generate(), body(owner.agent, "k2"))
+            .await
+            .unwrap();
+        assert_eq!(owner.policy.checked.lock().unwrap().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn create_still_checks_the_agent_accepts_requests() {
+        let owner = owner();
+        let closed = AgentId::generate();
+        owner.collab.share_agent(closed, false);
+        let refused = owner
+            .endpoints
+            .create(member(MemberId::generate()), body(closed, "k1"))
+            .await
+            .unwrap_err();
+        assert_eq!(refused.code, ErrorCode::RequestsNotAccepted);
+    }
+
+    #[tokio::test]
+    async fn resends_every_request_of_that_member_masked() {
         let owner = owner();
         let teammate = MemberId::generate();
         let open = owner
@@ -330,14 +378,14 @@ mod tests {
         recent.updated_at = now();
         owner.collab.put_request(&recent).unwrap();
 
-        // Ended long ago.
+        // Ended long ago, while the member was away.
         let mut old = owner
             .endpoints
             .create(member(teammate), body(owner.agent, "old"))
             .await
             .unwrap();
         old.status = RequestStatus::Canceled;
-        old.updated_at = now() - RESEND_FINAL_WITHIN - TimeDelta::hours(1);
+        old.updated_at = now() - TimeDelta::days(30);
         owner.collab.put_request(&old).unwrap();
 
         // Another member's.
@@ -349,8 +397,8 @@ mod tests {
 
         let resent = owner.endpoints.requests_to_resend(teammate).await.unwrap();
         let ids: Vec<RequestId> = resent.iter().map(|r| r.id).collect();
-        assert_eq!(ids, vec![open.id, recent.id]);
-        let result = resent[1].result.as_deref().unwrap();
+        assert_eq!(ids, vec![old.id, open.id, recent.id]);
+        let result = resent[2].result.as_deref().unwrap();
         assert!(!result.contains(&secret()), "{result}");
     }
 
@@ -410,6 +458,104 @@ mod tests {
             .await
             .expect("the forwarder stops with the queue")
             .unwrap();
+    }
+
+    struct QuietNotifier;
+
+    #[async_trait]
+    impl Notifier for QuietNotifier {
+        async fn raise(
+            &self,
+            kind: AttentionKind,
+            target: AttentionTarget,
+            subject: String,
+        ) -> Result<Attention> {
+            Ok(Attention {
+                id: AttentionId::generate(),
+                kind,
+                target,
+                subject,
+                at: now(),
+                resolved_at: None,
+            })
+        }
+        async fn resolve(&self, _: AttentionTarget) -> Result<()> {
+            Ok(())
+        }
+        async fn inbox(&self) -> Result<Vec<Attention>> {
+            Ok(Vec::new())
+        }
+    }
+
+    /// Approvals store their moves without the queue; the watcher hook is what
+    /// carries them to the requester. One denial ends the whole request.
+    #[tokio::test]
+    async fn forwards_approval_moves_to_the_requester_masked() {
+        let owner = owner();
+        let approvals = Approvals::new(
+            owner.collab.clone(),
+            Arc::new(RecordingEventSink::default()),
+            Arc::new(QuietNotifier),
+            Arc::new(SystemClock),
+        )
+        .with_request_watcher(owner.requests.clone());
+        let teammate = MemberId::generate();
+        let caller = member(teammate);
+        let created = owner
+            .endpoints
+            .create(caller.clone(), body(owner.agent, "k1"))
+            .await
+            .unwrap();
+        let item = owner.requests.next(owner.agent).await.unwrap();
+        owner
+            .requests
+            .report(item.id, RunProgress::Started)
+            .await
+            .unwrap();
+
+        let mut hub = owner.hub.subscribe();
+        let _forwarder = forward_updates(&owner.requests, owner.hub.clone());
+        let command = format!("git push https://{}@github.com/a/b", secret());
+        let approval = approvals
+            .raise(ApprovalTicket {
+                run_id: RunId::generate(),
+                agent_id: owner.agent,
+                caller,
+                request_id: Some(created.id),
+                call: ToolCall {
+                    tool_use_id: Some("toolu_1".into()),
+                    tool_name: "Bash".into(),
+                    input: serde_json::json!({ "command": command }),
+                },
+            })
+            .await
+            .unwrap();
+        approvals
+            .decide(
+                &Caller::Owner,
+                &ApprovalDecide {
+                    approval_id: approval.id,
+                    choice: ApprovalChoice::Deny,
+                    rule: None,
+                },
+            )
+            .await
+            .unwrap();
+
+        let updates = drain(&mut hub).await;
+        assert!(
+            updates
+                .iter()
+                .all(|(audience, r)| *audience == Audience::Member(teammate) && r.id == created.id)
+        );
+        let statuses: Vec<RequestStatus> = updates.iter().map(|(_, r)| r.status).collect();
+        assert_eq!(
+            statuses,
+            vec![RequestStatus::AwaitingApproval, RequestStatus::Denied]
+        );
+        let error = updates[1].1.error.clone().unwrap();
+        assert_eq!(error.code, ErrorCode::Denied);
+        assert!(!error.message.contains(&secret()), "{}", error.message);
     }
 
     #[tokio::test]
