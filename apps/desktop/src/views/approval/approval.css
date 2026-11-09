@@ -16,3 +16,15 @@
 .err { color: var(--red); font-size: 12.5px; }
 /* v2 Sky Glass: brand-blue focus ring on fields. */
 .input:focus, .textarea:focus, .select:focus { outline: none; border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 18%, transparent); }
+/* v2 fidelity (SC-011): details sit in a lifted white well, the command in
+   a flat grey well, and choices are flat full-width grey rows. */
+.kv { grid-template-columns: 120px 1fr; gap: 8px 12px; }
+.code { border: 0; border-radius: 10px; padding: 10px 12px; }
+.choice-list { gap: 8px; }
+.choice-list .btn { border: 0; background: var(--sec); border-radius: 10px; padding: 10px 14px; min-height: 36px; font-weight: 500; box-shadow: none; }
+.choice-list .btn:hover { background: color-mix(in srgb, var(--sec) 80%, var(--text) 6%); }
+.choice-list .btn small { color: var(--text3); opacity: 1; font-size: 11.5px; }
+.choice-list .btn.destructive { color: var(--red); }
+.input, .textarea, .select { border-radius: 12px; }
+.list > .kv { padding: 14px 14px 12px; }
+.list:has(> .kv) { border-radius: 14px; margin-bottom: 16px; }
