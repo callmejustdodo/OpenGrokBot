@@ -8,8 +8,22 @@ use tokio::time::{Duration, timeout};
 
 #[tokio::test]
 async fn fake_daemon_serves_snapshot_and_agents() {
+    check_wiring("harness", false).await;
+    check_wiring("harness,peers", true).await;
+}
+
+async fn check_wiring(fakes: &str, fake_peers: bool) {
     let directory = std::env::temp_dir().join(format!("formationd-{}", AgentId::generate()));
-    let service = wiring(&directory, "harness").unwrap();
+    let service = wiring(
+        &directory,
+        fakes,
+        DetectPaths {
+            claude_config: directory.join("claude"),
+            hermes: vec![],
+            openclaw: vec![],
+        },
+    )
+    .unwrap();
     assert!(directory.join("formation.db").is_file());
     let (client, server) = UnixStream::pair().unwrap();
     let task = tokio::spawn(connection(
@@ -19,7 +33,12 @@ async fn fake_daemon_serves_snapshot_and_agents() {
         service.bus.clone(),
     ));
     let mut client = BufReader::new(client);
-    for (id, method) in [(1, "snapshot"), (2, "agents_list")] {
+    for (id, method) in [
+        (1, "snapshot"),
+        (2, "agents_list"),
+        (3, "agents_detect"),
+        (4, "schedule_list"),
+    ] {
         let mut request = serde_json::to_vec(
             &json!({"jsonrpc": "2.0", "id": id, "method": method, "params": {}}),
         )
@@ -36,10 +55,15 @@ async fn fake_daemon_serves_snapshot_and_agents() {
         assert!(response.get("error").is_none(), "{response}");
         if method == "snapshot" {
             let snapshot = &response["result"];
-            assert_eq!(snapshot["team"], Value::Null);
+            if fake_peers {
+                assert_eq!(snapshot["team"]["members"].as_array().unwrap().len(), 2);
+                assert_eq!(snapshot["teammate_agents"][0]["slug"], "fake-agent");
+            } else {
+                assert_eq!(snapshot["team"], Value::Null);
+                assert_eq!(snapshot["teammate_agents"], json!([]));
+            }
             for field in [
                 "agents",
-                "teammate_agents",
                 "questions",
                 "requests",
                 "approvals",
