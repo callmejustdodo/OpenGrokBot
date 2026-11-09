@@ -2,6 +2,8 @@
 // as a flat still like the mockup (one body color, two dark eyes); a rounded
 // square in the color when the shape is unknown. The badge is a state dot for my
 // agents (drawn by CSS from `data-state`) or the owner's initial for teammates' agents.
+// A working agent's avatar moves gently and blinks (`data-motion="working"`, CSS in
+// styles/components.css); Reduce Motion stops it.
 import type { CSSProperties } from "react";
 import type { AgentState } from "../../ipc/generated/AgentState";
 import type { Avatar } from "../../ipc/generated/Avatar";
@@ -14,6 +16,8 @@ export type AgentAvatarProps = {
   state?: AgentState;
   /** The owner's initial for a teammate's agent. */
   ownerInitial?: string;
+  /** Whether the agent is working, for an avatar without a state dot (the pill); defaults to `state === "working"`. */
+  working?: boolean;
 };
 
 /** The shape as an SVG, or null for an unknown shape. */
@@ -24,7 +28,7 @@ export function BotShapeSvg({ shape, color }: { shape: string; color: string }) 
   const w = 4 * scale * 1.25;
   const h = 11 * scale * 1.25;
   const eye = (cx: number) => (
-    <rect x={cx - w / 2} y={y - h / 2} width={w} height={h} rx={w / 2} fill="var(--eye)" />
+    <rect x={cx - w / 2} y={y - h / 2} width={w} height={h} rx={w / 2} fill="var(--eye)" className="eye" />
   );
   return (
     <svg viewBox="0 0 100 100" aria-hidden="true">
@@ -35,7 +39,7 @@ export function BotShapeSvg({ shape, color }: { shape: string; color: string }) 
   );
 }
 
-export default function AgentAvatar({ avatar, size = 40, state, ownerInitial }: AgentAvatarProps) {
+export default function AgentAvatar({ avatar, size = 40, state, ownerInitial, working = state === "working" }: AgentAvatarProps) {
   const known = avatar.shape in BOT_SHAPES;
   return (
     <span
@@ -45,6 +49,7 @@ export default function AgentAvatar({ avatar, size = 40, state, ownerInitial }: 
       data-color={avatar.color}
       data-size={size}
       data-state={state}
+      data-motion={working ? "working" : undefined}
       style={{ "--size": `${size}px`, "--c": avatar.color } as CSSProperties}
     >
       <BotShapeSvg shape={avatar.shape} color={avatar.color} />

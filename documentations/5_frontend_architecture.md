@@ -94,6 +94,8 @@ flowchart LR
 
 A development-only page at `preview/` lists every shared component and every screen state from the mapping table, with the mockup's sample data, a theme switch, and a language switch, like the mockup's review bar. The designer's agent changes styles and checks them here before a pull request. It is excluded from release builds.
 
+`pnpm -C apps/desktop dev` serves it at `/preview.html` (code in `src/preview/`); `vite.config.ts` leaves it out of the build inputs. It runs without Tauri: a stand-in for `@tauri-apps/api` answers as a connected formationd. Each state loads a world from `tools/fake-formationd/fixtures/worlds/`, plays the state's scripts from `states.json` with fixture times moved to now, and opens its view and sheet with `uiStore`; a state held inside a component, such as a confirmation, is reached by clicking its button. A link opens a state directly: `preview.html#SC-005/working?theme=dark&lang=en`. A test renders every state in `states.json`.
+
 ## Behavior details
 
 - **Navigation:** the sidebar sets `ui.view` (`conversation` with a target, or `inbox`, `team`, `member`, `history`, `rules`). Top icons and chat items switch views; ⌘K opens a quick switcher over the chat list.
