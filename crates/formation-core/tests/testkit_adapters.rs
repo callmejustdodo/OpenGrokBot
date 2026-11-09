@@ -54,6 +54,17 @@ fn item(agent_id: AgentId) -> QueueItem {
     }
 }
 
+fn harness_status() -> HarnessStatus {
+    HarnessStatus {
+        harness: HarnessKind::ClaudeCode,
+        installed: true,
+        signed_in: Some(true),
+        version: Some("fake".into()),
+        path: None,
+        problem: None,
+    }
+}
+
 #[test]
 fn agents_enforce_slug_uniqueness_and_hide_soft_deleted_records() {
     let store: Arc<dyn Store> = Arc::new(MemoryStore::default());
@@ -326,18 +337,22 @@ async fn harness_returns_scripts_records_calls_and_allows_explicit_stream_events
         stream_seq: 7,
     };
     script.pages.push(ScriptedPage {
+        session_id: None,
         before: Some(ItemId("cursor".into())),
         limit: 3,
         page: page.clone(),
     });
-    let status = HarnessStatus {
-        harness: HarnessKind::ClaudeCode,
-        installed: true,
-        signed_in: Some(true),
-        version: Some("fake".into()),
-        path: None,
-        problem: None,
+    let fork_page = ConversationPageResult {
+        stream_seq: 8,
+        ..page.clone()
     };
+    script.pages.push(ScriptedPage {
+        session_id: Some(SessionId("fork".into())),
+        before: Some(ItemId("cursor".into())),
+        limit: 3,
+        page: fork_page.clone(),
+    });
+    let status = harness_status();
     let fake = Arc::new(FakeHarness::new(
         HarnessKind::ClaudeCode,
         status.clone(),
@@ -347,29 +362,74 @@ async fn harness_returns_scripts_records_calls_and_allows_explicit_stream_events
     assert_eq!(harness.kind(), HarnessKind::ClaudeCode);
     assert_eq!(harness.status().await, status);
     assert_eq!(harness.start(&a, None).await.unwrap(), session);
-    assert_eq!(harness.session_info(a.id).await.unwrap(), Some(session));
-    assert_eq!(harness.current_turn(a.id).await, None);
+    assert_eq!(
+        harness.session_info(a.id).await.unwrap(),
+        Some(session.clone())
+    );
     let item = item(a.id);
-    fake.set_current_turn(a.id, Some(item.clone())).unwrap();
-    assert_eq!(harness.current_turn(a.id).await, Some(item.clone()));
     let mut receiver = harness.subscribe();
+    let run_id = RunId::generate();
     for turn in turns {
-        assert_eq!(harness.run_turn(a.id, item.clone()).await.unwrap(), turn);
+        assert_eq!(
+            harness.run_turn(a.id, run_id, item.clone()).await.unwrap(),
+            turn
+        );
     }
     assert!(matches!(
         receiver.try_recv(),
         Err(tokio::sync::broadcast::error::TryRecvError::Empty)
     ));
     assert_eq!(
-        harness.run_turn(a.id, item.clone()).await.unwrap_err().code,
+        harness
+            .run_turn(a.id, run_id, item.clone())
+            .await
+            .unwrap_err()
+            .code,
         ErrorCode::NotFound
     );
     assert_eq!(
         harness
-            .conversation(a.id, Some(ItemId("cursor".into())), 3)
+            .conversation(a.id, None, Some(ItemId("cursor".into())), 3)
             .await
             .unwrap(),
         page
+    );
+    assert_eq!(
+        harness
+            .conversation(
+                a.id,
+                Some(session.session_id.clone()),
+                Some(ItemId("cursor".into())),
+                3
+            )
+            .await
+            .unwrap(),
+        page
+    );
+    assert_eq!(
+        harness
+            .conversation(
+                a.id,
+                Some(SessionId("fork".into())),
+                Some(ItemId("cursor".into())),
+                3
+            )
+            .await
+            .unwrap(),
+        fork_page
+    );
+    assert_eq!(
+        harness
+            .conversation(
+                a.id,
+                Some(SessionId("missing".into())),
+                Some(ItemId("cursor".into())),
+                3
+            )
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::NotFound
     );
     harness.steer(a.id, item.clone()).await.unwrap();
     harness.interrupt(a.id).await.unwrap();
@@ -377,6 +437,21 @@ async fn harness_returns_scripts_records_calls_and_allows_explicit_stream_events
     assert_eq!(
         fake.calls(),
         vec![
+            HarnessCall::RunTurn {
+                agent_id: a.id,
+                run_id,
+                item: item.clone()
+            },
+            HarnessCall::RunTurn {
+                agent_id: a.id,
+                run_id,
+                item: item.clone()
+            },
+            HarnessCall::RunTurn {
+                agent_id: a.id,
+                run_id,
+                item: item.clone()
+            },
             HarnessCall::Steer {
                 agent_id: a.id,
                 item: item.clone()
@@ -390,6 +465,7 @@ async fn harness_returns_scripts_records_calls_and_allows_explicit_stream_events
     );
     let event = AgentStreamEvent {
         agent_id: a.id,
+        session_id: session.session_id,
         stream_seq: 1,
         delta: StreamDelta::TurnStarted {
             message_id: item.id,
@@ -408,7 +484,7 @@ async fn harness_returns_scripts_records_calls_and_allows_explicit_stream_events
     );
     assert_eq!(
         harness
-            .run_turn(missing.id, item.clone())
+            .run_turn(missing.id, run_id, item.clone())
             .await
             .unwrap_err()
             .code,
@@ -432,10 +508,134 @@ async fn harness_returns_scripts_records_calls_and_allows_explicit_stream_events
     );
     assert_eq!(
         harness
-            .conversation(missing.id, None, 1)
+            .conversation(missing.id, None, None, 1)
             .await
             .unwrap_err()
             .code,
         ErrorCode::NotFound
     );
+}
+
+#[tokio::test]
+async fn harness_run_returns_only_the_scripted_run_info() {
+    let fake = FakeHarness::new(HarnessKind::ClaudeCode, harness_status(), []);
+    let agent_id = AgentId::generate();
+    let run_id = RunId::generate();
+    assert!(fake.run(run_id).await.is_none());
+    let info = RunInfo {
+        run_id,
+        agent_id,
+        session_id: SessionId("fork".into()),
+        item: item(agent_id),
+    };
+    fake.set_run(info.clone());
+    let stored = fake.run(run_id).await.unwrap();
+    assert_eq!(stored.run_id, info.run_id);
+    assert_eq!(stored.agent_id, info.agent_id);
+    assert_eq!(stored.session_id, info.session_id);
+    assert_eq!(stored.item, info.item);
+    assert!(fake.run(RunId::generate()).await.is_none());
+    let second = RunInfo {
+        run_id: RunId::generate(),
+        ..info.clone()
+    };
+    fake.set_run(second.clone());
+    assert_eq!(fake.run(run_id).await.unwrap().run_id, run_id);
+    assert_eq!(fake.run(second.run_id).await.unwrap().run_id, second.run_id);
+}
+
+#[tokio::test]
+async fn harness_forks_consume_only_the_agents_script_and_record_the_request() {
+    let agent_id = AgentId::generate();
+    let main = session(agent_id, "main");
+    let results: Vec<_> = ["fork-one", "fork-two"]
+        .into_iter()
+        .map(|id| ForkResult {
+            session: session(agent_id, id),
+            result: TurnResult {
+                outcome: TurnOutcome::Completed,
+                result: Some(id.into()),
+            },
+        })
+        .collect();
+    let mut script = ScriptedAgent::new(main.clone(), []);
+    script.forks = results.clone().into();
+    let other = session(AgentId::generate(), "other");
+    let fake = FakeHarness::new(
+        HarnessKind::ClaudeCode,
+        harness_status(),
+        [script, ScriptedAgent::new(other.clone(), [])],
+    );
+    let fork = ForkRun {
+        run_id: RunId::generate(),
+        from: main.session_id.clone(),
+        item: item(agent_id),
+        tools: ForkTools::None,
+    };
+    assert_eq!(
+        fake.run_fork(other.agent_id, fork.clone())
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::NotFound
+    );
+    for result in results {
+        assert_eq!(fake.run_fork(agent_id, fork.clone()).await.unwrap(), result);
+    }
+    assert_eq!(
+        fake.run_fork(agent_id, fork.clone())
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::NotFound
+    );
+    assert_eq!(
+        fake.run_fork(AgentId::generate(), fork.clone())
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::NotFound
+    );
+    let expected = |agent_id| HarnessCall::RunFork {
+        agent_id,
+        run_id: fork.run_id,
+        from: fork.from.clone(),
+        item: fork.item.clone(),
+        tools: fork.tools,
+    };
+    assert_eq!(
+        fake.calls(),
+        vec![
+            expected(other.agent_id),
+            expected(agent_id),
+            expected(agent_id),
+            expected(agent_id)
+        ]
+    );
+    assert_eq!(fake.session_info(agent_id).await.unwrap(), Some(main));
+}
+
+#[test]
+fn fork_sessions_upsert_by_run_and_preserve_main_and_other_forks() {
+    let store = MemoryStore::default();
+    let agent_id = AgentId::generate();
+    let run_id = RunId::generate();
+    let other_run = RunId::generate();
+    assert_eq!(store.fork_session(run_id).unwrap(), None);
+    let main = session(agent_id, "main");
+    store.put_main_session(&main).unwrap();
+    let other = session(agent_id, "other-fork");
+    store.put_fork_session(other_run, &other).unwrap();
+    store
+        .put_fork_session(run_id, &session(agent_id, "old-fork"))
+        .unwrap();
+    let new = session(agent_id, "new-fork");
+    store.put_fork_session(run_id, &new).unwrap();
+    assert_eq!(store.fork_session(run_id).unwrap(), Some(new.clone()));
+    assert_eq!(store.fork_session(other_run).unwrap(), Some(other));
+    assert_eq!(store.main_session(agent_id).unwrap(), Some(main));
+    store
+        .put_main_session(&session(agent_id, "new-main"))
+        .unwrap();
+    assert_eq!(store.fork_session(run_id).unwrap(), Some(new));
 }

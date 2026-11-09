@@ -2,7 +2,7 @@ use std::sync::Mutex;
 
 use formation_proto::agent::{Activity, Agent, Attention, AttentionTarget, Schedule, ScheduleRun};
 use formation_proto::common::{
-    ActivityId, AgentId, ApiError, ErrorCode, MemberId, ScheduleId, Timestamp,
+    ActivityId, AgentId, ApiError, ErrorCode, MemberId, RunId, ScheduleId, Timestamp,
 };
 use formation_proto::harness::SessionInfo;
 use formation_proto::snapshot::Settings;
@@ -21,6 +21,7 @@ pub struct MemoryStore {
 struct Data {
     agents: Vec<(Agent, Option<Timestamp>)>,
     sessions: Vec<SessionInfo>,
+    fork_sessions: std::collections::HashMap<RunId, SessionInfo>,
     schedules: Vec<Schedule>,
     runs: Vec<ScheduleRun>,
     attention: Vec<Attention>,
@@ -115,6 +116,23 @@ impl SessionRepo for MemoryStore {
         let mut data = self.data.lock().unwrap();
         data.sessions.retain(|s| s.agent_id != session.agent_id);
         data.sessions.push(session.clone());
+        Ok(())
+    }
+    fn fork_session(&self, run_id: RunId) -> Result<Option<SessionInfo>> {
+        Ok(self
+            .data
+            .lock()
+            .unwrap()
+            .fork_sessions
+            .get(&run_id)
+            .cloned())
+    }
+    fn put_fork_session(&self, run_id: RunId, session: &SessionInfo) -> Result<()> {
+        self.data
+            .lock()
+            .unwrap()
+            .fork_sessions
+            .insert(run_id, session.clone());
         Ok(())
     }
 }

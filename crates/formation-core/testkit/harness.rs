@@ -3,11 +3,11 @@ use std::{
     sync::Mutex,
 };
 
-use crate::ports::{Harness, Result, TurnResult};
+use crate::ports::{ForkResult, ForkRun, ForkTools, Harness, Result, RunInfo, TurnResult};
 use async_trait::async_trait;
 use formation_proto::{
     agent::{Agent, HarnessKind, HarnessStatus, StopMode},
-    common::{AgentId, ApiError, ErrorCode, ItemId, SessionId},
+    common::{AgentId, ApiError, ErrorCode, ItemId, RunId, SessionId},
     harness::{AgentStreamEvent, ConversationPageResult, SessionInfo},
     request::QueueItem,
 };
@@ -15,6 +15,7 @@ use tokio::sync::broadcast;
 
 /// A page returned for an exact scripted pagination request.
 pub struct ScriptedPage {
+    pub session_id: Option<SessionId>,
     pub before: Option<ItemId>,
     pub limit: u32,
     pub page: ConversationPageResult,
@@ -23,7 +24,7 @@ pub struct ScriptedPage {
 pub struct ScriptedAgent {
     pub session: SessionInfo,
     pub turns: VecDeque<TurnResult>,
-    pub current_turn: Option<QueueItem>,
+    pub forks: VecDeque<ForkResult>,
     pub pages: Vec<ScriptedPage>,
 }
 
@@ -32,7 +33,7 @@ impl ScriptedAgent {
         Self {
             session,
             turns: turns.into_iter().collect(),
-            current_turn: None,
+            forks: VecDeque::new(),
             pages: Vec::new(),
         }
     }
@@ -40,9 +41,29 @@ impl ScriptedAgent {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HarnessCall {
-    Steer { agent_id: AgentId, item: QueueItem },
-    Interrupt { agent_id: AgentId },
-    Stop { agent_id: AgentId, mode: StopMode },
+    RunTurn {
+        agent_id: AgentId,
+        run_id: RunId,
+        item: QueueItem,
+    },
+    RunFork {
+        agent_id: AgentId,
+        run_id: RunId,
+        from: SessionId,
+        item: QueueItem,
+        tools: ForkTools,
+    },
+    Steer {
+        agent_id: AgentId,
+        item: QueueItem,
+    },
+    Interrupt {
+        agent_id: AgentId,
+    },
+    Stop {
+        agent_id: AgentId,
+        mode: StopMode,
+    },
 }
 
 pub struct FakeHarness {
@@ -50,6 +71,7 @@ pub struct FakeHarness {
     status: HarnessStatus,
     agents: Mutex<HashMap<AgentId, ScriptedAgent>>,
     calls: Mutex<Vec<HarnessCall>>,
+    runs: Mutex<HashMap<RunId, RunInfo>>,
     stream: broadcast::Sender<AgentStreamEvent>,
 }
 
@@ -73,6 +95,7 @@ impl FakeHarness {
                     .collect(),
             ),
             calls: Mutex::new(Vec::new()),
+            runs: Mutex::new(HashMap::new()),
             stream: broadcast::channel(64).0,
         }
     }
@@ -82,14 +105,8 @@ impl FakeHarness {
     pub fn sender(&self) -> broadcast::Sender<AgentStreamEvent> {
         self.stream.clone()
     }
-    pub fn set_current_turn(&self, agent_id: AgentId, item: Option<QueueItem>) -> Result<()> {
-        self.agents
-            .lock()
-            .unwrap()
-            .get_mut(&agent_id)
-            .ok_or_else(not_found)?
-            .current_turn = item;
-        Ok(())
+    pub fn set_run(&self, run: RunInfo) {
+        self.runs.lock().unwrap().insert(run.run_id, run);
     }
     fn record(&self, agent_id: AgentId, call: HarnessCall) -> Result<()> {
         if !self.agents.lock().unwrap().contains_key(&agent_id) {
@@ -111,13 +128,46 @@ impl Harness for FakeHarness {
     async fn start(&self, agent: &Agent, _resume: Option<SessionId>) -> Result<SessionInfo> {
         self.session_info(agent.id).await?.ok_or_else(not_found)
     }
-    async fn run_turn(&self, agent_id: AgentId, _item: QueueItem) -> Result<TurnResult> {
+    async fn run_turn(
+        &self,
+        agent_id: AgentId,
+        run_id: RunId,
+        item: QueueItem,
+    ) -> Result<TurnResult> {
+        self.record(
+            agent_id,
+            HarnessCall::RunTurn {
+                agent_id,
+                run_id,
+                item,
+            },
+        )?;
         self.agents
             .lock()
             .unwrap()
             .get_mut(&agent_id)
             .ok_or_else(not_found)?
             .turns
+            .pop_front()
+            .ok_or_else(not_found)
+    }
+    async fn run_fork(&self, agent_id: AgentId, fork: ForkRun) -> Result<ForkResult> {
+        self.record(
+            agent_id,
+            HarnessCall::RunFork {
+                agent_id,
+                run_id: fork.run_id,
+                from: fork.from,
+                item: fork.item,
+                tools: fork.tools,
+            },
+        )?;
+        self.agents
+            .lock()
+            .unwrap()
+            .get_mut(&agent_id)
+            .ok_or_else(not_found)?
+            .forks
             .pop_front()
             .ok_or_else(not_found)
     }
@@ -141,27 +191,27 @@ impl Harness for FakeHarness {
                 .clone(),
         ))
     }
-    async fn current_turn(&self, agent_id: AgentId) -> Option<QueueItem> {
-        self.agents
-            .lock()
-            .unwrap()
-            .get(&agent_id)
-            .and_then(|a| a.current_turn.clone())
+    async fn run(&self, run_id: RunId) -> Option<RunInfo> {
+        self.runs.lock().unwrap().get(&run_id).cloned()
     }
     async fn conversation(
         &self,
         agent_id: AgentId,
+        session_id: Option<SessionId>,
         before: Option<ItemId>,
         limit: u32,
     ) -> Result<ConversationPageResult> {
-        self.agents
-            .lock()
-            .unwrap()
-            .get(&agent_id)
-            .ok_or_else(not_found)?
+        let agents = self.agents.lock().unwrap();
+        let agent = agents.get(&agent_id).ok_or_else(not_found)?;
+        let session_id = session_id.as_ref().unwrap_or(&agent.session.session_id);
+        agent
             .pages
             .iter()
-            .find(|p| p.before == before && p.limit == limit)
+            .find(|p| {
+                p.session_id.as_ref().unwrap_or(&agent.session.session_id) == session_id
+                    && p.before == before
+                    && p.limit == limit
+            })
             .map(|p| p.page.clone())
             .ok_or_else(not_found)
     }
