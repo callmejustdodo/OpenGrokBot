@@ -153,6 +153,9 @@ export default function Sidebar() {
   const rows = mirror
     ? selectChatList(mirror)
         .map((item) => ({ item, row: describeRow(t, item, mirror) }))
+        // A conversation with someone no longer on the team (or before joining one)
+        // has no name to show.
+        .filter(({ item, row }) => item.kind !== "person" || row.name !== "")
         .filter(
           ({ row }) =>
             !needle ||
