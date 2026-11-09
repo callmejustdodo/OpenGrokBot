@@ -12,6 +12,7 @@ import type { AgentMessageEdit } from "./AgentMessageEdit";
 import type { AgentMessageSend } from "./AgentMessageSend";
 import type { AgentMessageSteer } from "./AgentMessageSteer";
 import type { AgentMessageWithdraw } from "./AgentMessageWithdraw";
+import type { AgentRequestStop } from "./AgentRequestStop";
 import type { AgentStart } from "./AgentStart";
 import type { AgentStop } from "./AgentStop";
 import type { AgentTurnInterrupt } from "./AgentTurnInterrupt";
@@ -81,6 +82,7 @@ export type Commands = {
   agent_message_send: { params: AgentMessageSend; result: QueueItem };
   agent_message_steer: { params: AgentMessageSteer; result: null };
   agent_message_withdraw: { params: AgentMessageWithdraw; result: null };
+  agent_request_stop: { params: AgentRequestStop; result: null };
   agent_start: { params: AgentStart; result: Agent };
   agent_stop: { params: AgentStop; result: Agent };
   agent_turn_interrupt: { params: AgentTurnInterrupt; result: null };

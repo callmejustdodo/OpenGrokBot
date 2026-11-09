@@ -215,6 +215,7 @@ pub(crate) mod test_support {
             created_at: Timestamp::default(),
             last_activity_at: None,
             detected: None,
+            running_requests: vec![],
         }
     }
 

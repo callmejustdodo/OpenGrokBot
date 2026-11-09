@@ -318,6 +318,7 @@ impl Detect {
                 path: detected.path,
                 capabilities: detected.capabilities,
             }),
+            running_requests: Vec::new(),
         };
         self.store.insert_agent(&agent)?;
         self.events

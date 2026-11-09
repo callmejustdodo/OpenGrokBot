@@ -8,6 +8,11 @@ pub const MIGRATIONS: &[Migration] = &[
         sql: include_str!("schema.sql"),
     },
     Migration {
+        version: 1001,
+        name: "agent running requests",
+        sql: "ALTER TABLE agents ADD COLUMN running_requests TEXT NOT NULL DEFAULT '[]';",
+    },
+    Migration {
         version: 1002,
         name: "owner queues",
         sql: "CREATE TABLE owner_queues (agent_id TEXT PRIMARY KEY NOT NULL, items TEXT NOT NULL);",
