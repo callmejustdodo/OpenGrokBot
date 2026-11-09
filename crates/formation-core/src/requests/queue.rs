@@ -166,6 +166,21 @@ impl Requests {
             .ok_or_else(request_not_found)
     }
 
+    /// Every request sent to this Mac's agents, as the owner sees it (unmasked),
+    /// for the peer server to choose what to send requesters again. Empty when
+    /// this Mac has no team yet.
+    pub fn owned(&self) -> Result<Vec<WorkRequest>> {
+        let Some(me) = self.collab.me()? else {
+            return Ok(Vec::new());
+        };
+        Ok(self
+            .collab
+            .requests()?
+            .into_iter()
+            .filter(|request| request.owner == me)
+            .collect())
+    }
+
     /// Cancels before the run starts: `POST /v1/requests/{id}/cancel` from the
     /// requester (`by` is `Some`), or the owner on this Mac (`None`). Canceling a
     /// canceled request returns it unchanged, so retries are safe. Once the
