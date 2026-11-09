@@ -169,7 +169,8 @@ pub enum StreamDelta {
     ItemStarted {
         item: ConversationItem,
     },
-    /// Partial assistant text for an item already started.
+    /// Partial assistant text for an item already started. A client drops deltas for
+    /// an item it does not have until that item's `ItemCompleted` arrives.
     TextDelta {
         item_id: ItemId,
         text: String,
@@ -227,7 +228,9 @@ pub struct ConversationPageResult {
     pub stream_seq: u64,
 }
 
-/// Queue a message for the agent's next turn (or start one when idle).
+/// Queue a message for the agent's next turn (or start one when idle). Detected
+/// agents (sessions started outside Formation) are read and fork only (#14); returns
+/// `harness_unsupported` for them.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct AgentMessageSend {
@@ -239,12 +242,31 @@ pub struct AgentMessageSend {
 /// boundary: the running tool finishes and the turn follows the new message (TASK-004).
 /// Only the owner's own messages can steer (`denied` otherwise), because the steered
 /// text runs under the running turn's caller. `harness_unsupported` for a harness
-/// that cannot steer.
+/// that cannot steer or for a detected agent, which is read and fork only (#14).
+/// Returns `conflict` when no turn is running.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct AgentMessageSteer {
     pub agent_id: AgentId,
     pub message_id: MessageId,
+}
+
+/// Edits a queued message that has not started; `conflict` once it started.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct AgentMessageEdit {
+    pub agent_id: AgentId,
+    pub message_id: MessageId,
+    pub text: String,
+}
+
+/// Stops the running turn and keeps the session via `Harness::interrupt` (TASK-004
+/// 4a: stdin `control_request` interrupt); `conflict` when no turn runs. Unlike
+/// `agent_stop`, this does not stop the agent.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[ts(export)]
+pub struct AgentTurnInterrupt {
+    pub agent_id: AgentId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -258,6 +280,8 @@ commands! {
     ConversationPage => "conversation_page" -> ConversationPageResult;
     AgentMessageSend => "agent_message_send" -> QueueItem;
     AgentMessageSteer => "agent_message_steer" -> ();
+    AgentMessageEdit => "agent_message_edit" -> QueueItem;
+    AgentTurnInterrupt => "agent_turn_interrupt" -> ();
     AgentMessageWithdraw => "agent_message_withdraw" -> ();
 }
 
@@ -342,6 +366,12 @@ mod tests {
             started_at: t0(),
             last_activity_at: None,
         });
+        roundtrip(&AgentMessageEdit {
+            agent_id,
+            message_id,
+            text: "Updated".into(),
+        });
+        roundtrip(&AgentTurnInterrupt { agent_id });
         roundtrip(&AgentMessageSteer {
             agent_id,
             message_id,

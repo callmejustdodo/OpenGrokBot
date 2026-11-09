@@ -30,11 +30,19 @@ pub trait RequestQueue: Send + Sync {
 
     async fn items(&self, agent_id: AgentId) -> Result<Vec<QueueItem>>;
 
+    /// Edits a queued message and publishes `agent.queue`.
+    async fn edit(&self, agent_id: AgentId, id: MessageId, text: String) -> Result<QueueItem>;
+
     /// Removes a message that has not started.
     async fn withdraw(&self, agent_id: AgentId, id: MessageId) -> Result<()>;
 
-    /// Removes and returns one message so it can steer the running turn.
+    /// Removes and returns one message so it can steer the running turn. The caller
+    /// restores it if `Harness::steer` fails.
     async fn take(&self, agent_id: AgentId, id: MessageId) -> Result<QueueItem>;
+
+    /// Restores an item returned by `take` with the same `MessageId`, at its
+    /// original position ordered by `queued_at`, and publishes `agent.queue`.
+    async fn restore(&self, agent_id: AgentId, item: QueueItem) -> Result<()>;
 
     /// Waits for the agent's next message. Single consumer per agent.
     async fn next(&self, agent_id: AgentId) -> Result<QueueItem>;
