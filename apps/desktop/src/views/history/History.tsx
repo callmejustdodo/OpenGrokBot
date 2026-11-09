@@ -268,7 +268,7 @@ export default function History() {
 
 
   return (
-    <section className="page" aria-label={t("history.title", "History")} data-state={load.status}>
+    <section className="page history" aria-label={t("history.title", "History")} data-state={load.status}>
       <div className="h1row">
         <h1>{t("history.title", "History")}</h1>
         <span className="spacer" />

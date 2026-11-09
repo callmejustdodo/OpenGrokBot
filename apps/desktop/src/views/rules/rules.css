@@ -29,3 +29,6 @@
 .list.always { margin-bottom: 12px; }
 .page .list .row { padding: 13px 16px; min-height: 58px; }
 .input, .select { border-radius: 12px; }
+
+/* Keep a rule's expiry and use count on one line. */
+.row .when { white-space: nowrap; }
