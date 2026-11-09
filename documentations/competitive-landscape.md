@@ -1,6 +1,6 @@
 # Competitive landscape
 
-Research date: October 9, 2026. Updated November 9, 2026 with Reason Network, Paperclip, mco-org squad, and adjacent multi-agent tools.
+Research date: October 9, 2026. Updated November 9, 2026 with Reason Network, Paperclip, Grok Bot, mco-org squad, and adjacent multi-agent tools.
 
 This comparison uses official product pages, documentation, and public repositories. It is not an installation-based performance or security evaluation. Documentation may describe experimental features or development branches rather than a stable release. An unverified capability is not an absent capability.
 
@@ -16,6 +16,7 @@ This comparison uses official product pages, documentation, and public repositor
 | [Flowpad](https://flowpad.ai/) | O | O | ? | ? | ? |
 | [Agent Relay](https://github.com/AgentWorkforce/relay) | O | O | O | ? | ? |
 | [Paperclip](https://github.com/paperclipai/paperclip) | O | O | ? | ? | ? |
+| [Grok Bot](https://x.ai/news/grok-bot-more-plans) | ? | O | ? | ? | ? |
 | [Claude Together](https://github.com/wybe-labs/claude-together) | ? | O | O | ? | ? |
 | [squad (mco-org)](https://github.com/mco-org/squad) | O | ? | O | ? | ? |
 | [Happy](https://github.com/slopus/happy) | O | O | ? | ? | ? |
@@ -47,6 +48,7 @@ quadrantChart
     Formation planned: [0.80, 0.55]
     mco squad: [0.25, 0.80]
     Flowpad: [0.82, 0.32]
+    Grok Bot: [0.72, 0.42]
     Happy: [0.67, 0.16]
     HAPI: [0.28, 0.33]
     Claude Remote Control: [0.20, 0.15]
@@ -56,10 +58,10 @@ quadrantChart
 |---|---|
 | Team workflows with agent-callable interfaces | Agent Relay, Claude Together, Happier, Paperclip, Reason Network; Formation's target. |
 | Personal agent-to-agent coordination | mco-org squad. |
-| Human team collaboration | Flowpad and current Happy Harness. |
+| Human team collaboration | Flowpad, current Happy Harness, and Grok Bot Shared Bots. |
 | Personal remote control emphasis | HAPI and Claude Remote Control. |
 
-Paperclip's team workflow is an organization hierarchy: agents receive delegated work through goals and tasks. It does not center on owners sharing their existing local sessions with each other. mco-org squad coordinates agents in one local workspace; team use across machines was not verified. Happier also provides human collaboration. Happy supports subagent delegation, but an external agent-callable team-session interface was not verified. HAPI supports multiple clients on certain shared executions; that alone does not establish collaborator-specific team permissions.
+Paperclip's team workflow is an organization hierarchy: agents receive delegated work through goals and tasks. It does not center on owners sharing their existing local sessions with each other. mco-org squad coordinates agents in one local workspace; team use across machines was not verified. Grok Bot shares one cloud agent with a team through private per-person chats rather than sharing local coding sessions. Happier also provides human collaboration. Happy supports subagent delegation, but an external agent-callable team-session interface was not verified. HAPI supports multiple clients on certain shared executions; that alone does not establish collaborator-specific team permissions.
 
 ## Product findings and official links
 
@@ -104,13 +106,30 @@ Provides agent messaging across machines and team-session context search. It ove
 ### Paperclip
 
 - Landing page: [paperclip.ing](https://paperclip.ing/).
-- Sources: [repository](https://github.com/paperclipai/paperclip), [documentation](https://docs.paperclip.ing/), [approvals guide](https://docs.paperclip.ing/guides/day-to-day/approvals/) (hire and strategy approvals; the tool-gateway rules below come from the repository README).
+- Sources: [repository](https://github.com/paperclipai/paperclip), [documentation](https://docs.paperclip.ing/), [approvals guide](https://docs.paperclip.ing/guides/day-to-day/approvals/) (hire and strategy approvals; the tool-gateway rules below come from the repository README), [adding a human teammate](https://docs.paperclip.ing/how-to/add-a-human-teammate/), [Agent Chat](https://docs.paperclip.ing/experimental/agent-chat/), [deployment modes](https://docs.paperclip.ing/reference/deploy/deployment-modes/).
 
 A self-hosted, MIT-licensed Node.js server and React UI that runs teams of agents as an organization. Agents on Claude Code, Codex, Cursor, Gemini CLI, OpenClaw, and other runtimes join a mixed human-and-agent org chart with roles, reporting lines, permissions, and budgets. Work flows through goals, tasks, and threaded conversations. Heartbeats wake agents for assigned work, follow-up messages, or schedules.
 
 The repository documents human roles and permissions, company memberships, invite flows, and agent API keys. Governance includes board approval workflows, review stages, budget hard-stops, and pausing or terminating agents. Calls through its tool gateway can be approved once or saved as a revocable rule. Agents delegate to each other through tasks and comments using agent API keys. An interface for querying or messaging another person's session was not verified, so the matrix marks agent-callable control as unverified. The repository was created in March 2026 and had over 100,000 GitHub stars as of November 9, 2026.
 
-This is the strongest documented overlap on organization-level governance and approvals. Its approval choices resemble Formation's "allow once" and "keep allowing similar commands." Its center is delegating work down an organization hierarchy, not asking a teammate's existing local session a question without disturbing it. Not verified: whether its approvals cover coding agents' local shell and file tool calls, and whether one person can query another person's live session in an isolated conversation.
+Multiple human users require the authenticated deployment mode; the quickstart defaults to a trusted local loopback mode. Members with invite permission, by default Owners and Admins, create invites from Settings → Members → Invites. Each invite carries a Viewer, Operator (default), Admin, or Owner role. Invite links are copied and shared manually, work once, expire after 72 hours, and take effect without a separate approval step.
+
+Experimental Agent Chat is off by default and is enabled for the whole instance. It gives each person one ongoing conversation with each agent in the company. Teammates can read a conversation, but only its owner can post in it. The agent can research and draft a plan in chat and hands substantial work off to ordinary tasks; the documentation describes each conversation as a task behind the scenes. Which tools chat can use, and whether chat shares session state with the agent's task work, were not documented.
+
+The landing page and the README invite visitors to join a Paperclip Cloud waitlist, and the README roadmap lists cloud deployments as in progress. The documentation says Cloud Sync to a Paperclip Cloud upstream was removed in v2026.1012.0. A generally available hosted version was not verified.
+
+This is the strongest documented overlap on organization-level governance and approvals. Its approval choices resemble Formation's "allow once" and "keep allowing similar commands." Its center is delegating work down an organization hierarchy, not asking a teammate's existing local session a question without disturbing it. Not verified: whether its approvals cover coding agents' local shell and file tool calls, and whether Agent Chat is isolated from the agent's task sessions.
+
+### Grok Bot
+
+- Announcement: [x.ai news](https://x.ai/news/grok-bot-more-plans).
+- Sources: [Shared Bots documentation](https://docs.x.ai/grok-bot/shared-bots), [deep dive by Flavio Copes](https://flaviocopes.com/grok-bot/) (secondary).
+
+An AI-teammate service from SpaceX Super Intelligence; a secondary source describes it as xAI's product. The announcement page's footer reads "Built with Grok", and its macOS download is hosted by Cursor. The beta launched on August 11, 2026. Users can message a Bot from mobile or desktop. Access comes with SuperGrok and Cursor plans, with Bot usage metered separately, and enterprise customers can join a waitlist. Users message Bots like coworkers. A cloud Bot has an always-on computer with browser and terminal access, works across connected apps, and can run routines while the user is away. Several Bots can share a group chat and hand work to each other.
+
+A Shared Bot is shared with a whole team or with chosen people and groups, without making a copy. The owner and Managers can change its instructions, skills, memory, and apps; Collaborators can only chat. Each person's chat is private from the owner and Managers. The Bot can save what it learns for the whole team and says when it does. In a teammate's chat it uses the owner's apps and secrets, asks before using the teammate's own accounts, and usually runs on the teammate's Grok Bot computer. Approval cards, such as the one for using the teammate's own accounts or for reviewing an action in a Slack thread, go to the person the Bot is answering. Because approval follows the asker rather than authority the owner grants to a collaborator, the matrix leaves approval delegation unverified. Only cloud Bots can be shared; a Bot that runs on the user's own computer cannot.
+
+This is the closest documented match to Formation's experience of teammates asking one person's agent in their own private conversations. It differs in where a shared agent runs (the vendor's cloud, not the owner's machine), in scope (general business work rather than Claude Code and Codex coding sessions), in model (the announcement reads "Built with Grok"), and in licensing (a closed, paid service). Its approval model also differs: approval cards go to the person asking, while Formation proposes that the owner's local service makes the final decision. Support for Claude Code or Codex sessions was not documented. Not verified: whether team memory written from one chat changes the Bot's behavior in other people's chats.
 
 ### squad (mco-org)
 
@@ -155,7 +174,7 @@ These tools orchestrate several agents but do not share sessions between people.
 - [Squad](https://github.com/github/squad) (GitHub): human-led AI agent teams for a repository through GitHub Copilot. Specialist members persist as files in the repository. It installs as `@bradygaster/squad-cli`. It is built primarily around GitHub Copilot, and its `--client` option projects the same team into Claude Code, Codex, OpenCode, Cursor, and other hosts. It serves one operator's repository rather than sharing live sessions between people.
 - [Claude Squad](https://github.com/smtg-ai/claude-squad): an AGPL-3.0 terminal app for running several terminal agents, such as Claude Code, Codex, Gemini, Aider, OpenCode, and Amp, in parallel. Team sharing was not verified.
 
-Naming note: at least four agent tools use the Squad name, counting mco-org squad above. squads-cli and SquadCue also appeared in search results but were not reviewed. On November 9, 2026, the product's working title changed from Shared to Formation. A quick search that day found no agent orchestration tool named "Formation". That search was not a trademark, domain, or package-name check.
+Naming note: at least four agent tools use the Squad name, counting mco-org squad above. squads-cli and SquadCue also appeared in search results but were not reviewed. On November 9, 2026, the product's working title changed from Shared to Formation. A quick search that day found no agent orchestration tool named "Formation". That search was not a trademark, domain, or package-name check. A later rename to OpenGrokBot, with the checks it needs first, is tracked in [issue #11](https://github.com/callmejustdodo/Shared/issues/11).
 
 ## Formation's differentiation hypotheses
 
@@ -169,12 +188,12 @@ Validate these together:
 - The same policy and request lifecycle across the macOS app and agent CLI.
 - A small, understandable installation and approval experience.
 
-These are hypotheses, not claims that competitors lack these features. In particular, the side-question column still needs hands-on investigation. Paperclip documents approve-once and revocable-rule approvals, so approval choices alone are not differentiation.
+These are hypotheses, not claims that competitors lack these features. In particular, the side-question column still needs hands-on investigation. Paperclip documents approve-once and revocable-rule approvals, so approval choices alone are not differentiation. Grok Bot's Shared Bots and Paperclip's Agent Chat both document per-person conversations with a shared agent, so a separate conversation alone is not differentiation either. Their privacy differs: Grok Bot chats are private from the owner, while teammates can read Paperclip Agent Chat conversations.
 
 ## Next comparison experiment
 
 Run the same two-person workflow in Happier, Reason Network, Flowpad, Agent Relay, and Paperclip: share a session, ask about an implementation decision, query from another agent, submit a test request, approve it, and revoke access.
 
-For Paperclip, also check whether its approvals reach coding agents' local tool calls. Check too whether a teammate can ask a question without creating a task in the organization.
+For Paperclip, also check whether its approvals reach coding agents' local tool calls. Check too whether a teammate can ask a question without creating a task in the organization. Where a plan allows it, also try Grok Bot's Shared Bots to compare private-chat isolation and who approves actions.
 
 Compare main-session disruption, permission granularity, existing-session compatibility, setup friction, and host resource use. If an existing product sufficiently solves the workflow, evaluate an extension before committing to a separate app.
