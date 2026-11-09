@@ -1,0 +1,17 @@
+/* SC-005 Conversation with my agent: screen rules copied from documentations/mockups/index.html.
+   The shared layer (src/styles/) owns .conversation, .c-head, .msgs, .sep-t, .ag, .me, .working, .dots,
+   .composer, .cbtn, .c-note, .tagpill and .code. */
+/* Conversation items are wrapped in .block (and .q in question conversations); flatten them so bubbles
+   align left and right in the .msgs flex column, as in the mockup. */
+.msgs .block, .msgs .q { display: contents; }
+.ag .src { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--sep); color: var(--text2); font-size: 12.5px; }
+.steps { align-self: flex-start; width: 78%; }
+.steps summary { list-style: none; cursor: pointer; color: var(--text2); font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px; border-radius: 6px; }
+.steps summary::-webkit-details-marker { display: none; }
+.steps summary:hover { background: var(--hover); }
+.step { display: flex; align-items: center; gap: 8px; padding: 4px 6px 4px 10px; color: var(--text2); font-size: 13px; border-left: 2px solid var(--sep); margin-left: 8px; }
+.step .mono { color: var(--text); }
+.queued { margin: 0 24px 8px; display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 14px; border-radius: 14px; background: var(--card); box-shadow: var(--soft); font-size: 13px; }
+.queued .qt { flex: 1; min-width: 0; }
+.queued .qt small { display: block; color: var(--text2); font-size: 12px; }
+.stopped-bar { margin: 0 20px 18px; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 14px; border-radius: 26px; background: var(--card); box-shadow: var(--soft); color: var(--text2); }

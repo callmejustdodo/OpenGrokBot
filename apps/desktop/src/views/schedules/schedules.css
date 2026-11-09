@@ -1,0 +1,10 @@
+/* SC-007 Schedules: screen rules from documentations/mockups/index.html. The shared layer owns .seg and form fields. */
+/* Panel card rows: the mockup's p-card body (bold task, rule and time, last run coloured by result). */
+.sched { list-style: none; display: flex; flex-direction: column; }
+.sched-open { border: 0; background: transparent; padding: 0; text-align: left; cursor: pointer; }
+.sched-open b { color: var(--text); font-weight: 600; }
+.sched small { display: block; color: var(--text2); }
+.sched .run[data-run="failed"] { color: var(--red); }
+.sched .run[data-run="missed"] { color: var(--orange); }
+.sched .hint { margin-top: 8px; }
+.input[type="time"] { width: 140px; }

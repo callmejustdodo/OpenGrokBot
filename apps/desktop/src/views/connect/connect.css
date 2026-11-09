@@ -1,0 +1,5 @@
+/* SC-009 Connect agents: screen rules copied from documentations/mockups/index.html. */
+.connect-body { display: grid; grid-template-columns: 200px 1fr; gap: 14px; }
+.connect-body .list { list-style: none; margin: 0; padding: 0; }
+/* The mockup marks the chosen agent with an inline var(--sel) background; the app uses aria-pressed. */
+.connect-body .row[aria-pressed="true"] { background: var(--sel); }

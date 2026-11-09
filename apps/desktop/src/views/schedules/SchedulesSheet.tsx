@@ -1,3 +1,4 @@
+import "./schedules.css";
 // SC-007 schedule sheet (mockup `schedules`): an agent's schedules, and a form
 // to add or edit one (task, repeat, time, paused) with its recent runs.
 import * as Switch from "@radix-ui/react-switch";
