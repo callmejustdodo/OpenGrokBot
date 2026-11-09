@@ -1,3 +1,4 @@
+import "./my-conversation.css";
 // SC-005 conversation with my agent. States: working, idle, queued, permission,
 // approval (cards owned by TASK-026), stalled, error, stopped, detected
 // (read-only, banner owned by TASK-033), stop-confirm.
@@ -90,7 +91,7 @@ export default function MyConversation({ agentId }: { agentId: AgentId }) {
 
   return (
     <section className="conversation" aria-label={t("conversation.labelWith", "Conversation with {{name}}", { name: agent.name })} data-state={state}>
-      <div className="c-head">
+      <div className="c-head" data-tauri-drag-region>
         <span className="pill">
           <AgentAvatar avatar={agent.avatar} size={28} />
           <span className="nm">{agent.name}</span>
@@ -188,7 +189,7 @@ export default function MyConversation({ agentId }: { agentId: AgentId }) {
             aria-label={t("conversation.message", "Message")}
             placeholder={
               detected
-                ? t("conversation.detectedPlaceholder", "Formation can't send messages to this session")
+                ? t("conversation.detectedPlaceholder", "OpenGrokBot can't send messages to this session")
                 : t("conversation.placeholder", "Message {{name}}", { name: agent.name })
             }
             disabled={detected}

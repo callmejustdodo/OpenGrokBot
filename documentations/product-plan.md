@@ -1,4 +1,4 @@
-# Formation product plan
+# OpenGrokBot product plan
 
 **Don’t ask your teammate. Ask their agent.**
 
@@ -6,9 +6,9 @@ Version 0.1 · October 9, 2026 · Planning stage
 
 ## Product definition
 
-Formation is an open-source macOS app and CLI that lets a machine owner share selected local Claude Code and Codex sessions with collaborators and their agents. Collaborators can read approved context, ask questions in a separate side conversation, and submit follow-up prompts or work requests under the owner's permissions.
+OpenGrokBot is an open-source macOS app and CLI that lets a machine owner share selected local Claude Code and Codex sessions with collaborators and their agents. Collaborators can read approved context, ask questions in a separate side conversation, and submit follow-up prompts or work requests under the owner's permissions.
 
-The agent runs on the owner's machine. Formation does not transfer the owner's provider credentials to collaborators. Publishing the source code does not make anyone's sessions public.
+The agent runs on the owner's machine. OpenGrokBot does not transfer the owner's provider credentials to collaborators. Publishing the source code does not make anyone's sessions public.
 
 All features and commands in this document are proposals, not implemented functionality.
 
@@ -16,7 +16,7 @@ All features and commands in this document are proposals, not implemented functi
 
 Coding sessions accumulate implementation decisions, unsuccessful approaches, investigation results, and project context. Teammates often need the owner to summarize or copy that context before they can continue their own work. Agents face the same problem when a person must relay questions between them.
 
-Formation aims to reduce that coordination work. Whether it saves time and creates a recurring team habit remains a hypothesis to test.
+OpenGrokBot aims to reduce that coordination work. Whether it saves time and creates a recurring team habit remains a hypothesis to test.
 
 | User | Need |
 |---|---|
@@ -53,7 +53,7 @@ Sharing a limited history range must also limit what the answering agent receive
 
 ### Ask a side question
 
-A collaborator asks, for example, “Why did you choose JWT for this authentication flow?” Formation starts a separate conversation using approved context from a specific revision. Follow-up questions stay in that conversation and do not automatically enter the main session's history or queue.
+A collaborator asks, for example, “Why did you choose JWT for this authentication flow?” OpenGrokBot starts a separate conversation using approved context from a specific revision. Follow-up questions stay in that conversation and do not automatically enter the main session's history or queue.
 
 Responses identify their source session and context revision. Where available, they also identify a Git commit. The user can explicitly refresh context as the main session progresses.
 
@@ -61,7 +61,7 @@ The initial mode answers from shared history without tools. A later file-reading
 
 ### Submit work to a session fork
 
-“Add tests for token expiration” is a work request that runs in its own session fork ([D-056](0_one_pager.md#planning-progress)). Formation previews the prompt that will be delivered and submits it according to the owner's policy. By default, requests wait until the current turn finishes. Mid-turn intervention requires a separate explicit permission.
+“Add tests for token expiration” is a work request that runs in its own session fork ([D-056](0_one_pager.md#planning-progress)). OpenGrokBot previews the prompt that will be delivered and submits it according to the owner's policy. By default, requests wait until the current turn finishes. Mid-turn intervention requires a separate explicit permission.
 
 A side conversation can be promoted into a session-fork request by selecting the relevant messages. The entire side conversation is not attached automatically.
 
@@ -91,7 +91,7 @@ Access permissions and execution permissions are separate. Accepting a prompt do
 
 The approval UI shows the requesting person and agent, purpose, target session, actual command or file change, and permission scope. Grants are inspectable and revocable. Owners can set time and usage limits.
 
-The owner's local service makes the final decision. A relay or collaborator client cannot manufacture approval. Apply Formation policy alongside provider policy, respecting the narrower restriction. Verify enforcement against provider auto-approval paths; do not assume an approval callback sees every tool call. The [Claude SDK permission documentation](https://code.claude.com/docs/en/agent-sdk/permissions) explicitly describes evaluation paths that can bypass `canUseTool`.
+The owner's local service makes the final decision. A relay or collaborator client cannot manufacture approval. Apply OpenGrokBot policy alongside provider policy, respecting the narrower restriction. Verify enforcement against provider auto-approval paths; do not assume an approval callback sees every tool call. The [Claude SDK permission documentation](https://code.claude.com/docs/en/agent-sdk/permissions) explicitly describes evaluation paths that can bypass `canUseTool`.
 
 Preserve request provenance and record requests, decisions, and results locally. Secret detection is a supplementary check, not a substitute for sharing previews. Provider authentication tokens stay on the host.
 
@@ -148,7 +148,7 @@ SwiftUI fits the macOS-first direction. A Node or Python helper may be necessary
 
 The official [Codex App Server](https://learn.chatgpt.com/docs/app-server) provides thread operations, turn execution, and approval requests. It is a candidate integration surface.
 
-Reading or resuming stored history is different from attaching to an execution already owned by another process. Do not assume Formation can inject prompts into any existing Codex desktop session. Verify process ownership, supported versions, and duplicate-execution prevention.
+Reading or resuming stored history is different from attaching to an execution already owned by another process. Do not assume OpenGrokBot can inject prompts into any existing Codex desktop session. Verify process ownership, supported versions, and duplicate-execution prevention.
 
 [HAPI documents shared Codex executions](https://hapi.run/docs/guide/codex-shared-sessions), where supported terminal and remote clients use one app-server. This is an implementation reference, not proof that arbitrary unmanaged sessions are attachable.
 
@@ -156,7 +156,7 @@ Reading or resuming stored history is different from attaching to an execution a
 
 The [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk/sessions) supports session resume and fork. Permission rules, callbacks, and hooks provide integration points for execution control.
 
-Injecting input into an arbitrary running CLI process is a separate compatibility question. Start with executions Formation manages and expose read or resume capabilities for other sessions only when supported.
+Injecting input into an arbitrary running CLI process is a separate compatibility question. Start with executions OpenGrokBot manages and expose read or resume capabilities for other sessions only when supported.
 
 ### Transport and state
 
@@ -182,13 +182,13 @@ Acceptance criteria:
 - Concurrent main-session inputs preserve a visible order.
 - Offline, sleep, and provider-exit states reflect reality.
 - Unsupported attachment and resume operations explain their limitations.
-- Formation policy remains effective on provider auto-approval paths.
+- OpenGrokBot policy remains effective on provider auto-approval paths.
 
 ## Validation and open decisions
 
 In a small-team pilot, measure repeated context explanations, question resolution, main-task interruptions, approval burden, and repeat usage. Compare agent-to-agent queries with manual message relay. Establish metric targets after collecting a baseline.
 
-Measure Formation separately from provider processes: idle memory and CPU, one question, streaming, and multiple sessions. No performance advantage has been demonstrated yet.
+Measure OpenGrokBot separately from provider processes: idle memory and CPU, one question, streaming, and multiple sessions. No performance advantage has been demonstrated yet.
 
 Decide the first provider, default history scope, execution defaults, transport, and applicable provider account and usage conditions. Billing and large-team administration are proposed exclusions from the first MVP.
 

@@ -1,6 +1,6 @@
 # Third-party notices
 
-Formation is licensed under the [MIT License](LICENSE). This file lists code copied or generated from other projects, as the [reuse plan](documentations/6_backend_architecture.md#reuse-plan-d-051) requires (D-051). Copy only from MIT or Apache-2.0 sources; never from HAPI, Claude Squad, or Flowpad.
+OpenGrokBot is licensed under the [MIT License](LICENSE). This file lists code copied or generated from other projects, as the [reuse plan](documentations/6_backend_architecture.md#reuse-plan-d-051) requires (D-051). Copy only from MIT or Apache-2.0 sources; never from HAPI, Claude Squad, or Flowpad.
 
 Add one entry per copied file or file group: the path in this repository, the upstream repository, the commit or version, the license, and what was changed. Dependencies installed through Cargo or pnpm are not listed here; their licenses ship with the packages.
 
@@ -12,5 +12,12 @@ Add one entry per copied file or file group: the path in this repository, the up
   - `apps/desktop/index.html`, `apps/desktop/vite.config.ts`, `apps/desktop/tsconfig.json`, `apps/desktop/tsconfig.node.json`, `apps/desktop/.gitignore`
   - `apps/desktop/src/main.tsx`, `apps/desktop/src/App.tsx`, `apps/desktop/src/vite-env.d.ts`
   - `apps/desktop/src-tauri/Cargo.toml`, `apps/desktop/src-tauri/build.rs`, `apps/desktop/src-tauri/src/main.rs`, `apps/desktop/src-tauri/src/lib.rs`, `apps/desktop/src-tauri/tauri.conf.json`, `apps/desktop/src-tauri/capabilities/default.json`, `apps/desktop/src-tauri/.gitignore`
-  - `apps/desktop/src-tauri/icons/*` (Tauri's placeholder icons, unchanged; to be replaced with Formation's icon)
-- **Changes:** removed the sample `greet` command, the opener plugin, and the demo page and assets; renamed the app to Formation; set the window size and the macOS 13 minimum; added Vitest settings to `vite.config.ts`.
+  - `apps/desktop/src-tauri/icons/*` (Tauri's placeholder icons, unchanged; to be replaced with OpenGrokBot's icon)
+- **Changes:** removed the sample `greet` command, the opener plugin, and the demo page and assets; renamed the app to OpenGrokBot; set the window size and the macOS 13 minimum; added Vitest settings to `vite.config.ts`.
+
+## open-bot-avatar (avatar body shapes)
+
+- **Upstream:** [DominikScholz/open-bot-avatar](https://github.com/DominikScholz/open-bot-avatar), gallery shapes as embedded in the approved mockup `documentations/mockups/index.html` (the mockup does not record the upstream commit)
+- **License:** MIT. Copyright (c) 2026 Dominik Scholz.
+- **Files:** `apps/desktop/src/components/sidebar/avatarShapes.ts` (the license text is kept in the file header)
+- **Changes:** copied the mockup's `OBA` map of body paths and eye positions into a typed TypeScript constant; `AgentAvatar.tsx` draws them as flat stills the way the mockup does.

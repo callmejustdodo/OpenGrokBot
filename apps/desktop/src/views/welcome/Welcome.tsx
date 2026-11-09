@@ -3,6 +3,7 @@
 import * as Switch from "@radix-ui/react-switch";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import "./welcome.css";
 import type { HarnessStatus } from "../../ipc/generated/HarnessStatus";
 import { tauriTransport } from "../../ipc/transport";
 import { useAppStore } from "../../store/store";
@@ -64,7 +65,7 @@ export default function Welcome() {
   return (
     <section className="page welcome" aria-label={t("welcome.label", "Welcome")} data-state={state}>
       <div className="wbody">
-        <h2>{t("welcome.title", "Welcome to Formation")}</h2>
+        <h2>{t("welcome.title", "Welcome to OpenGrokBot")}</h2>
         <p className="muted">
           {t("welcome.lead", "Teammates ask your agents directly, and you run your agents in one place.")}
         </p>

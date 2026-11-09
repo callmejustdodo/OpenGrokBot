@@ -4,8 +4,9 @@
 //! `Arc<SqliteStore>` in its adapter and use `with_connection` for its repositories
 //! and transactions without changing A's schema or implementing B's port here.
 //!
-//! The schema lives in `schema.sql`. JSON columns are agents.repositories,
-//! agents.detected, schedules.rule, schedules.last_run, attention.target,
+//! The schema lives in `schema.sql` plus later steps in `migrations.rs`. JSON
+//! columns are agents.repositories, agents.detected, agents.running_requests,
+//! schedules.rule, schedules.last_run, attention.target,
 //! activity.target, and settings.notifications. Other proto fields use scalar
 //! columns, with avatar split into shape/color. UTC timestamp columns have fixed
 //! nanosecond precision so SQL ordering and exclusive paging compare instants.

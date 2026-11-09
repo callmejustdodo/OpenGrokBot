@@ -1,3 +1,4 @@
+import "./schedules.css";
 // SC-007 schedules section of the information panel (mockup `schedPanelCard`):
 // each schedule's rule, time, next run and last result, and "Add".
 import { useTranslation } from "react-i18next";

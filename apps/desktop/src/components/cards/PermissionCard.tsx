@@ -12,6 +12,7 @@ import { useAppStore } from "../../store/store";
 import { act } from "../../store/sync";
 import { uiStore } from "../../store/ui";
 import { errorCode } from "../../views/approval/model";
+import "./cards.css";
 
 export default function PermissionCard({ approvalId }: { approvalId: ApprovalId }) {
   const { t } = useTranslation();
@@ -95,7 +96,7 @@ export default function PermissionCard({ approvalId }: { approvalId: ApprovalId 
       <p className="small">
         {t(
           "permission.note",
-          "These are {{harness}}'s own choices. Teammates' requests follow Formation's approval rules.",
+          "These are {{harness}}'s own choices. Teammates' requests follow OpenGrokBot's approval rules.",
           { harness: harnessName(t, harness) },
         )}
       </p>

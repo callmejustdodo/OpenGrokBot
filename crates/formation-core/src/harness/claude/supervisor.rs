@@ -21,7 +21,7 @@ use serde_json::{Value, json};
 use tokio::{
     io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
     process::{Child, ChildStdin, Command},
-    sync::{broadcast, mpsc, oneshot},
+    sync::{Notify, broadcast, mpsc, oneshot},
     time::Instant,
 };
 
@@ -34,6 +34,11 @@ use crate::{
         RequestQueue, Result, RunInfo, RunProgress, Store, TurnResult,
     },
 };
+
+/// Names the run of a Claude Code process for the permission tool and hook.
+pub const RUN_ID_ENV: &str = "FORMATION_RUN_ID";
+/// Names the agent of a Claude Code process for the permission tool and hook.
+pub const AGENT_ID_ENV: &str = "FORMATION_AGENT_ID";
 
 /// Gate transport configuration is supplied by formationd; this adapter only installs flags.
 #[derive(Clone, Debug)]
@@ -75,6 +80,8 @@ struct Inner {
     streams: broadcast::Sender<AgentStreamEvent>,
     requests: Option<Arc<dyn RequestQueue>>,
     forks: Mutex<HashMap<RunId, RunInfo>>,
+    /// Teammates' requests running in forks, with the signal that stops each one.
+    request_stops: Mutex<HashMap<RequestId, (AgentId, Arc<Notify>)>>,
 }
 struct Running {
     tx: mpsc::UnboundedSender<Control>,
@@ -85,6 +92,9 @@ struct Running {
     /// up to the last one that ended with a result.
     transcript_seq: u64,
     run: Option<RunInfo>,
+    /// `FORMATION_RUN_ID` of the long-lived process: the permission tool and hook
+    /// name it, and [`Harness::run`] answers with the turn running at that moment.
+    process_run: RunId,
     finished: bool,
 }
 struct Pending {
@@ -123,6 +133,15 @@ impl ClaudeSupervisor {
         requests: Option<Arc<dyn RequestQueue>>,
     ) -> Self {
         let (streams, _) = broadcast::channel(256);
+        // No fork outlives the process that ran it: drop lists a previous run left.
+        if let Ok(agents) = store.agents() {
+            for mut agent in agents {
+                if !agent.running_requests.is_empty() {
+                    agent.running_requests.clear();
+                    let _ = store.update_agent(&agent);
+                }
+            }
+        }
         Self {
             inner: Arc::new(Inner {
                 config,
@@ -132,6 +151,7 @@ impl ClaudeSupervisor {
                 streams,
                 requests,
                 forks: Mutex::new(HashMap::new()),
+                request_stops: Mutex::new(HashMap::new()),
             }),
         }
     }
@@ -226,6 +246,77 @@ impl ClaudeSupervisor {
         }
         Ok(agent)
     }
+    /// Changes the agent's running requests in the store and publishes `agent.update`;
+    /// `change` returns whether it changed anything.
+    fn update_running(
+        &self,
+        id: AgentId,
+        change: impl FnOnce(&mut Vec<RunningRequest>) -> bool,
+    ) -> Result<()> {
+        let mut agent = self
+            .inner
+            .store
+            .agent(id)?
+            .ok_or_else(|| error(ErrorCode::NotFound, "agent not found"))?;
+        if !change(&mut agent.running_requests) {
+            return Ok(());
+        }
+        self.inner.store.update_agent(&agent)?;
+        if let Some(r) = self.inner.agents.lock().unwrap().get(&id) {
+            agent.state = r.state;
+        }
+        self.inner
+            .sink
+            .publish(Event::AgentUpdate(AgentUpdateEvent::Upsert {
+                agent: Box::new(agent),
+            }));
+        Ok(())
+    }
+    /// Runs a teammate's request in a fork, listed on the agent while it runs.
+    async fn run_request(
+        &self,
+        id: AgentId,
+        request_id: RequestId,
+        requester: MemberId,
+        fork: ForkRun,
+    ) -> Result<TurnResult> {
+        let stop = Arc::new(Notify::new());
+        self.inner
+            .request_stops
+            .lock()
+            .unwrap()
+            .insert(request_id, (id, stop.clone()));
+        let run_id = fork.run_id;
+        let entry = RunningRequest {
+            request_id,
+            requester,
+            prompt: fork.item.text.clone(),
+            started_at: now(),
+            run_id,
+            fork_session_id: None,
+        };
+        let result = match self.update_running(id, |list| {
+            list.push(entry);
+            true
+        }) {
+            Err(e) => Err(e),
+            Ok(()) => tokio::select! {
+                result = self.run_fork(id, fork) => result.map(|fork| fork.result),
+                _ = stop.notified() => {
+                    // Dropping the fork future kills its process (`kill_on_drop`).
+                    self.inner.forks.lock().unwrap().remove(&run_id);
+                    Ok(TurnResult { outcome: TurnOutcome::Interrupted, result: None })
+                }
+            },
+        };
+        self.inner.request_stops.lock().unwrap().remove(&request_id);
+        let _ = self.update_running(id, |list| {
+            let before = list.len();
+            list.retain(|r| r.request_id != request_id);
+            list.len() != before
+        });
+        result
+    }
 }
 
 async fn write(stdin: &mut ChildStdin, line: String) -> Result<()> {
@@ -304,11 +395,14 @@ impl Harness for ClaudeSupervisor {
                 permission_mode: None,
             },
         );
+        let process_run = RunId::generate();
         let mut child = Command::new(&config.binary)
             .args(args)
             .current_dir(&agent.folder_path)
             .envs(&config.env)
             .env("CLAUDE_CONFIG_DIR", &config.config_dir)
+            .env(RUN_ID_ENV, process_run.to_string())
+            .env(AGENT_ID_ENV, agent.id.to_string())
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::null())
@@ -341,6 +435,7 @@ impl Harness for ClaudeSupervisor {
                 seq,
                 transcript_seq,
                 run: None,
+                process_run,
                 finished: false,
             },
         );
@@ -444,12 +539,12 @@ impl Harness for ClaudeSupervisor {
         if let Some(run) = self.inner.forks.lock().unwrap().get(&id).cloned() {
             return Some(run);
         }
-        self.inner
-            .agents
-            .lock()
-            .unwrap()
-            .values()
-            .find_map(|r| r.run.as_ref().filter(|run| run.run_id == id).cloned())
+        self.inner.agents.lock().unwrap().values().find_map(|r| {
+            r.run
+                .as_ref()
+                .filter(|run| run.run_id == id || r.process_run == id)
+                .cloned()
+        })
     }
     async fn conversation(
         &self,
@@ -722,10 +817,10 @@ impl ClaudeSupervisor {
                     let from = self.inner.agents.lock().unwrap()[&id].session.session_id.clone();
                     request_run = Some(Box::pin(async move {
                         let message_id = item.id;
-                        let result = if matches!(item.source, QueueSource::Request { .. }) {
-                            supervisor.run_fork(id, ForkRun {
+                        let result = if let QueueSource::Request { request_id, requester } = item.source {
+                            supervisor.run_request(id, request_id, requester, ForkRun {
                                 run_id: RunId::generate(), from, item, tools: ForkTools::Gated,
-                            }).await.map(|fork| fork.result)
+                            }).await
                         } else {
                             supervisor.run_turn(id, RunId::generate(), item).await
                         };
@@ -898,6 +993,7 @@ impl CommandHandler for ClaudeSupervisor {
             "agent_message_edit",
             "agent_message_withdraw",
             "agent_turn_interrupt",
+            "agent_request_stop",
             "conversation_page",
         ]
     }
@@ -982,6 +1078,22 @@ impl CommandHandler for ClaudeSupervisor {
             "agent_turn_interrupt" => {
                 let p: AgentTurnInterrupt = params(call.params)?;
                 self.interrupt(p.agent_id).await?;
+                value(())
+            }
+            "agent_request_stop" => {
+                let p: AgentRequestStop = params(call.params)?;
+                let stop = self
+                    .inner
+                    .request_stops
+                    .lock()
+                    .unwrap()
+                    .get(&p.request_id)
+                    .filter(|(agent_id, _)| *agent_id == p.agent_id)
+                    .map(|(_, stop)| stop.clone())
+                    .ok_or_else(|| {
+                        error(ErrorCode::NotFound, "request is not running on this agent")
+                    })?;
+                stop.notify_one();
                 value(())
             }
             "conversation_page" => {

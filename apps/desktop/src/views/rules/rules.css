@@ -1,0 +1,34 @@
+/* SC-012 Rules: screen-specific rules from the approved mockup
+   (documentations/mockups/index.html). Lists, rows, banners and buttons
+   come from the shared styles. */
+.page { flex: 1; overflow: auto; padding: 22px 30px; }
+.page h1 { font-size: 22px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 10px; }
+.page .h1row { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.page .lead { color: var(--text2); font-size: 13px; }
+.list.always { margin-bottom: 14px; }
+.ok { color: var(--green); } .bad { color: var(--orange); }
+.row .when { color: var(--text3); font-size: 12px; flex: none; }
+.empty { text-align: center; padding: 90px 20px; color: var(--text2); }
+.empty > .ic { width: 34px; height: 34px; color: var(--text3); margin-bottom: 10px; }
+.empty b { display: block; color: var(--text); font-size: 17px; margin-bottom: 6px; font-weight: 600; }
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.field > span, .field > label { font-weight: 600; font-size: 13px; }
+.field small { color: var(--text2); font-weight: 400; }
+.field.limits { padding: 0 14px 12px; }
+.input, .select { border: 1px solid var(--sep); background: var(--field); border-radius: 10px; padding: 8px 12px; width: 100%; }
+.err { color: var(--red); font-size: 12.5px; }
+/* v2 Sky Glass: rule lists are white rounded cards. */
+.page .list { border-radius: 16px; border: 1px solid var(--sep); background: var(--card); box-shadow: var(--soft); }
+.input:focus, .select:focus { outline: none; border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 18%, transparent); }
+/* v2 fidelity (SC-012): small title with an inline lead, borderless lifted
+   cards, ~60px rows. */
+.page { padding: 24px 30px; }
+.page h1 { font-size: 20px; }
+.page .h1row { margin-bottom: 16px; }
+.page .list { border: 0; border-radius: 14px; box-shadow: 0 4px 18px rgba(47,80,140,.08), 0 0 0 1px color-mix(in srgb, var(--sep) 60%, transparent); }
+.list.always { margin-bottom: 12px; }
+.page .list .row { padding: 13px 16px; min-height: 58px; }
+.input, .select { border-radius: 12px; }
+
+/* Keep a rule's expiry and use count on one line. */
+.row .when { white-space: nowrap; }

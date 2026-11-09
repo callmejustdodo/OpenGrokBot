@@ -121,6 +121,7 @@ async fn detects_recent_external_sessions_skips_owned_projects_and_connects_read
             created_at: now,
             last_activity_at: None,
             detected: None,
+            running_requests: vec![],
         })
         .unwrap();
     let before = fs::read(&original).unwrap();
@@ -244,6 +245,7 @@ async fn detects_recent_codex_sessions_skips_known_ones_and_connects_read_only()
             created_at: now,
             last_activity_at: None,
             detected: None,
+            running_requests: vec![],
         })
         .unwrap();
     let before = fs::read(&original).unwrap();

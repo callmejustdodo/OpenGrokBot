@@ -8,6 +8,7 @@ import { uiStore } from "../../store/ui";
 import { actionText, agentName, agoText, memberName, useNow } from "../approval/model";
 import QuestionsForMe from "./QuestionsForMe";
 import { selectInbox, type InboxApproval } from "./selectors";
+import "./inbox.css";
 
 export default function Inbox() {
   const { t } = useTranslation();

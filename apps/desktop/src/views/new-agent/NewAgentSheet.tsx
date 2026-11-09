@@ -1,3 +1,4 @@
+import "./new-agent.css";
 // SC-004 new agent sheet (the "+" menu is in the sidebar). States: default,
 // harness-not-ready (the agent can still be created, US-002), name-taken
 // (`agent_create` answers `conflict`). Created: opens its conversation.

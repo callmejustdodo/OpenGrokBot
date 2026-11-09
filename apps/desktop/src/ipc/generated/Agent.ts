@@ -4,6 +4,7 @@ import type { AgentState } from "./AgentState";
 import type { Avatar } from "./Avatar";
 import type { DetectedSource } from "./DetectedSource";
 import type { HarnessKind } from "./HarnessKind";
+import type { RunningRequest } from "./RunningRequest";
 
 /**
  * An agent on this Mac. Its folder holds `AGENTS.md`, `CLAUDE.md`, `.claude/skills/`,
@@ -30,4 +31,8 @@ files_revision: string, created_at: string, last_activity_at: string | null,
 /**
  * Set only for connected detected agents.
  */
-detected: DetectedSource | null, };
+detected: DetectedSource | null, 
+/**
+ * Teammates' requests running in forks now; empty after a restart.
+ */
+running_requests: Array<RunningRequest>, };

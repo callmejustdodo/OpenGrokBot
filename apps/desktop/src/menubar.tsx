@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import MenubarPanel from "./MenubarPanel";
 import "./i18n";
+import "./styles/index.css";
 import { tauriTransport } from "./ipc/transport";
 import { startNotificationBridge } from "./notifications/bridge";
 import { startStore } from "./store/boot";

@@ -1,4 +1,4 @@
-# Formation — Backend architecture
+# OpenGrokBot — Backend architecture
 
 Rev 1 · 2026-11-09 · Implements the [tech spec](4_techspec.md) (Rev 3) for the requirements in the [PRD](1_product_requirements_documentation.md) (Rev 2). The frontend side is in the [frontend architecture](5_frontend_architecture.md). Decision IDs refer to the [planning progress](0_one_pager.md#planning-progress) record.
 
@@ -19,7 +19,7 @@ Rev 1 · 2026-11-09 · Implements the [tech spec](4_techspec.md) (Rev 3) for the
 | --- | --- | --- |
 | `service` | Lifecycle (the app registers formationd with launchd; see the [tech spec](4_techspec.md#technology-choices)), local socket server (newline-delimited JSON-RPC 2.0), snapshot builder, event bus with sequence numbers | D-048, NFR-007 |
 | `harness::claude` | One supervisor task per running agent: spawn `claude -p` in stream-json mode in the agent folder, parse stdout events, write user messages to stdin, track queue and turn state, stop and resume, stalled detection | FR-003, FR-022, FR-007 |
-| `harness::permission` | Bridge for `formation mcp --permission`: receives Claude Code permission prompts, asks `policy`, returns allow or deny; serves the `PreToolUse` hook endpoint | FR-015, FR-022, NFR-004 |
+| `permission` | The gate behind `permission_decide`, which `formation mcp --permission` and the `formation hook pre-tool-use` hook send: finds the run's caller, asks `policy`, raises approvals; the hook only denies or defers, and a deny wins for that tool call | FR-015, FR-022, NFR-004 |
 | `harness::codex` | `codex app-server` JSON-RPC adapter (after Claude Code) | D-002 |
 | `harness::detect` | Find sessions started elsewhere (transcripts, live-session markers), Hermes and OpenClaw installs; report per-harness capabilities | FR-006 |
 | `agents` | Agent folders: create layout (`AGENTS.md`, `CLAUDE.md` importing it, `.claude/skills/`, `formation.toml` with name, role, harness, avatar), watch for outside edits, file read and write for the UI | FR-001, FR-004 |
@@ -41,7 +41,7 @@ All enforcement happens in formationd on the owner's Mac. The UI, CLI, MCP clien
 | Private agents are invisible to teammates | `policy` before every peer response and routing step | Filter by `agent_share.shared`; never list, route to, or answer from private agents |
 | Teammates see answers only, or answers and excerpts | `ask` post-processing | Drop excerpts when visibility is `answer` (D-025) |
 | Side conversations change nothing | `ask` runner | Fork with all tools disabled; never resume the original session for a question |
-| Nothing runs without approval except allowed reads | `harness::permission` and the `PreToolUse` hook, both calling `policy` | Allowed reads inside the agent folder and assigned repositories; saved rules; otherwise raise an approval and wait (D-028) |
+| Nothing runs without approval except allowed reads | `permission`, reached by the permission tool and the `PreToolUse` hook, calling `policy` | Allowed reads inside the agent folder and assigned repositories; saved rules; otherwise raise an approval and wait (D-028) |
 | Rules never widen | `policy::rules` | Match program, argument pattern, and folder exactly as stored; reject command chaining and paths outside the folder |
 | Only the owner approves | `policy::approvals` | Decisions are accepted only from the local socket of the owner's own session, never from peers |
 | A retried request runs once | `requests` with a unique index on (requester, idempotency key) | Insert-or-return in one transaction |
@@ -70,7 +70,7 @@ sequenceDiagram
   end
 ```
 
-Work requests follow the same entry path to `requests`; they run per [FR-014](1_product_requirements_documentation.md#work-requests-and-approvals), with the policy context bound at fork startup as specified in the [Claude Code integration](4_techspec.md#claude-code-integration-first-harness), and every tool call goes through `harness::permission`.
+Work requests follow the same entry path to `requests`; they run per [FR-014](1_product_requirements_documentation.md#work-requests-and-approvals), with the policy context bound at fork startup as specified in the [Claude Code integration](4_techspec.md#claude-code-integration-first-harness), and every tool call goes through `permission`.
 
 ## Error codes
 
@@ -80,15 +80,15 @@ Work requests follow the same entry path to `requests`; they run per [FR-014](1_
 
 - **Location:** `~/Library/Application Support/Formation/formation.db` (SQLite, WAL mode), schema from the [data model](4_techspec.md#data-model), migrations applied by formationd at start.
 - **What each Mac owns:** the owner's Mac owns its agents, their folders, approvals, rules, and the answers its agents produce. The asker's Mac keeps a copy of its own questions and the answers received (D-029).
-- **Harness transcripts** stay where Claude Code and Codex keep them; Formation reads them and never copies them off the Mac, except excerpts allowed by visibility.
+- **Harness transcripts** stay where Claude Code and Codex keep them; OpenGrokBot reads them and never copies them off the Mac, except excerpts allowed by visibility.
 - **Deletion (proposed):** an asker's delete removes only the asker's copy. An owner's delete removes the owner's copy and asks the asker's Mac to delete its copy the next time it is reachable. Confirm in review; the PRD allows both deletions but does not say whether the owner's delete reaches the asker's copy.
-- **Backups (assumption):** none in the first version. Losing a Mac loses its Formation history; the harness transcripts and agent folders remain wherever the user backs them up.
+- **Backups (assumption):** none in the first version. Losing a Mac loses its OpenGrokBot history; the harness transcripts and agent folders remain wherever the user backs them up.
 
 ## Recovery
 
-- **formationd crash:** launchd restarts it (`KeepAlive`). On start it rebuilds state: resumes Formation-managed sessions with `--resume` (never detected originals, per [FR-006](1_product_requirements_documentation.md#managing-agents-owner)), re-queues requests that were `queued`, marks interrupted ones `failed` with a reason, expires approvals past 24 hours, and retries the outbox.
+- **formationd crash:** launchd restarts it (`KeepAlive`). On start it rebuilds state: resumes OpenGrokBot-managed sessions with `--resume` (never detected originals, per [FR-006](1_product_requirements_documentation.md#managing-agents-owner)), re-queues requests that were `queued`, marks interrupted ones `failed` with a reason, expires approvals past 24 hours, and retries the outbox.
 - **App crash or quit:** no effect on agents; the UI reconnects and takes a fresh snapshot.
-- **Harness crash:** the agent goes to `error` with the exit code; restart resumes a Formation-managed session; detected originals follow [FR-006](1_product_requirements_documentation.md#managing-agents-owner).
+- **Harness crash:** the agent goes to `error` with the exit code; restart resumes a OpenGrokBot-managed session; detected originals follow [FR-006](1_product_requirements_documentation.md#managing-agents-owner).
 - **Peer unreachable:** questions and requests wait in the asker's outbox; the owner re-checks membership and sharing when they arrive (FR-016).
 
 ## Identity and team
@@ -108,7 +108,7 @@ Work requests follow the same entry path to `requests`; they run per [FR-014](1_
 
 Inspect and copy before writing from scratch. Licenses checked 2026-11-09; keep notices and record each copied file in `THIRD_PARTY_NOTICES.md`.
 
-| Formation module | Source | License | Use |
+| OpenGrokBot module | Source | License | Use |
 | --- | --- | --- | --- |
 | `harness::detect` | [Reason Network](https://github.com/reason-machines/reason-network) `src/daemon/sessions.rs`, `src/setup/hermes.rs` | MIT or Apache-2.0 | Copy and adapt: discovers Claude Code sessions from local session files and Hermes profiles |
 | `harness::claude`, `harness::codex` | Reason Network `src/claude.rs`, `src/codex.rs`, `src/hook.rs` | MIT or Apache-2.0 | Copy and adapt: harness specifics, hook payloads, Codex app-server usage |
