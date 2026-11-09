@@ -1,15 +1,15 @@
 // The menu bar panel (SC-002): agents with their state and a way back to the
 // main window. TASK-035 completes it (needs-attention list, all-clear, offline).
 import { showMainWindow } from "./ipc/client";
-import { useSnapshot } from "./useSnapshot";
+import { useAppStore } from "./store/store";
 
 export default function MenubarPanel() {
-  const { connected, snapshot } = useSnapshot();
-  const agents = snapshot?.agents ?? [];
+  const agents = useAppStore((s) => s.mirror?.agents);
+  const connected = useAppStore((s) => s.connected);
   return (
     <div className="menubar" data-connected={connected}>
       <ul className="agents">
-        {agents.map((a) => (
+        {Object.values(agents ?? {}).map((a) => (
           <li key={a.id} data-state={a.state}>
             {a.name}
           </li>
