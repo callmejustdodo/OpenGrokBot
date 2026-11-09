@@ -100,6 +100,7 @@ Work requests follow the same entry path to `requests`; they run per [FR-014](1_
 ## Configuration, logs, and operations
 
 - **Config:** `~/Library/Application Support/Formation/config.toml` (peer port 7413, harness paths, thresholds such as stalled after 10 minutes).
+- **Local socket:** `~/Library/Application Support/Formation/formationd.sock`; override with `FORMATION_SOCKET`.
 - **Logs:** `~/Library/Logs/Formation/`, rotated daily and kept 7 days (assumption); no telemetry leaves the Mac.
 - **Operations:** the team creator runs the Tailscale tailnet and the GitHub OAuth App; each member keeps Claude Code (and later Codex) signed in. No servers to run.
 
