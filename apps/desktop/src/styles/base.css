@@ -33,9 +33,9 @@ pre { margin: 0; }
 kbd { font-family: var(--font); }
 
 /* Buttons */
-.btn { display: inline-flex; align-items: center; gap: 6px; border: 0; background: var(--sec); border-radius: 999px; padding: 6px 14px; cursor: pointer; white-space: nowrap; font-size: 13.5px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; border: 0; background: var(--sec); color: var(--text); font-weight: 500; border-radius: 999px; padding: 6px 14px; cursor: pointer; white-space: nowrap; font-size: 13.5px; }
 .btn:hover { filter: brightness(.97); }
-.btn.primary { background: var(--primary); color: var(--primary-fg); }
+.btn.primary { background: var(--brand-grad); color: var(--primary-fg); box-shadow: 0 4px 12px color-mix(in srgb, var(--brand) 28%, transparent); }
 .btn.destructive { background: transparent; color: var(--red); }
 .btn.plain { background: transparent; color: var(--text2); padding: 4px 8px; font-size: 12.5px; }
 .btn.plain:hover { background: var(--hover); color: var(--text); }
@@ -43,7 +43,7 @@ kbd { font-family: var(--font); }
 .btn .k, .btn kbd { opacity: .55; font-size: 11px; }
 .ticon { position: relative; width: 32px; height: 32px; border-radius: 10px; border: 0; background: transparent; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text2); flex: none; padding: 0; }
 .ticon:hover { background: var(--hover); color: var(--text); }
-.ticon[aria-current="page"], .ticon[aria-pressed="true"] { background: var(--sel); color: var(--text); }
+.ticon[aria-current="page"], .ticon[aria-pressed="true"] { background: var(--sel); color: var(--brand); }
 .ticon.plus { background: var(--card); box-shadow: var(--soft); color: var(--text); margin-left: 4px; }
 .ticon .cnt { position: absolute; top: 2px; right: 1px; min-width: 15px; height: 15px; padding: 0 4px; border-radius: 999px; background: var(--orange); color: var(--badge-fg); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
 
@@ -58,7 +58,7 @@ kbd { font-family: var(--font); }
 /* Switch (Radix Switch: the root is the track, its thumb a span) */
 .switch { display: inline-flex; align-items: center; cursor: pointer; border: 0; padding: 0; flex: none; width: 34px; height: 20px; border-radius: 999px; background: var(--sel); position: relative; transition: background .15s; }
 .switch > span { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--badge-fg); box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: left .15s; }
-.switch[data-state="checked"] { background: var(--primary); }
+.switch[data-state="checked"] { background: var(--brand); }
 .switch[data-state="checked"] > span { left: 16px; background: var(--primary-fg); }
 .switch[disabled] { opacity: .4; cursor: not-allowed; }
 
@@ -72,6 +72,7 @@ kbd { font-family: var(--font); }
 .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
 .field > span, .field > label, .field > legend { font-weight: 600; font-size: 13px; padding: 0; }
 .field small { color: var(--text2); font-weight: 400; }
+.input:focus, .textarea:focus, .select:focus { border-color: var(--brand); }
 .input, .textarea, .select { border: 1px solid var(--sep); background: var(--field); border-radius: 12px; padding: 8px 12px; width: 100%; outline: none; }
 .select { appearance: auto; }
 .textarea { min-height: 76px; resize: none; line-height: 1.45; }

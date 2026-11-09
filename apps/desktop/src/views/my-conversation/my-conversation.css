@@ -9,9 +9,9 @@
 .steps summary { list-style: none; cursor: pointer; color: var(--text2); font-size: 12.5px; display: inline-flex; align-items: center; gap: 6px; padding: 2px 4px; border-radius: 6px; }
 .steps summary::-webkit-details-marker { display: none; }
 .steps summary:hover { background: var(--hover); }
-.step { display: flex; align-items: center; gap: 8px; padding: 4px 6px 4px 10px; color: var(--text2); font-size: 13px; border-left: 2px solid var(--sep); margin-left: 8px; }
+.step { display: flex; align-items: center; gap: 8px; padding: 4px 6px 4px 10px; color: var(--text2); font-size: 13px; border-left: 2px solid color-mix(in srgb, var(--brand, var(--focus)) 30%, var(--sep)); margin-left: 8px; }
 .step .mono { color: var(--text); }
-.queued { margin: 0 24px 8px; display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 14px; border-radius: 14px; background: var(--card); box-shadow: var(--soft); font-size: 13px; }
+.queued { margin: 0 24px 8px; display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 14px; border-radius: 16px; background: var(--card); border: 1px solid var(--sep); box-shadow: var(--soft); font-size: 13px; }
 .queued .qt { flex: 1; min-width: 0; }
 .queued .qt small { display: block; color: var(--text2); font-size: 12px; }
-.stopped-bar { margin: 0 20px 18px; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 14px; border-radius: 26px; background: var(--card); box-shadow: var(--soft); color: var(--text2); }
+.stopped-bar { margin: 0 20px 18px; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 14px; border-radius: 26px; background: var(--card); border: 1px solid var(--sep); box-shadow: var(--soft); color: var(--text2); }

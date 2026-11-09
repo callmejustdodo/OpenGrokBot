@@ -5,7 +5,7 @@
 .settings > .banner { margin: 10px 16px 0; }
 .stabs { display: flex; justify-content: center; gap: 6px; padding: 4px 8px 10px; border-bottom: 1px solid var(--sep); }
 .stabs button { border: 0; background: transparent; padding: 7px 14px; border-radius: 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; color: var(--text2); }
-.stabs button[aria-selected="true"] { background: var(--sel); color: var(--text); }
+.stabs button[aria-selected="true"] { background: var(--card); color: var(--focus); box-shadow: var(--soft); }
 .stabs .ic { width: 20px; height: 20px; }
 .wbody { flex: 1; overflow: auto; padding: 10px 32px 24px; }
 .wbody h2 { font-size: 13px; font-weight: 600; color: var(--text2); margin: 18px 0 6px; }
@@ -15,8 +15,8 @@
 .switch { display: inline-flex; align-items: center; cursor: pointer; border: 0; background: transparent; padding: 0; flex: none; }
 .switch .track { width: 34px; height: 20px; border-radius: 999px; background: var(--sel); position: relative; transition: background .15s; }
 .switch .track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: left .15s; }
-.switch[aria-checked="true"] .track { background: var(--primary); }
-.switch[aria-checked="true"] .track::after { left: 16px; background: var(--primary-fg); }
+.switch[aria-checked="true"] .track { background: var(--focus); }
+.switch[aria-checked="true"] .track::after { left: 16px; }
 .switch[disabled] { opacity: .4; cursor: not-allowed; }
 .seg { display: inline-flex; background: var(--sec); border-radius: 999px; padding: 3px; gap: 2px; }
 .seg button { border: 0; background: transparent; padding: 4px 12px; border-radius: 999px; cursor: pointer; font-size: 12.5px; }
