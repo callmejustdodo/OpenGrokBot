@@ -1,0 +1,28 @@
+/* SC-018 Settings window: screen-specific rules from the approved mockup
+   (documentations/mockups/index.html). The window frame is native, so the
+   mockup's .window and .titlebar positioning is not copied. */
+.settings { display: flex; flex-direction: column; height: 100%; background: var(--win); }
+.settings > .banner { margin: 10px 16px 0; }
+.stabs { display: flex; justify-content: center; gap: 6px; padding: 4px 8px 10px; border-bottom: 1px solid var(--sep); }
+.stabs button { border: 0; background: transparent; padding: 7px 14px; border-radius: 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; color: var(--text2); }
+.stabs button[aria-selected="true"] { background: var(--sel); color: var(--text); }
+.stabs .ic { width: 20px; height: 20px; }
+.wbody { flex: 1; overflow: auto; padding: 10px 32px 24px; }
+.wbody h2 { font-size: 13px; font-weight: 600; color: var(--text2); margin: 18px 0 6px; }
+.form-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--sep); }
+.form-row:last-child { border-bottom: 0; }
+.form-row small { display: block; color: var(--text2); font-size: 12px; }
+.switch { display: inline-flex; align-items: center; cursor: pointer; border: 0; background: transparent; padding: 0; flex: none; }
+.switch .track { width: 34px; height: 20px; border-radius: 999px; background: var(--sel); position: relative; transition: background .15s; }
+.switch .track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.3); transition: left .15s; }
+.switch[aria-checked="true"] .track { background: var(--primary); }
+.switch[aria-checked="true"] .track::after { left: 16px; background: var(--primary-fg); }
+.switch[disabled] { opacity: .4; cursor: not-allowed; }
+.seg { display: inline-flex; background: var(--sec); border-radius: 999px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: transparent; padding: 4px 12px; border-radius: 999px; cursor: pointer; font-size: 12.5px; }
+.seg button[aria-pressed="true"], .seg button[data-state="on"] { background: var(--card); box-shadow: var(--soft); font-weight: 600; }
+.ok { color: var(--green); } .bad { color: var(--orange); }
+.online { display: inline-flex; align-items: center; gap: 5px; color: var(--text2); font-size: 12.5px; font-weight: 400; }
+.online::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--green); }
+.online.off::before { background: var(--text3); }
+.err { color: var(--red); font-size: 12.5px; }

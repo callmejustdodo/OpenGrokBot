@@ -12,6 +12,7 @@ import { useAppStore } from "../../store/store";
 import { act } from "../../store/sync";
 import { uiStore } from "../../store/ui";
 import { errorCode } from "../../views/approval/model";
+import "./cards.css";
 
 export default function PermissionCard({ approvalId }: { approvalId: ApprovalId }) {
   const { t } = useTranslation();

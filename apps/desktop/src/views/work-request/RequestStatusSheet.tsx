@@ -11,6 +11,7 @@ import { act } from "../../store/sync";
 import { uiStore } from "../../store/ui";
 import Sheet from "../../ui/Sheet";
 import { agentName, errorCode, memberName } from "../approval/model";
+import "./work-request.css";
 
 const FLOW: readonly RequestStatus[] = ["received", "awaiting_approval", "queued", "running", "completed"];
 const CANCELABLE: readonly RequestStatus[] = ["received", "awaiting_approval", "queued"];

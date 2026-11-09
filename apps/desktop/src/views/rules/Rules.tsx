@@ -19,6 +19,7 @@ import {
   type ExpiryChoice,
   type RuleRow,
 } from "./selectors";
+import "./rules.css";
 
 type Failure = { message: string; action: "retry" | "dismiss"; retry: () => void };
 
