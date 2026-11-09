@@ -7,4 +7,8 @@ export type ScheduleRun = { id: ScheduleRunId, schedule_id: ScheduleId, planned_
 /**
  * `None` while running.
  */
-result: ScheduleRunResult | null, };
+result: ScheduleRunResult | null, 
+/**
+ * Why a failed run failed.
+ */
+error: string | null, };

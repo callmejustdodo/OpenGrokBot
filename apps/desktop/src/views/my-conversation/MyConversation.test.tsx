@@ -192,11 +192,49 @@ describe("SC-005 error", () => {
     play(planningError);
     open(PLANNING);
     const banner = screen.getAllByRole("alert")[0];
-    expect(banner).toHaveTextContent("The process exited unexpectedly");
-    expect(banner).toHaveTextContent("exited with code 1");
+    expect(within(banner).getByText("The process exited unexpectedly")).toBeInTheDocument();
+    expect(within(banner).getByText("Exited with code 1")).toBeInTheDocument();
+    expect(banner).not.toHaveTextContent("Planning · exited with code 1");
     await act(async () => fireEvent.click(within(banner).getByRole("button", { name: "Restart" })));
     expect(call.mock.calls).toEqual([["agent_start", { agent_id: PLANNING }]]);
     expect(screen.queryByRole("textbox", { name: "Message" })).toBeNull();
+  });
+
+  it("shows the event's reason without an exit code line when only the reason is known", () => {
+    open(PLANNING);
+    emit({ type: "agent.state", payload: { agent_id: PLANNING, state: "error", reason: "Out of memory", exit_code: null } });
+    const banner = screen.getAllByRole("alert")[0];
+    expect(within(banner).getByText("Out of memory")).toBeInTheDocument();
+    expect(banner).not.toHaveTextContent("Exited with code");
+  });
+
+  it("shows the exit code under the default title when only the exit code is known", () => {
+    open(PLANNING);
+    emit({ type: "agent.state", payload: { agent_id: PLANNING, state: "error", reason: null, exit_code: 137 } });
+    const banner = screen.getAllByRole("alert")[0];
+    expect(within(banner).getByText("The process exited unexpectedly")).toBeInTheDocument();
+    expect(within(banner).getByText("Exited with code 137")).toBeInTheDocument();
+  });
+
+  it("falls back to the Inbox item when the event gave neither", () => {
+    play({
+      steps: [
+        { event: { ...planningError.steps[0].event, payload: { ...planningError.steps[0].event.payload, reason: null, exit_code: null } } },
+        planningError.steps[1],
+      ],
+    });
+    open(PLANNING);
+    const banner = screen.getAllByRole("alert")[0];
+    expect(within(banner).getByText("The process exited unexpectedly")).toBeInTheDocument();
+    expect(within(banner).getByText("Planning · exited with code 1")).toBeInTheDocument();
+  });
+
+  it("drops the banner and its status once the agent runs again", () => {
+    play(planningError);
+    open(PLANNING);
+    emit({ type: "agent.state", payload: { agent_id: PLANNING, state: "working", reason: null, exit_code: null } });
+    expect(screen.queryByText("Exited with code 1")).toBeNull();
+    expect(appStore.getState().mirror?.agentStatus).not.toHaveProperty(PLANNING);
   });
 });
 

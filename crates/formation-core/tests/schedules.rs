@@ -4,7 +4,12 @@ use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 use chrono::{Datelike, Duration, Local, TimeZone, Utc};
-use formation_core::{ports::*, schedules::Schedules, testkit::*};
+use formation_core::{
+    harness::claude::{ClaudeConfig, ClaudeSupervisor},
+    ports::*,
+    schedules::Schedules,
+    testkit::*,
+};
 use formation_proto::{
     agent::*, common::*, events::Event, harness::*, policy::Caller, request::QueueSource,
 };
@@ -82,20 +87,36 @@ impl Fixture {
                 path: None,
                 problem: None,
             },
-            [ScriptedAgent::new(
-                SessionInfo {
-                    agent_id: agent.id,
-                    session_id: SessionId("main".into()),
-                    transcript_path: "/tmp/main.jsonl".into(),
-                    cwd: agent.folder_path.clone(),
-                    started_at: Utc::now(),
-                    last_activity_at: None,
-                },
-                outcomes.iter().map(|outcome| TurnResult {
-                    outcome: *outcome,
-                    result: None,
-                }),
-            )],
+            [ScriptedAgent {
+                forks: outcomes
+                    .iter()
+                    .map(|outcome| ForkResult {
+                        session: SessionInfo {
+                            agent_id: agent.id,
+                            session_id: SessionId(RunId::generate().to_string()),
+                            transcript_path: "/tmp/fork.jsonl".into(),
+                            cwd: agent.folder_path.clone(),
+                            started_at: Utc::now(),
+                            last_activity_at: None,
+                        },
+                        result: TurnResult {
+                            outcome: *outcome,
+                            result: None,
+                        },
+                    })
+                    .collect(),
+                ..ScriptedAgent::new(
+                    SessionInfo {
+                        agent_id: agent.id,
+                        session_id: SessionId("main".into()),
+                        transcript_path: "/tmp/main.jsonl".into(),
+                        cwd: agent.folder_path.clone(),
+                        started_at: Utc::now(),
+                        last_activity_at: None,
+                    },
+                    [],
+                )
+            }],
         ));
         let events = Arc::new(RecordingEventSink::default());
         let notifier = Arc::new(Notifications::default());
@@ -179,8 +200,9 @@ async fn commands_persist_publish_pause_resume_and_delete() {
 }
 
 #[tokio::test]
-async fn due_turn_records_completion_and_skips_future_work() {
+async fn due_fork_preserves_main_session_records_completion_and_skips_future_work() {
     let f = Fixture::new(&[TurnOutcome::Completed]);
+    let main = f.harness.session_info(f.agent.id).await.unwrap().unwrap();
     let schedule = f.create(ScheduleRule::Daily).await;
     let due = schedule.next_run_at.unwrap();
     f.schedules.tick(due - Duration::seconds(1)).await.unwrap();
@@ -193,10 +215,17 @@ async fn due_turn_records_completion_and_skips_future_work() {
     assert_eq!(run.planned_at, due);
     assert_eq!(run.started_at, Some(due));
     assert!(run.finished_at.unwrap() >= due);
+    let calls = f.harness.calls();
+    assert_eq!(calls.len(), 1);
     assert!(
-        matches!(&f.harness.calls()[0], HarnessCall::RunTurn { agent_id, item, .. }
-        if *agent_id == f.agent.id && item.text == schedule.prompt
+        matches!(&calls[0], HarnessCall::RunFork { agent_id, from, item, tools, .. }
+        if *agent_id == f.agent.id && *from == main.session_id && *tools == ForkTools::Gated
+        && item.text == schedule.prompt && item.queued_at == due
         && item.source == QueueSource::Schedule { schedule_id: schedule.id })
+    );
+    assert_eq!(
+        f.harness.session_info(f.agent.id).await.unwrap(),
+        Some(main)
     );
     let history: Vec<ScheduleRun> = serde_json::from_value(
         f.call(
@@ -209,6 +238,55 @@ async fn due_turn_records_completion_and_skips_future_work() {
     assert_eq!(history, vec![run]);
     assert_eq!(f.events.events().len(), 3);
     assert!(f.notifier.inbox().await.unwrap().is_empty());
+}
+
+#[tokio::test]
+async fn due_run_without_main_session_falls_back_to_turn() {
+    let mut f = Fixture::new(&[]);
+    let root = std::env::temp_dir().join(format!("formation-schedule-{}", RunId::generate()));
+    std::fs::create_dir_all(&root).unwrap();
+    f.agent.folder_path = root.clone();
+    f.store.update_agent(&f.agent).unwrap();
+    let harness = Arc::new(ClaudeSupervisor::new(
+        ClaudeConfig {
+            binary: env!("CARGO_BIN_EXE_fake-claude").into(),
+            config_dir: root.join("config"),
+            env: std::collections::HashMap::from([(
+                "FAKE_CLAUDE_TRANSCRIPT".into(),
+                format!(
+                    "{}/testkit/fixtures/claude/1-one-turn.stdout.jsonl",
+                    env!("CARGO_MANIFEST_DIR")
+                ),
+            )]),
+            ..ClaudeConfig::default()
+        },
+        f.store.clone(),
+        f.events.clone(),
+    ));
+    f.schedules = Schedules::new(
+        f.store.clone(),
+        harness.clone(),
+        f.events.clone(),
+        f.notifier.clone(),
+    );
+    assert_eq!(harness.session_info(f.agent.id).await.unwrap(), None);
+    let schedule = f.create(ScheduleRule::Daily).await;
+    f.schedules
+        .tick(schedule.next_run_at.unwrap())
+        .await
+        .unwrap();
+    let run = f
+        .store
+        .schedule(schedule.id)
+        .unwrap()
+        .unwrap()
+        .last_run
+        .unwrap();
+    assert_eq!(run.result, Some(ScheduleRunResult::Completed));
+    assert!(harness.session_info(f.agent.id).await.unwrap().is_some());
+    assert!(f.notifier.inbox().await.unwrap().is_empty());
+    harness.stop(f.agent.id, StopMode::Now).await.unwrap();
+    std::fs::remove_dir_all(root).unwrap();
 }
 
 #[tokio::test]
@@ -230,6 +308,15 @@ async fn wake_runs_once_for_many_missed_slots() {
         f.store.schedule_runs(schedule.id, None, 10).unwrap().len(),
         1
     );
+    let alerts = f.notifier.inbox().await.unwrap();
+    assert_eq!(alerts.len(), 1);
+    assert_eq!(alerts[0].kind, AttentionKind::ScheduleMissed);
+    assert_eq!(
+        alerts[0].target,
+        AttentionTarget::Schedule {
+            schedule_id: schedule.id
+        }
+    );
 }
 
 #[tokio::test]
@@ -250,6 +337,14 @@ async fn failed_turn_and_harness_error_record_failure_and_alert() {
     assert!(
         runs.iter()
             .all(|r| r.result == Some(ScheduleRunResult::Failed) && r.finished_at.is_some())
+    );
+    // Newest first: the harness error, then the failed turn without reply text.
+    assert_eq!(
+        runs.iter().map(|r| r.error.as_deref()).collect::<Vec<_>>(),
+        [
+            Some("no scripted agent or response"),
+            Some("turn did not complete")
+        ]
     );
     let alerts = f.notifier.inbox().await.unwrap();
     assert_eq!(alerts.len(), 2);

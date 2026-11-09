@@ -1,10 +1,21 @@
-//! Ask pipeline: answering a teammate's question from an agent's session.
+//! Ask pipeline: answering a teammate's question from an agent's session
+//! (FR-010 to FR-013, tech spec "Ask pipeline").
 //!
-//! This is the TASK-006 spike from `documentations/implementation_plan.md`:
-//! answer a question in a fork of the agent's Claude Code session and show
-//! that the original session's transcript is byte-identical afterwards
-//! (FR-012, NFR-002). It covers step 4 of the tech spec's ask pipeline; the
-//! rest of the pipeline (routing, excerpts, `as_of`, masking) is TASK-019.
+//! TASK-019 builds the pipeline on the owner's Mac:
+//!
+//! - [`pipeline`] takes a received question to an answer, a routing choice, or
+//!   a failure; continues threads with follow-ups; refreshes. Answers come from
+//!   `Harness::run_fork` with no tools, never from the main session.
+//! - [`routing`] decides confident or unsure from a [`routing::Scorer`];
+//!   [`scorer`] is the real one, a short isolated Claude Code call.
+//! - [`answer`] post-processes a forked answer: excerpts, `as_of`,
+//!   `possibly_stale`, visibility, and masking ([`mask`]).
+//!
+//! Sharing and visibility settings live in [`crate::policy::sharing`].
+//!
+//! The TASK-006 spike answered a question in a fork of the agent's Claude Code
+//! session and showed that the original session's transcript is byte-identical
+//! afterwards (FR-012, NFR-002):
 //!
 //! - [`fork`] builds and runs the answer command and measures it.
 //! - [`stream`] parses the CLI's `stream-json` output.
@@ -71,25 +82,36 @@
 //! fork only ("Tool call interrupted ...", then "No response requested."),
 //! and answers may list those CLI-made messages as used.
 //!
-//! Known limits, left to TASK-019:
+//! Known limits the spike found, and how TASK-019 handles them:
 //!
 //! - Every fork leaves a full copy of the conversation as
-//!   `<fork-session-id>.jsonl` beside the original; callers must track or
-//!   delete those files so they do not show up as agent sessions (FR-006).
+//!   `<fork-session-id>.jsonl` beside the original. The pipeline records each
+//!   thread's newest fork, deletes the fork it replaces, and deletes the last
+//!   one with the thread ([`pipeline::AskPipeline::discard_thread`]). Session
+//!   detection must still skip the recorded forks (FR-006).
 //! - No flag removes content that is already part of the original
 //!   conversation (for example `SessionStart` hook output or instructions the
 //!   agent loaded), and the CLI attaches the account email and environment to
-//!   each new turn. Answers still need masking (NFR-003).
+//!   each new turn. Answers and excerpts are masked ([`mask`]), including the
+//!   owner's email addresses when the pipeline is given them; excerpts show only
+//!   user and assistant messages, never tool output.
 //! - A fork taken while the agent is mid-turn sees the pending user message
 //!   but none of the reply in progress, and reports that request as still
-//!   open.
+//!   open. The question then carries a note saying so
+//!   ([`pipeline::MID_TURN_NOTE`]) instead of the fork being cut.
 //! - The process runner in [`fork`] (`claude_command`, `run_print`), the
 //!   isolation flags and the list of parent-session variables are spike code
 //!   and inputs to TASK-022, where role A builds the forked, tool-less run
-//!   behind the Harness port. TASK-019 should start forks through that port
-//!   rather than reuse this runner.
+//!   behind the Harness port. Answers go through that port; only the routing
+//!   call ([`scorer`]), which resumes no session, uses this runner.
 
+pub mod answer;
+pub(crate) mod excerpts;
 pub mod fork;
+pub mod mask;
+pub mod pipeline;
+pub mod routing;
+pub mod scorer;
 pub mod stream;
 pub mod transcript;
 

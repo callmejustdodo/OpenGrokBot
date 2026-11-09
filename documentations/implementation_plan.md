@@ -297,7 +297,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: B
 
 ### TASK-019: Sharing, routing, and answers from the session conversation
-- Status: pending
+- Status: complete
 - References: FR-009 to FR-013, US-009, US-013 to US-017, [ask pipeline](4_techspec.md#ask-pipeline), D-025 to D-027, TASK-006 results
 - Prerequisites: TASK-006, TASK-018 (uses `FakeHarness` from TASK-003 until IC-2)
 - Change locations: `crates/formation-core/src/{policy,ask}/`
