@@ -1,0 +1,20 @@
+      0ms stdin#1   user "Which shell command did I ask you to run? Reply with only the command."
+    215ms stdout#1   system hook_started
+    215ms stdout#2   system hook_started
+    215ms stdout#3   system hook_started
+    273ms stdout#4   system hook_response
+    275ms stdout#5   system hook_response
+    703ms stdout#6   system hook_response
+    751ms stdout#7   system init
+    753ms stdout#8   system status
+   1635ms stdout#9   user "Which shell command did I ask you to run? Reply with only th"
+   1635ms stdout#10  stream_event message_start
+   1635ms stdout#11  stream_event content_block_start
+   1636ms stdout#12  stream_event content_block_delta
+   1660ms stdout#13  assistant "`sleep 20`"
+   1660ms stdout#14  stream_event content_block_stop
+   1666ms stdout#15  stream_event message_delta
+   1667ms stdout#16  stream_event message_stop
+   1669ms stdout#17  rate_limit_event
+   1676ms stdout#18  result success "`sleep 20`"
+   2564ms exit      exit status: 0
