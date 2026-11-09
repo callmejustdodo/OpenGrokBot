@@ -8,6 +8,7 @@ use std::sync::Arc;
 use formation_core::agents::{Agents, ClaudeReadiness, HarnessReadiness};
 use formation_core::harness::claude::{ClaudeConfig, ClaudeSupervisor};
 use formation_core::harness::detect::{Detect, DetectPaths};
+use formation_core::harness::dispatch::HarnessDispatcher;
 use formation_core::notify::{AttentionNotifier, monitor, reconcile};
 use formation_core::ports::{
     CollabStore, CommandHandler, Harness, Notifier, Peers, PermissionGate, Policy, RequestQueue,
@@ -108,6 +109,15 @@ fn wiring(directory: &Path, fake_list: &str, detect_paths: DetectPaths) -> Resul
         ));
         (supervisor.clone(), supervisor, Arc::new(readiness))
     };
+    let dispatcher = Arc::new(HarnessDispatcher::new(
+        store.clone(),
+        vec![
+            (harness, commands),
+            // TASK-041: add the Codex supervisor here, as (codex.clone(), codex).
+        ],
+    ));
+    let (harness, commands): (Arc<dyn Harness>, Arc<dyn CommandHandler>) =
+        (dispatcher.clone(), dispatcher);
     let agents = Arc::new(Agents::new(
         directory.join("agents"),
         store.clone(),
