@@ -233,7 +233,7 @@ describe("asking a person", () => {
   it("unsure: lists candidates best guess first, plus Ask Minsu directly", async () => {
     const region = open(PERSON);
     expect(region).toHaveAttribute("data-state", "unsure");
-    expect(within(region).getByText("Asking a person · Formation picks the agent")).toBeInTheDocument();
+    expect(within(region).getByText("Asking a person · OpenGrokBot picks the agent")).toBeInTheDocument();
     const card = within(region).getByRole("group", { name: "Not sure which agent should answer" });
     const options = within(card).getAllByRole("button");
     expect(options.map((o) => o.textContent)).toEqual([
