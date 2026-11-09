@@ -86,7 +86,7 @@ Work requests follow the same entry path to `requests`; they run per [FR-014](1_
 
 ## Recovery
 
-- **formationd crash:** launchd restarts it (`KeepAlive`). On start it rebuilds state: resumes OpenGrokBot-managed sessions with `--resume` (never detected originals, per [FR-006](1_product_requirements_documentation.md#managing-agents-owner)), re-queues requests that were `queued`, marks interrupted ones `failed` with a reason, expires approvals past 24 hours, and retries the outbox.
+- **formationd crash:** launchd restarts it (`KeepAlive`). On start it rebuilds state: resumes OpenGrokBot-managed sessions with `--resume` (never detected originals, per [FR-006](1_product_requirements_documentation.md#managing-agents-owner)), re-queues requests that were `queued`, marks interrupted ones `failed` with a reason, denies approvals still pending from the previous process (their runs are gone, so no answer could reach them), expires approvals past 24 hours, and retries the outbox.
 - **App crash or quit:** no effect on agents; the UI reconnects and takes a fresh snapshot.
 - **Harness crash:** the agent goes to `error` with the exit code; restart resumes a OpenGrokBot-managed session; detected originals follow [FR-006](1_product_requirements_documentation.md#managing-agents-owner).
 - **Peer unreachable:** questions and requests wait in the asker's outbox; the owner re-checks membership and sharing when they arrive (FR-016).
