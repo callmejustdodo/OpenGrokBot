@@ -321,7 +321,9 @@ fn react(
 ) {
     if let Some(reaction) = hub.fixtures.reaction(method, &params) {
         let ph = hub.placeholders(params.clone());
-        let mut result = ph.fill(&reaction.result);
+        let filled = ph.fill(&reaction.result);
+        let ph = ph.with_result(filled.clone());
+        let mut result = filled;
         shift_times(&mut result, hub.shift);
         let steps: Vec<(u64, Value)> = reaction
             .play
