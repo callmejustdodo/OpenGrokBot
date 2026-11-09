@@ -35,6 +35,8 @@ export default function MyConversation({ agentId }: { agentId: AgentId }) {
   const { t } = useTranslation();
   const agent = useAppStore((s) => s.mirror?.agents[agentId]);
   const conversation = useAppStore((s) => s.mirror?.conversations[agentId]);
+  const status = useAppStore((s) => s.mirror?.agentStatus[agentId]);
+  // Only when the `agent.state` event gave neither a reason nor an exit code.
   const errorItem = useAppStore((s) =>
     Object.values(s.mirror?.inbox ?? {}).find(
       (i) => i.kind === "agent_error" && i.target.kind === "agent" && i.target.agent_id === agentId,
@@ -130,8 +132,14 @@ export default function MyConversation({ agentId }: { agentId: AgentId }) {
       {state === "error" ? (
         <div className="banner err" role="alert">
           <div className="bt">
-            <b>{t("conversation.error.title", "The process exited unexpectedly")}</b>
-            {errorItem ? <span className="mono">{errorItem.subject}</span> : null}
+            <b>{status?.reason ?? t("conversation.error.title", "The process exited unexpectedly")}</b>
+            {status && status.exit_code !== null ? (
+              <span className="mono">
+                {t("conversation.error.exitCode", "Exited with code {{code}}", { code: status.exit_code })}
+              </span>
+            ) : !status && errorItem ? (
+              <span className="mono">{errorItem.subject}</span>
+            ) : null}
           </div>
           <button type="button" className="btn primary" disabled={starting} onClick={() => run(() => restart(agentId, false))}>
             {t("conversation.restart", "Restart")}
