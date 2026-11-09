@@ -20,6 +20,7 @@ async fn check_wiring(fakes: &str, fake_peers: bool) {
         fakes,
         DetectPaths {
             claude_config: directory.join("claude"),
+            codex_sessions: directory.join("codex"),
             hermes: vec![],
             openclaw: vec![],
         },
