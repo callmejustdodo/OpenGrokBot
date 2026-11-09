@@ -46,27 +46,28 @@ Keep documents complementary rather than repeating the same requirement in sever
 
 ## Git branch conventions
 
-- `main` is the integration branch.
+- `dev` is the integration branch and the repository's default branch; every pull request targets it.
+- `main` is the release branch. Only repository admins can update it (the `main: admins only` ruleset), and they bring changes over from `dev` by cherry-picking. Do not open pull requests against `main`.
 - Name new branches `<type>/<short-description>`, using the commit types below and lowercase letters, digits and hyphens within each segment. Examples: `fix/login-redirect` and `docs/branch-conventions`. Do not use tool prefixes such as `codex/` or `claude/`. Follow an explicit user-provided branch name when given.
 - Keep each branch focused on one feature, fix or documentation task.
-- Start new, independent work from the latest `origin/main` after fetching. Continue an existing task on its existing branch; use another base only when the task explicitly depends on it.
+- Start new, independent work from the latest `origin/dev` after fetching. Continue an existing task on its existing branch; use another base only when the task explicitly depends on it.
 - Inspect the current branch and working tree before switching or creating branches. Preserve unrelated local changes; use a separate worktree when isolation is needed. Do not rename an existing branch just to match this convention.
 - Keep shared branch history intact. Do not force-push or rebase a shared branch without explicit authorization.
 - Delete a topic branch after its pull request is merged and its work is no longer needed. Do not delete branches with unmerged work or active worktrees.
 
 ## Git workflow and pull requests
 
-The team uses GitHub Flow, starting from an issue: issue -> `main` -> short-lived working branch -> pull request -> checks -> merge -> branch deletion. Keep `main` ready to deploy, and use working branches for incomplete work.
+The team uses GitHub Flow, starting from an issue: issue -> `dev` -> short-lived working branch -> pull request to `dev` -> checks -> merge -> branch deletion. Keep `dev` working and `main` ready to deploy, and use working branches for incomplete work.
 
 - Before starting work or opening an issue, check whether the work is already tracked or under way: search open and closed issues (`gh issue list --state all --search "<words>"`) and open pull requests (`gh pr list --search "<words>"`). Reuse a matching open issue instead of opening a duplicate. When a closed issue or merged pull request already covers the work, confirm the problem remains before reopening the issue or opening a new one.
 - Start every piece of work from an issue, so the team can see who is doing what and two people do not do the same work. Assign yourself when you start (`gh issue edit <N> --add-assignee @me`). If someone else holds the issue or has a pull request open for it, ask them before taking it over.
-- Link every pull request to its issue with `Closes #N`, or with `Part of #N` when more pull requests follow. Only a hotfix, an urgent fix for a broken `main` or deployment, may go without an issue, and its description says it is a hotfix. The `issue-link` check fails a pull request that has none of these and no issue linked in its Development sidebar. It ignores HTML comments and code, so the template's own examples do not count. Linking an issue only in the sidebar does not re-run the check; edit the description or re-run the check afterwards.
-- Do not commit directly to `main`; every change reaches it through a pull request. Merge once the relevant checks pass. Teammate review is welcome but not required, so the author may merge their own pull request.
-- Keep pull requests small and separate unrelated changes. Describe the resulting behavior, rationale and validation, including any checks that could not run. Bring in new changes from `main` regularly and resolve conflicts before merging.
+- Link every pull request to its issue with `Closes #N`, or with `Part of #N` when more pull requests follow. Only a hotfix, an urgent fix for a broken `dev`, `main` or deployment, may go without an issue, and its description says it is a hotfix. The `issue-link` check fails a pull request that has none of these and no issue linked in its Development sidebar. It ignores HTML comments and code, so the template's own examples do not count. Linking an issue only in the sidebar does not re-run the check; edit the description or re-run the check afterwards.
+- Do not commit directly to `dev` or `main`; every change reaches `dev` through a pull request. Merge once the relevant checks pass. Teammate review is welcome but not required, so the author may merge their own pull request.
+- Keep pull requests small and separate unrelated changes. Describe the resulting behavior, rationale and validation, including any checks that could not run. Bring in new changes from `dev` regularly and resolve conflicts before merging.
 - Write the pull request description with the sections of [`.github/pull_request_template.md`](.github/pull_request_template.md). GitHub fills it in on the web, but `gh pr create --body` does not, so agents copy its sections themselves.
 - Open issues with the forms in `.github/ISSUE_TEMPLATE/`; blank issues are disabled. Issues track ideas and work.
-- Use **Squash and merge** by default, so each pull request becomes one commit on `main` whose title and message follow the commit format below. Use **Rebase and merge** only when the individual commits are already meaningful, independently reviewable and worth keeping.
-- After a merge, delete the local branch and start the next task from the latest `main`, especially after a squash merge.
+- Use **Squash and merge** by default, so each pull request becomes one commit on `dev` whose title and message follow the commit format below. Use **Rebase and merge** only when the individual commits are already meaningful, independently reviewable and worth keeping.
+- After a merge, delete the local branch and start the next task from the latest `dev`, especially after a squash merge.
 
 ## Commit messages
 

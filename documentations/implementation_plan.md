@@ -41,7 +41,7 @@ Shared component `.tsx` files in `apps/desktop/src/components/` and `ui/` are co
 3. **Each role builds the fakes it needs others to use.** A ships `fake-claude` (replays recorded `stream-json`), `FakeHarness`, an in-memory `Store`, and a recording `EventSink` (TASK-003). B ships `stub-whois`, `FakePolicy`, `FakePermissionGate`, `FakePeers`, `FakeRequestQueue`, and an in-memory `CollabStore` (TASK-042). C ships `fake-formationd`, which serves the mockup's sample snapshot and events (TASK-043). Each real piece replaces its fake by configuration (`FORMATION_FAKE=…`), not by code edits.
 4. **Dependencies point at interfaces.** Before an integration checkpoint, no task waits for another role's implementation; it uses the port and its fake. Real pieces meet only at IC-1, IC-2, and IC-3.
 5. **No shared files between roles.** Migrations use numbered ranges per role (A `1000–1999`, B `2000–2999`); proto is split into per-role files; i18n keys are grouped per view; CSS lives beside each component.
-6. **Branches and merges.** One branch and one pull request per task, named `feat/<area>-task-NNN` (for example `feat/harness-task-013`), squash-merged to `main` per `AGENTS.md`. `main` stays green: every pull request runs the checks in [Commands](#commands).
+6. **Branches and merges.** One branch and one pull request per task, named `feat/<area>-task-NNN` (for example `feat/harness-task-013`), squash-merged to `dev` per `AGENTS.md`. `dev` stays green: every pull request runs the checks in [Commands](#commands).
 7. **Integration checkpoints.** All four join at IC-1, IC-2, and IC-3, switch fakes to real pieces, run the checkpoint script, and fix forward before the next phase.
 
 ## Lanes
