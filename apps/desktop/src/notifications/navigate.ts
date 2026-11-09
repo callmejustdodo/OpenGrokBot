@@ -19,6 +19,8 @@ export function destinationFor(target: AttentionTarget, mirror: MirrorState | nu
       return { view: { kind: "agent", agentId: target.agent_id }, sheet: null };
     case "approval": {
       const approval = mirror?.approvals[target.approval_id];
+      // The owner's own permission prompts are answered in the conversation, not the sheet.
+      if (approval?.request_id === null) return { view: { kind: "agent", agentId: approval.agent_id }, sheet: null };
       return {
         view: approval ? { kind: "agent", agentId: approval.agent_id } : null,
         sheet: { kind: "approval", approvalId: target.approval_id },

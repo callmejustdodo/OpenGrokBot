@@ -305,3 +305,60 @@ async fn claude_start_and_stop_record_lifecycle() {
     }
     std::fs::remove_dir_all(root).unwrap();
 }
+
+#[tokio::test]
+async fn claude_process_exit_records_agent_failed() {
+    let root = std::env::temp_dir().join(format!("formation-history-{}", RunId::generate()));
+    std::fs::create_dir_all(&root).unwrap();
+    let agent = agent(AgentState::Stopped, root.clone());
+    let store = Arc::new(MemoryStore::default());
+    store.insert_agent(&agent).unwrap();
+    let supervisor = ClaudeSupervisor::new(
+        ClaudeConfig {
+            binary: env!("CARGO_BIN_EXE_fake-claude").into(),
+            config_dir: root.join("config"),
+            stalled_after: StdDuration::from_secs(600),
+            // fake-claude exits at once when it cannot read its transcript.
+            env: HashMap::from([(
+                "FAKE_CLAUDE_TRANSCRIPT".into(),
+                root.join("missing.jsonl").display().to_string(),
+            )]),
+            ..ClaudeConfig::default()
+        },
+        store.clone(),
+        Arc::new(RecordingEventSink::default()),
+    );
+    supervisor.start(&agent, None).await.unwrap();
+
+    let failed = tokio::time::timeout(StdDuration::from_secs(5), async {
+        loop {
+            if let Some(failed) = store
+                .activity(Some(agent.id), None, None, 10)
+                .unwrap()
+                .into_iter()
+                .find(|a| a.kind == ActivityKind::AgentFailed)
+            {
+                break failed;
+            }
+            tokio::time::sleep(StdDuration::from_millis(10)).await;
+        }
+    })
+    .await
+    .expect("agent_failed recorded");
+    assert_eq!(failed.actor, None);
+    assert_eq!(failed.agent_id, Some(agent.id));
+    assert_eq!(failed.target, None);
+    assert!(
+        failed.summary.starts_with("Claude exited"),
+        "{}",
+        failed.summary
+    );
+    let kinds: Vec<ActivityKind> = store
+        .activity(Some(agent.id), None, None, 10)
+        .unwrap()
+        .into_iter()
+        .map(|a| a.kind)
+        .collect();
+    assert!(!kinds.contains(&ActivityKind::AgentStopped), "{kinds:?}");
+    std::fs::remove_dir_all(root).unwrap();
+}
