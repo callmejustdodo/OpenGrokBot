@@ -24,11 +24,22 @@ import type { WorkRequest } from "../ipc/generated/WorkRequest";
 
 type ById<T> = Readonly<Record<string, T>>;
 
+/**
+ * Why an agent is in the `error` state, from its latest `agent.state` event. Kept outside
+ * the contract `Agent`, which carries neither field; formationd sends them on the event.
+ */
+export type AgentStatus = { reason: string | null; exit_code: number | null };
+
 export type MirrorState = {
   /** The last event `seq` applied (or the snapshot's). */
   seq: number;
   team: Team | null;
   agents: ById<Agent>;
+  /**
+   * Keyed by agent ID: the `reason` and `exit_code` of the agent's latest `agent.state`
+   * event, kept only while the agent is in the `error` state and at least one is known.
+   */
+  agentStatus: ById<AgentStatus>;
   /** Keyed by agent ID; includes the queue and the last applied `stream_seq`. */
   conversations: ById<Conversation>;
   /** Keyed by agent ID. */
@@ -69,11 +80,43 @@ function groupByOwner(agents: readonly SharedAgentView[]): Record<MemberId, Shar
   return out;
 }
 
+function hasStatus(status: AgentStatus): boolean {
+  return status.reason !== null || status.exit_code !== null;
+}
+
+/** Records or clears an agent's error status after its state changes. */
+function withAgentStatus(
+  agentStatus: ById<AgentStatus>,
+  agentId: AgentId,
+  state: Agent["state"],
+  status: AgentStatus,
+): ById<AgentStatus> {
+  if (state !== "error" || !hasStatus(status)) return without(agentStatus, agentId);
+  return { ...agentStatus, [agentId]: status };
+}
+
+/**
+ * The contract `Agent` has no `reason` or `exit_code`; if a snapshot's errored agent
+ * carries them anyway, they seed `agentStatus` until the next `agent.state` event.
+ */
+function snapshotStatus(agents: readonly Agent[]): ById<AgentStatus> {
+  let out: ById<AgentStatus> = {};
+  for (const agent of agents) {
+    const extra = agent as Agent & Partial<AgentStatus>;
+    out = withAgentStatus(out, agent.id, agent.state, {
+      reason: extra.reason ?? null,
+      exit_code: extra.exit_code ?? null,
+    });
+  }
+  return out;
+}
+
 export function fromSnapshot(snapshot: Snapshot): MirrorState {
   return {
     seq: snapshot.seq,
     team: snapshot.team,
     agents: byId(snapshot.agents, (a) => a.id),
+    agentStatus: snapshotStatus(snapshot.agents),
     conversations: byId(snapshot.conversations, (c) => c.agent_id),
     shares: byId(snapshot.shares, (s) => s.agent_id),
     schedules: byId(snapshot.schedules, (s) => s.id),
@@ -153,7 +196,12 @@ function applyEvent(state: MirrorState, envelope: EventEnvelope): MirrorState {
     case "agent.state": {
       const agent = state.agents[event.payload.agent_id];
       if (!agent) return state;
-      return { ...state, agents: { ...state.agents, [agent.id]: { ...agent, state: event.payload.state } } };
+      const { state: agentState, reason, exit_code } = event.payload;
+      return {
+        ...state,
+        agents: { ...state.agents, [agent.id]: { ...agent, state: agentState } },
+        agentStatus: withAgentStatus(state.agentStatus, agent.id, agentState, { reason, exit_code }),
+      };
     }
     case "agent.stream":
       return applyStream(state, event.payload);
@@ -180,13 +228,20 @@ function applyEvent(state: MirrorState, envelope: EventEnvelope): MirrorState {
     case "agent.update": {
       const payload = event.payload;
       if (payload.change === "upsert") {
-        return { ...state, agents: { ...state.agents, [payload.agent.id]: payload.agent } };
+        const agent = payload.agent;
+        return {
+          ...state,
+          agents: { ...state.agents, [agent.id]: agent },
+          // An upsert still in `error` keeps the event's reason; any other state clears it.
+          agentStatus: agent.state === "error" ? state.agentStatus : without(state.agentStatus, agent.id),
+        };
       }
       const staleConversations = new Set(state.staleConversations);
       staleConversations.delete(payload.agent_id);
       return {
         ...state,
         agents: without(state.agents, payload.agent_id),
+        agentStatus: without(state.agentStatus, payload.agent_id),
         conversations: without(state.conversations, payload.agent_id),
         shares: without(state.shares, payload.agent_id),
         staleConversations,
