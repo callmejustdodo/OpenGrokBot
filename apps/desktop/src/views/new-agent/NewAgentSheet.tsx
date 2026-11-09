@@ -21,6 +21,8 @@ import Sheet from "../../ui/Sheet";
 import { AVATAR_COLORS, AVATAR_SHAPES, isReady } from "./options";
 
 const PENDING = "agent_create";
+const NAME_TAKEN = "agent name or slug is taken";
+const FOLDER_TAKEN = /^the folder is already (.+)'s folder$/s;
 const HARNESSES: { kind: Exclude<HarnessKind, "detected">; name: string }[] = [
   { kind: "claude_code", name: "Claude Code" },
   { kind: "codex", name: "Codex" },
@@ -76,9 +78,12 @@ export default function NewAgentSheet() {
       },
       (e: unknown) => {
         const data = (e as Partial<CallError> | null)?.data;
-        // Both a taken name and a taken folder answer `conflict`; the name is checked
-        // first, and only its message names it.
-        if (data?.code === "conflict" && folder !== null && !data.message.includes("name"))
+        // A taken name and a taken folder both answer `conflict`; formationd's
+        // messages for them (crates/formation-core/src/agents/mod.rs) tell them apart.
+        const owner = data?.code === "conflict" ? FOLDER_TAKEN.exec(data.message)?.[1] : undefined;
+        if (owner !== undefined)
+          setError(t("newAgent.folderTakenBy", "This folder is already {{name}}'s folder.", { name: owner }));
+        else if (data?.code === "conflict" && folder !== null && data.message !== NAME_TAKEN)
           setError(t("newAgent.folderTaken", "This folder is already another agent's folder."));
         else if (data?.code === "conflict") setNameTaken(true);
         else setError(t("newAgent.error", "Couldn't create the agent. Try again."));

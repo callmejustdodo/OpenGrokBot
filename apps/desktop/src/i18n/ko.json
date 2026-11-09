@@ -454,6 +454,7 @@
     "folderExistingNote": "AGENTS.md와 CLAUDE.md를 포함해 이미 있는 파일은 그대로 둬요.",
     "folderNew": "에이전트 이름으로 새 폴더",
     "folderTaken": "이 폴더는 이미 다른 에이전트의 폴더예요.",
+    "folderTakenBy": "이 폴더는 이미 {{name}}의 폴더예요.",
     "folderUseNew": "새 폴더 사용",
     "harness": {
       "label": "하네스",

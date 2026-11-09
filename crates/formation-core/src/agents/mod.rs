@@ -213,6 +213,8 @@ impl Inner {
                 && (agent.slug == candidate
                     || agent.name.nfkc().collect::<String>().to_lowercase() == key)
         }) {
+            // The app tells this conflict apart by this exact message
+            // (`apps/desktop/src/views/new-agent/NewAgentSheet.tsx`).
             return Err(ApiError::new(
                 ErrorCode::Conflict,
                 "agent name or slug is taken",
@@ -244,14 +246,21 @@ impl Inner {
             None
         };
         if let Some(existing) = &adopted {
-            let taken = self.store.agents()?.iter().any(|agent| {
-                &agent.folder_path == existing
-                    || agent.folder_path.canonicalize().ok().as_ref() == Some(existing)
+            // A detected agent's folder is only its session's working folder; it does
+            // not own it, so it does not block adopting the folder.
+            let agents = self.store.agents()?;
+            let owner = agents.iter().find(|agent| {
+                agent.harness != HarnessKind::Detected
+                    && agent.detected.is_none()
+                    && (&agent.folder_path == existing
+                        || agent.folder_path.canonicalize().ok().as_ref() == Some(existing))
             });
-            if taken {
+            if let Some(owner) = owner {
+                // The app reads the owner's name from this exact wording
+                // (`apps/desktop/src/views/new-agent/NewAgentSheet.tsx`).
                 return Err(ApiError::new(
                     ErrorCode::Conflict,
-                    "the folder is already another agent's folder",
+                    format!("the folder is already {}'s folder", owner.name),
                 ));
             }
         }
