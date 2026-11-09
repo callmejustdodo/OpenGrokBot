@@ -328,6 +328,38 @@ fn sessions_roundtrip_and_replace_by_agent_or_run() {
 }
 
 #[test]
+fn formation_sessions_match_main_and_fork_ids_like_the_memory_store() {
+    let sqlite = store();
+    let memory = crate::testkit::MemoryStore::default();
+    let stores: [&dyn Store; 2] = [&sqlite, &memory];
+    let mut main = session(AgentId::generate());
+    main.session_id = SessionId("main".into());
+    let mut fork = session(main.agent_id);
+    fork.session_id = SessionId("fork".into());
+    let ids = ["main", "fork", "replaced", "external"].map(|id| SessionId(id.into()));
+    let mut answers = Vec::new();
+    for store in stores {
+        assert!(
+            ids.iter()
+                .all(|id| !store.is_formation_session(id).unwrap())
+        );
+        let mut replaced = main.clone();
+        replaced.session_id = SessionId("replaced".into());
+        store.put_main_session(&replaced).unwrap();
+        store.put_main_session(&main).unwrap();
+        store.put_fork_session(RunId::generate(), &fork).unwrap();
+        answers.push(
+            ids.iter()
+                .map(|id| store.is_formation_session(id).unwrap())
+                .collect::<Vec<_>>(),
+        );
+    }
+    // A replaced main session is no longer stored, so it no longer counts.
+    assert_eq!(answers[0], vec![true, true, false, false]);
+    assert_eq!(answers[0], answers[1]);
+}
+
+#[test]
 fn owner_queue_roundtrip_in_order_and_replace() {
     use formation_proto::request::{QueueItem, QueueSource};
     let store = store();

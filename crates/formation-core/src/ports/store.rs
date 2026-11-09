@@ -6,7 +6,9 @@
 use std::ops::Range;
 
 use formation_proto::agent::{Activity, Agent, Attention, AttentionTarget, Schedule, ScheduleRun};
-use formation_proto::common::{ActivityId, AgentId, MemberId, RunId, ScheduleId, Timestamp};
+use formation_proto::common::{
+    ActivityId, AgentId, MemberId, RunId, ScheduleId, SessionId, Timestamp,
+};
 use formation_proto::harness::SessionInfo;
 use formation_proto::request::QueueItem;
 use formation_proto::snapshot::Settings;
@@ -53,6 +55,9 @@ pub trait SessionRepo {
     /// Fork sessions are retained for recovery and follow-ups.
     fn fork_session(&self, run_id: RunId) -> Result<Option<SessionInfo>>;
     fn put_fork_session(&self, run_id: RunId, session: &SessionInfo) -> Result<()>;
+    /// Whether `session_id` is any stored main or fork session, so detection can tell
+    /// Formation's own sessions from external ones.
+    fn is_formation_session(&self, session_id: &SessionId) -> Result<bool>;
     /// The owner's messages waiting in the main session's queue, in order, kept so a
     /// restart delivers them.
     fn owner_queue(&self, agent_id: AgentId) -> Result<Vec<QueueItem>>;

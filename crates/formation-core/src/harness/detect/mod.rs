@@ -18,7 +18,7 @@ use formation_proto::{
 use serde_json::Value;
 
 use crate::{
-    ask::transcript::{claude_config_dir, project_dir_name},
+    ask::transcript::claude_config_dir,
     ports::{CommandCall, CommandHandler, EventSink, Result, Store},
 };
 
@@ -77,30 +77,11 @@ impl Detect {
 
     fn scan(&self) -> Result<Vec<(DetectedAgent, PathBuf)>> {
         let agents = self.store.agents()?;
-        let excluded: HashSet<_> = agents
-            .iter()
-            .map(|a| {
-                project_dir_name(
-                    &a.folder_path
-                        .canonicalize()
-                        .unwrap_or(a.folder_path.clone()),
-                )
-            })
-            .collect();
-        let folders: HashSet<_> = agents
-            .iter()
-            .map(|a| {
-                a.folder_path
-                    .canonicalize()
-                    .unwrap_or(a.folder_path.clone())
-            })
-            .collect();
+        // Sessions are skipped by ID, never by folder: Formation's own main and fork
+        // sessions, and sessions already connected, wherever they ran.
         let mut sessions = HashSet::new();
         let mut codex_sources = Vec::new();
         for agent in &agents {
-            if let Some(session) = self.store.main_session(agent.id)? {
-                sessions.insert(session.session_id);
-            }
             if let Some(source) = &agent.detected
                 && source.harness == DetectedHarness::ClaudeCode
                 && let Some(stem) = source.path.file_stem().and_then(|s| s.to_str())
@@ -117,12 +98,7 @@ impl Detect {
         let mut found = Vec::new();
         let cutoff: Timestamp = (SystemTime::now() - Duration::from_secs(24 * 60 * 60)).into();
         for project in entries(&self.paths.claude_config.join("projects"))? {
-            if !project.is_dir()
-                || project
-                    .file_name()
-                    .and_then(|s| s.to_str())
-                    .is_some_and(|s| excluded.contains(s))
-            {
+            if !project.is_dir() {
                 continue;
             }
             for path in entries(&project)? {
@@ -155,7 +131,10 @@ impl Detect {
                 let (Some(cwd), Some(session_id), Some(at)) = (cwd, session, latest) else {
                     continue;
                 };
-                if at < cutoff || sessions.contains(&session_id) {
+                if at < cutoff
+                    || sessions.contains(&session_id)
+                    || self.store.is_formation_session(&session_id)?
+                {
                     continue;
                 }
                 // The transcript path preserves the session identity in DetectedSource.
@@ -225,9 +204,8 @@ impl Detect {
                 .is_some_and(|s| s.ends_with(&suffix));
             if !identified
                 || latest.is_none_or(|at| at < cutoff)
-                || sessions.contains(&SessionId(id.into()))
                 || codex_sources.iter().any(|s| s.ends_with(&suffix))
-                || folders.contains(&cwd.canonicalize().unwrap_or(cwd.clone()))
+                || self.store.is_formation_session(&SessionId(id.into()))?
             {
                 continue;
             }

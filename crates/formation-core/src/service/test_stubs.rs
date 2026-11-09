@@ -16,6 +16,7 @@ impl AgentRepo for Stub {
 impl SessionRepo for Stub {
     fn fork_session(&self, _run_id: RunId) -> Result<Option<SessionInfo>> { unreachable!("unused port method") }
     fn put_fork_session(&self, _run_id: RunId, _session: &SessionInfo) -> Result<()> { unreachable!("unused port method") }
+    fn is_formation_session(&self, _session_id: &SessionId) -> Result<bool> { unreachable!("unused port method") }
     fn main_session(&self, _agent_id: AgentId) -> Result<Option<SessionInfo>> { Ok(Some(session())) }
     fn put_main_session(&self, _session: &SessionInfo) -> Result<()> { unreachable!("unused port method") }
     fn owner_queue(&self, _agent_id: AgentId) -> Result<Vec<QueueItem>> { unreachable!("unused port method") }
