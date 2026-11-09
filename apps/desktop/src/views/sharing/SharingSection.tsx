@@ -4,6 +4,7 @@ import * as Switch from "@radix-ui/react-switch";
 import * as ToggleGroup from "@radix-ui/react-toggle-group";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import "./sharing.css";
 import type { AgentId } from "../../ipc/generated/AgentId";
 import type { ShareUpdate } from "../../ipc/generated/ShareUpdate";
 import type { Visibility } from "../../ipc/generated/Visibility";
