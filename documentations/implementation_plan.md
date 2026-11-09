@@ -158,7 +158,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: C
 
 ### TASK-009: formationd runs as a LaunchAgent and outlives the app
-- Status: in progress
+- Status: complete
 - References: D-048, [system overview](4_techspec.md#system-overview)
 - Prerequisites: TASK-001
 - Change locations: `crates/formationd/`, `apps/desktop/src-tauri/` (registration call)
