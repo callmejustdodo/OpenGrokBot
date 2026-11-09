@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import approvalRaised from "../../../../tools/fake-formationd/fixtures/scripts/approval-raised.json";
 import inboxCleared from "../../../../tools/fake-formationd/fixtures/scripts/inbox-cleared.json";
+import planningError from "../../../../tools/fake-formationd/fixtures/scripts/planning-error.json";
 import m3 from "../../../../tools/fake-formationd/fixtures/worlds/m3.json";
 import type { Event } from "../ipc/generated/Event";
 import type { EventEnvelope } from "../ipc/generated/EventEnvelope";
@@ -11,6 +12,7 @@ import { applyConversationPage, applyEnvelope, fromSnapshot, type MirrorState } 
 const snapshot = m3 as unknown as Snapshot;
 const BACKEND = "01930000-0000-7000-8000-000000000101";
 const RESEARCH = "01930000-0000-7000-8000-000000000103";
+const PLANNING = "01930000-0000-7000-8000-000000000105";
 const MINSU = "01930000-0000-7000-8000-000000000002";
 const JIWOO = "01930000-0000-7000-8000-000000000003";
 const AT = "2026-11-09T01:53:00Z";
@@ -178,6 +180,74 @@ describe("applyEnvelope", () => {
     expect(state.schedules[schedule.id].paused).toBe(true);
     state = apply(state, { type: "schedule.update", payload: { change: "removed", schedule_id: schedule.id } });
     expect(state.schedules[schedule.id]).toBeUndefined();
+  });
+});
+
+describe("agentStatus", () => {
+  const errored = (reason: string | null, exit_code: number | null): Event => ({
+    type: "agent.state",
+    payload: { agent_id: PLANNING, state: "error", reason, exit_code },
+  });
+
+  it("starts empty for the M3 world, whose agents carry no reason", () => {
+    expect(fromSnapshot(snapshot).agentStatus).toEqual({});
+  });
+
+  it("keeps the reason and exit code of the planning-error script", () => {
+    const state = play(fromSnapshot(snapshot), planningError);
+    expect(state.agents[PLANNING].state).toBe("error");
+    expect(state.agentStatus[PLANNING]).toEqual({ reason: "The process exited unexpectedly", exit_code: 1 });
+    expect(state.agents[PLANNING]).not.toHaveProperty("reason");
+  });
+
+  it("replaces the status with the latest error event", () => {
+    let state = play(fromSnapshot(snapshot), planningError);
+    state = apply(state, errored(null, 137));
+    expect(state.agentStatus[PLANNING]).toEqual({ reason: null, exit_code: 137 });
+  });
+
+  it("keeps nothing for an error with neither reason nor exit code", () => {
+    let state = play(fromSnapshot(snapshot), planningError);
+    state = apply(state, errored(null, null));
+    expect(state.agentStatus).not.toHaveProperty(PLANNING);
+  });
+
+  it("clears the status when the agent leaves the error state", () => {
+    let state = play(fromSnapshot(snapshot), planningError);
+    state = apply(state, {
+      type: "agent.state",
+      payload: { agent_id: PLANNING, state: "working", reason: null, exit_code: null },
+    });
+    expect(state.agentStatus).not.toHaveProperty(PLANNING);
+  });
+
+  it("ignores a reason sent with a non-error state", () => {
+    const state = apply(fromSnapshot(snapshot), {
+      type: "agent.state",
+      payload: { agent_id: RESEARCH, state: "stalled", reason: "no output", exit_code: null },
+    });
+    expect(state.agentStatus).toEqual({});
+  });
+
+  it("keeps the status on an error upsert, and clears it on another upsert or a removal", () => {
+    let state = play(fromSnapshot(snapshot), planningError);
+    const agent = state.agents[PLANNING];
+    state = apply(state, { type: "agent.update", payload: { change: "upsert", agent: { ...agent, name: "Plans" } } });
+    expect(state.agentStatus[PLANNING]?.exit_code).toBe(1);
+    state = apply(state, { type: "agent.update", payload: { change: "upsert", agent: { ...agent, state: "stopped" } } });
+    expect(state.agentStatus).not.toHaveProperty(PLANNING);
+
+    state = play(state, planningError);
+    state = apply(state, { type: "agent.update", payload: { change: "removed", agent_id: PLANNING } });
+    expect(state.agentStatus).not.toHaveProperty(PLANNING);
+  });
+
+  it("seeds the status from a snapshot agent that carries a reason", () => {
+    const world = structuredClone(m3) as unknown as Snapshot;
+    const planning = world.agents.find((a) => a.id === PLANNING);
+    if (!planning) throw new Error("no Planning agent");
+    Object.assign(planning, { state: "error", reason: "Out of memory", exit_code: 137 });
+    expect(fromSnapshot(world).agentStatus[PLANNING]).toEqual({ reason: "Out of memory", exit_code: 137 });
   });
 });
 
