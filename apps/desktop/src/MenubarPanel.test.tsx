@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import approvalRaised from "../../../tools/fake-formationd/fixtures/scripts/approval-raised.json";
 import inboxCleared from "../../../tools/fake-formationd/fixtures/scripts/inbox-cleared.json";
 import "./i18n";
@@ -19,10 +19,19 @@ function panel() {
   return screen.getByRole("main", { name: "Formation menu bar panel" });
 }
 
+/** M3's clock: the approval came in 3 minutes ago, as in the mockup. */
+const NOW = Date.parse("2026-11-09T01:53:30Z");
+
 beforeEach(() => {
   invoke.mockReset();
   invoke.mockResolvedValue(null);
+  vi.useFakeTimers({ toFake: ["Date", "setInterval", "clearInterval"] });
+  vi.setSystemTime(NOW);
   loadM3();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("menu bar panel (SC-002)", () => {
@@ -33,9 +42,10 @@ describe("menu bar panel (SC-002)", () => {
 
     const needs = within(screen.getByRole("region", { name: "Needs you" })).getAllByRole("button");
     expect(needs.map((b) => b.textContent)).toEqual([
-      "Research · no activity for 14 minutesStalled",
-      "Jiwoo · When will the payment refactor be done?Question for you",
+      "Research · no activity for 14 minutesStalled14m",
+      "Jiwoo · When will the payment refactor be done?Question for you23m",
     ]);
+    expect(within(needs[0]).getByText("14m")).toHaveAttribute("dateTime", "2026-11-09T01:39:00Z");
 
     const agents = within(screen.getByRole("region", { name: "My agents" })).getAllByRole("listitem");
     expect(agents).toHaveLength(5);
@@ -50,7 +60,31 @@ describe("menu bar panel (SC-002)", () => {
     act(() => play(approvalRaised));
     expect(screen.getByText("5 agents · 3 need you")).toBeInTheDocument();
     const first = within(screen.getByRole("region", { name: "Needs you" })).getAllByRole("button")[0];
-    expect(first).toHaveTextContent("Minsu → Backend · npm test -- auth/token.spec.tsWaiting for approval");
+    expect(first).toHaveTextContent("Minsu → Backend · npm test -- auth/token.spec.tsWaiting for approval3m");
+  });
+
+  it("keeps each row's age current, minute by minute", () => {
+    render(<MenubarPanel />);
+    act(() => play(approvalRaised));
+    const region = () => within(screen.getByRole("region", { name: "Needs you" }));
+    expect(region().getByText("3m")).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(60_000));
+    expect(region().getByText("4m")).toBeInTheDocument();
+    expect(region().getByText("15m")).toBeInTheDocument();
+    // An hour on, every row reads in hours.
+    act(() => vi.advanceTimersByTime(60 * 60_000));
+    expect(region().getAllByText("1h")).toHaveLength(3);
+  });
+
+  it("shows the tray icon's dot only while something needs me", () => {
+    render(<MenubarPanel />);
+    expect(invoke).toHaveBeenCalledWith("set_tray_attention", { attention: true });
+    invoke.mockClear();
+    // A change that leaves something needing me sends nothing.
+    act(() => vi.advanceTimersByTime(60_000));
+    expect(invoke).not.toHaveBeenCalled();
+    act(() => play(inboxCleared));
+    expect(invoke).toHaveBeenLastCalledWith("set_tray_attention", { attention: false });
   });
 
   it("opens the main window on the clicked item or agent", () => {
