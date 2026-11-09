@@ -41,12 +41,17 @@ Keep documents complementary rather than repeating the same requirement in sever
 
 ## Git workflow and pull requests
 
-This repository has one maintainer, who reviews and merges their own work. Keep `main` working.
+The team uses GitHub Flow, starting from an issue: issue -> `main` -> short-lived working branch -> pull request -> checks -> merge -> branch deletion. Keep `main` ready to deploy, and use working branches for incomplete work.
 
-- Small, self-contained changes may go directly to `main` once the relevant checks pass. Use a topic branch and a pull request for larger or risky changes, or to let CI run before merging.
-- Issues are optional. Before opening one, search open and closed issues (`gh issue list --state all --search "<words>"`) and reuse a matching open issue. When an issue tracks the work, link the pull request to it with `Closes #N`, or with `Part of #N` when more pull requests follow.
-- Write a pull request description with the sections of [`.github/pull_request_template.md`](.github/pull_request_template.md). GitHub fills it in on the web, but `gh pr create --body` does not, so agents copy its sections themselves.
-- Use **Squash and merge** for pull requests by default, so each becomes one commit whose title and message follow the commit format below. Use **Rebase and merge** only when the individual commits are worth keeping.
+- Before starting work or opening an issue, check whether the work is already tracked or under way: search open and closed issues (`gh issue list --state all --search "<words>"`) and open pull requests (`gh pr list --search "<words>"`). Reuse a matching open issue instead of opening a duplicate. When a closed issue or merged pull request already covers the work, confirm the problem remains before reopening the issue or opening a new one.
+- Start every piece of work from an issue, so the team can see who is doing what and two people do not do the same work. Assign yourself when you start (`gh issue edit <N> --add-assignee @me`). If someone else holds the issue or has a pull request open for it, ask them before taking it over.
+- Link every pull request to its issue with `Closes #N`, or with `Part of #N` when more pull requests follow. Only a hotfix, an urgent fix for a broken `main` or deployment, may go without an issue, and its description says it is a hotfix.
+- Do not commit directly to `main`; every change reaches it through a pull request. Merge once the relevant checks pass. Teammate review is welcome but not required, so the author may merge their own pull request.
+- Keep pull requests small and separate unrelated changes. Describe the resulting behavior, rationale and validation, including any checks that could not run. Bring in new changes from `main` regularly and resolve conflicts before merging.
+- Write the pull request description with the sections of [`.github/pull_request_template.md`](.github/pull_request_template.md). GitHub fills it in on the web, but `gh pr create --body` does not, so agents copy its sections themselves.
+- Open issues with the forms in `.github/ISSUE_TEMPLATE/`; blank issues are disabled. Issues track ideas and work.
+- Use **Squash and merge** by default, so each pull request becomes one commit on `main` whose title and message follow the commit format below. Use **Rebase and merge** only when the individual commits are already meaningful, independently reviewable and worth keeping.
+- After a merge, delete the local branch and start the next task from the latest `main`, especially after a squash merge.
 
 ## Commit messages
 
