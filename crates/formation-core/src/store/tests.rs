@@ -219,7 +219,7 @@ fn migrations_merge_roles_validate_first_and_rollback_failed_step() {
             .unwrap();
     }
     let failed = Migration {
-        version: 1003,
+        version: 1999,
         name: "bad sql",
         sql: "CREATE TABLE rolled_back (id TEXT); INSERT INTO missing VALUES (1);",
     };
@@ -344,6 +344,7 @@ fn schedules_roundtrip_filter_runs_page_and_delete() {
             started_at: Some(at(second)),
             finished_at: Some(at(second + 1)),
             result: Some(ScheduleRunResult::MissedRan),
+            error: Some("harness exited".into()),
         };
         store.put_schedule_run(&run).unwrap();
         assert!(store.schedule_runs(s.id, None, 10).unwrap().contains(&run));

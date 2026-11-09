@@ -145,6 +145,7 @@ fn schedules_filter_upsert_delete_and_page_runs_newest_first() {
             started_at: None,
             finished_at: None,
             result: None,
+            error: None,
         };
         store.put_schedule_run(&run).unwrap();
         runs.push(run);

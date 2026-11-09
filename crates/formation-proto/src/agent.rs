@@ -236,6 +236,9 @@ pub struct ScheduleRun {
     pub finished_at: Option<Timestamp>,
     /// `None` while running.
     pub result: Option<ScheduleRunResult>,
+    /// Why a failed run failed.
+    #[serde(default)]
+    pub error: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -266,6 +269,8 @@ pub enum AttentionKind {
     AgentError,
     AgentStalled,
     ScheduleFailed,
+    /// A scheduled run was missed while the Mac slept and ran late.
+    ScheduleMissed,
     /// My work request to a teammate finished, failed, or was denied.
     RequestFinished,
 }
@@ -581,6 +586,7 @@ pub(crate) mod samples {
                 started_at: Some(t0()),
                 finished_at: Some(t0()),
                 result: Some(ScheduleRunResult::MissedRan),
+                error: None,
             }),
         }
     }

@@ -12,4 +12,9 @@ pub const MIGRATIONS: &[Migration] = &[
         name: "agent running requests",
         sql: "ALTER TABLE agents ADD COLUMN running_requests TEXT NOT NULL DEFAULT '[]';",
     },
+    Migration {
+        version: 1003,
+        name: "schedule run error",
+        sql: "ALTER TABLE schedule_runs ADD COLUMN error TEXT;",
+    },
 ];
