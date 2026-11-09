@@ -2,6 +2,7 @@
 // invitation, and Remove for the team creator.
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import "./team.css";
 import type { Invitation } from "../../ipc/generated/Invitation";
 import type { Member } from "../../ipc/generated/Member";
 import { tauriTransport } from "../../ipc/transport";
