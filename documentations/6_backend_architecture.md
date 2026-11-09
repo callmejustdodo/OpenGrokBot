@@ -93,9 +93,9 @@ Work requests follow the same entry path to `requests`; they run per [FR-014](1_
 
 ## Identity and team
 
-- **Joining:** the creator generates an invitation (expiring code). The invitee's formationd presents it to the creator's formationd over Tailscale, along with a GitHub login proven through the GitHub OAuth device flow.
-- **GitHub verification (assumption to verify):** a GitHub OAuth App registered by the team creator supplies the client ID; formationd uses the device flow to read the user's login. Fallback for the MVP: read the login from an existing `gh` session.
-- **Per request:** Tailscale WhoIs on the connection gives the Tailscale user and node, which must match a member's recorded Tailscale login (D-046).
+- **Joining:** the creator generates an invitation link (single-use code, 24 hours). The invitee's formationd presents the code to the creator's formationd over Tailscale, along with a GitHub login proven through the GitHub OAuth device flow. The roster, link format, and join rules are in the tech spec's [team and roster](4_techspec.md#team-and-roster).
+- **GitHub verification (assumption to verify):** a GitHub OAuth App registered by the team creator supplies the client ID; formationd uses the device flow to read the user's login. Fallback for the MVP, in use now: the joiner's Mac reads the login from `gh api user`, and the creator's Mac can check only its shape.
+- **Per request:** Tailscale WhoIs on the connection gives the Tailscale user (`LoginName`) and node (`StableID`), which must both match a current member's recorded Tailscale login and node (D-046). Tagged nodes have no user and are refused, as are removed members. The join call skips only the member check, never WhoIs.
 
 ## Configuration, logs, and operations
 

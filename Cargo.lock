@@ -886,6 +886,7 @@ dependencies = [
  "chrono",
  "formation-core",
  "formation-proto",
+ "getrandom 0.4.3",
  "rmcp",
  "rusqlite",
  "schemars 1.2.3",
@@ -902,12 +903,14 @@ dependencies = [
 name = "formation-desktop"
 version = "0.1.0"
 dependencies = [
+ "fake-formationd",
  "formation-proto",
  "libc",
  "serde",
  "serde_json",
  "tauri",
  "tauri-build",
+ "tokio",
  "ts-rs",
 ]
 

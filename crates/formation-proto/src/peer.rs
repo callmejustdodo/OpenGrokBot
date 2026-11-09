@@ -11,7 +11,7 @@ use crate::ask::{AskTarget, Question, RouteChoice};
 use crate::common::{AgentId, ApiError, MemberId, QuestionId, RequestId, Timestamp, commands};
 use crate::policy::Chain;
 use crate::request::WorkRequest;
-use crate::team::Member;
+use crate::team::{Member, TeamId};
 
 /// Assumed default peer port (tech spec).
 pub const PEER_PORT: u16 = 7413;
@@ -100,11 +100,12 @@ pub struct PeerRequestCreate {
 }
 
 /// `POST /v1/team/join`. The creator's Mac checks the code and records the caller's
-/// Tailscale WhoIs with the GitHub login.
+/// Tailscale WhoIs (login and node, never from this body) with the GitHub login.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct PeerJoin {
     pub code: String,
+    /// From `gh api user` on the joiner's Mac in the MVP.
     pub github_login: String,
     pub display_name: String,
 }
@@ -116,6 +117,13 @@ pub struct PeerJoinAccepted {
     /// The joiner's new member ID.
     pub member_id: MemberId,
     pub members: Vec<Member>,
+    /// The team joined; matches the invitation link's.
+    #[serde(default)]
+    pub team_id: Option<TeamId>,
+    /// The roster version of `members`.
+    #[serde(default)]
+    #[ts(type = "number")]
+    pub version: u64,
 }
 
 /// `GET /v1/team`
@@ -123,6 +131,11 @@ pub struct PeerJoinAccepted {
 #[ts(export)]
 pub struct RosterResponse {
     pub members: Vec<Member>,
+    /// Starts at 1 when the team is created and goes up by one on every roster change
+    /// on the creator's Mac. A Mac applies a roster only when its version is newer.
+    #[serde(default)]
+    #[ts(type = "number")]
+    pub version: u64,
 }
 
 /// A member came online or went offline, or their shared agents changed. Also the
@@ -159,6 +172,10 @@ pub enum PeerEvent {
     /// member loses access on every Mac once it arrives.
     Roster {
         members: Vec<Member>,
+        /// As [`RosterResponse::version`].
+        #[serde(default)]
+        #[ts(type = "number")]
+        version: u64,
     },
 }
 
@@ -273,21 +290,39 @@ mod tests {
     fn team_payloads_round_trip() {
         let team = team();
         roundtrip(&PeerJoin {
-            code: "fmn1-abcd".into(),
+            code: "7F3K-Q9PX".into(),
             github_login: "baekdusan".into(),
             display_name: "Baekdusan".into(),
         });
         roundtrip(&PeerJoinAccepted {
             member_id: team.members[1].id,
             members: team.members.clone(),
+            team_id: Some(TeamId::generate()),
+            version: 2,
         });
         roundtrip(&RosterResponse {
             members: team.members.clone(),
+            version: 2,
         });
         let json = roundtrip(&PeerEvent::Roster {
-            members: team.members,
+            members: team.members.clone(),
+            version: 2,
         });
         assert_eq!(json["type"], "roster");
+        assert_eq!(json["version"], 2);
+
+        // Additive fields: replies written before the roster version still decode.
+        let old = serde_json::json!({ "members": [], "type": "roster" });
+        assert_eq!(
+            serde_json::from_value::<PeerEvent>(old).unwrap(),
+            PeerEvent::Roster {
+                members: vec![],
+                version: 0
+            }
+        );
+        let old = serde_json::json!({ "member_id": team.members[1].id, "members": [] });
+        let accepted: PeerJoinAccepted = serde_json::from_value(old).unwrap();
+        assert_eq!((accepted.team_id, accepted.version), (None, 0));
     }
 
     #[test]

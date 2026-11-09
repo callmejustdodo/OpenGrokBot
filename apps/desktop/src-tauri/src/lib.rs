@@ -1,10 +1,20 @@
+pub mod formationd;
 mod launch_agent;
+mod shell;
 
-use tauri::{AppHandle, Manager};
+use serde_json::Value;
+use tauri::{AppHandle, Emitter, Manager, State};
+
+use formationd::{CallError, Connection, Sink, Status};
 
 /// Launch argument that keeps the main window closed, so formationd can open
 /// the app in the background to show a notification (D-048).
 pub const HIDDEN_ARG: &str = "--hidden";
+
+/// Tauri event carrying each `EventEnvelope` from formationd to every window.
+pub const EVENT: &str = "formationd://event";
+/// Tauri event carrying connection [`Status`] changes to every window.
+pub const STATUS: &str = "formationd://status";
 
 /// Whether the arguments ask for a hidden start.
 fn starts_hidden(mut args: impl Iterator<Item = String>) -> bool {
@@ -17,19 +27,52 @@ fn uses_fake_daemon(value: Option<&str>) -> bool {
     value.is_some_and(|v| v.split(',').any(|part| part.trim() == "daemon"))
 }
 
-fn show_main_window(app: &AppHandle) {
-    if let Some(window) = app.get_webview_window("main") {
-        let _ = window.show();
-        let _ = window.set_focus();
+/// Emits formationd's events and status to every window.
+struct WindowSink(AppHandle);
+
+impl Sink for WindowSink {
+    fn event(&self, envelope: Value) {
+        let _ = self.0.emit(EVENT, envelope);
     }
+
+    fn status(&self, status: Status) {
+        let _ = self.0.emit(STATUS, status);
+    }
+}
+
+/// Forwards one command to formationd and returns its result.
+#[tauri::command]
+async fn formationd_call(
+    conn: State<'_, Connection>,
+    method: String,
+    params: Value,
+) -> Result<Value, CallError> {
+    conn.call(&method, params).await
+}
+
+#[tauri::command]
+fn formationd_status(conn: State<'_, Connection>) -> Status {
+    conn.status()
+}
+
+/// Opens the main window, for the menu bar panel and notifications.
+#[tauri::command]
+fn show_main_window(app: AppHandle) {
+    shell::show_main_window(&app);
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let hidden = starts_hidden(std::env::args());
-    let fake_daemon = uses_fake_daemon(std::env::var("FORMATION_FAKE").ok().as_deref());
+    let fake = std::env::var("FORMATION_FAKE").ok();
+    let fake_daemon = uses_fake_daemon(fake.as_deref());
 
     tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![
+            formationd_call,
+            formationd_status,
+            show_main_window
+        ])
         .setup(move |app| {
             if fake_daemon {
                 eprintln!("formationd LaunchAgent: skipped (FORMATION_FAKE=daemon)");
@@ -42,11 +85,24 @@ pub fn run() {
                     }
                 });
             }
+
+            let home = std::env::var_os("HOME")
+                .map(std::path::PathBuf::from)
+                .unwrap_or_default();
+            let socket = std::env::var("FORMATION_SOCKET").ok();
+            let path = formationd::socket_path(socket.as_deref(), fake.as_deref(), &home);
+            eprintln!("formationd socket: {}", path.display());
+            let sink = WindowSink(app.handle().clone());
+            let conn = tauri::async_runtime::block_on(async move { Connection::start(path, sink) });
+            app.manage(conn);
+
+            shell::create_tray(app.handle())?;
             if !hidden {
-                show_main_window(app.handle());
+                shell::show_main_window(app.handle());
             }
             Ok(())
         })
+        .on_window_event(shell::on_window_event)
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|_app, _event| {
@@ -57,7 +113,7 @@ pub fn run() {
                 ..
             } = _event
             {
-                show_main_window(_app);
+                shell::show_main_window(_app);
             }
         });
 }
