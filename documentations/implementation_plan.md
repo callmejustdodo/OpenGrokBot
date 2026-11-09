@@ -430,7 +430,7 @@ Each Phase 5 task uses the same fields as the tasks above when it starts: change
 
 ### TASK-041: Codex agents through app-server
 - Status: pending
-- References: D-002, [Codex note](4_techspec.md#claude-code-integration-first-harness), Reason Network `src/codex.rs`
+- References: D-002, [Codex note](4_techspec.md#codex-integration-second-harness), Reason Network `src/codex.rs`
 - Prerequisites: IC-4
 - Change locations: `crates/formation-core/src/harness/codex/`
 - Work: prove `codex app-server` turns, interrupts, and approvals; implement the `Harness` port for Codex; route approvals through `PermissionGate`.
