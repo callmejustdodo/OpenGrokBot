@@ -13,6 +13,7 @@ import { uiStore } from "../../store/ui";
 import Alert, { AlertCancel } from "../../ui/Alert";
 import Sheet from "../../ui/Sheet";
 import { agentName, approvalFolder, blockReturn, errorCode, memberName, timeLeft, timeLeftText, useNow } from "./model";
+import "./approval.css";
 
 type Expiry = "proposed" | "never";
 

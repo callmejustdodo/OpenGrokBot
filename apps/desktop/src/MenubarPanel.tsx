@@ -21,6 +21,7 @@ import { isMuted } from "./notifications/decide";
 import { setTrayAttention } from "./notifications/tray";
 import { useAppStore } from "./store/store";
 import { useSettingsUpdate } from "./views/settings/useSettingsUpdate";
+import "./menubar-panel.css";
 
 /** How long "Pause alerts" mutes notifications. */
 const PAUSE_MS = 60 * 60 * 1000;

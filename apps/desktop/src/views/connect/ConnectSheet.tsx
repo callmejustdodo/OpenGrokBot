@@ -1,3 +1,4 @@
+import "./connect.css";
 // SC-009 Connect agents sheet: finds agents running outside Formation on this
 // Mac (`agents_detect`), shows what Formation can do with each, and connects
 // the chosen one (`agent_connect`), which then opens its read-only

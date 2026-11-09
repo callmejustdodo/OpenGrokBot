@@ -3,6 +3,7 @@
 import * as Switch from "@radix-ui/react-switch";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import "./welcome.css";
 import type { HarnessStatus } from "../../ipc/generated/HarnessStatus";
 import { tauriTransport } from "../../ipc/transport";
 import { useAppStore } from "../../store/store";
