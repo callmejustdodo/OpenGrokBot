@@ -6,10 +6,11 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
-serde_json = "1.0"
+serde_json = { version = "1", features = ["preserve_order"] }
 
 [dev-dependencies]
 rmcp = { version = "3.9.0", features = ["server", "macros", "transport-io"] }
 schemars = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 tokio = { version = "1", features = ["rt"] }
+uuid = { version = "1", features = ["v4"] }

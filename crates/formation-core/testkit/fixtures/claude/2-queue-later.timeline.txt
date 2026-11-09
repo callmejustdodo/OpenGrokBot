@@ -1,0 +1,61 @@
+      0ms stdin#1   user "Use the Bash tool in the foreground (no run_in_background) to run exactly `sleep 20`. After it finishes, reply with exactly: FIRST-DONE"
+    301ms stdout#1   system hook_started
+    301ms stdout#2   system hook_started
+    301ms stdout#3   system hook_started
+    484ms stdout#4   system hook_response
+    484ms stdout#5   system hook_response
+    994ms stdout#6   system hook_response
+   1117ms stdout#7   system init
+   1120ms stdout#8   system status
+   2113ms stdout#9   user "Use the Bash tool in the foreground (no run_in_background) t"
+   2113ms stdout#10  stream_event message_start
+   2113ms stdout#11  stream_event content_block_start
+   2114ms stdout#12  stream_event content_block_delta
+   2429ms stdout#13  stream_event content_block_delta
+   2429ms stdout#14  stream_event content_block_delta
+   2429ms stdout#15  stream_event content_block_delta
+   2429ms stdout#16  stream_event content_block_delta
+   2429ms stdout#17  stream_event content_block_delta
+   2450ms stdout#18  stream_event content_block_delta
+   2556ms stdout#19  assistant "I'll run `sleep 20` in the foreground with Bash, then send t"
+   2556ms stdout#20  stream_event content_block_stop
+   2557ms stdout#21  stream_event content_block_start
+   2557ms stdout#22  stream_event content_block_delta
+   2601ms stdout#23  stream_event content_block_delta
+   2657ms stdout#24  stream_event content_block_delta
+   2827ms stdout#25  stream_event content_block_delta
+   2859ms stdout#26  stream_event content_block_delta
+   2952ms stdout#27  stream_event content_block_delta
+   3021ms stdout#28  stream_event content_block_delta
+   3101ms stdout#29  stream_event content_block_delta
+   3103ms stdout#30  assistant tool_use:"Bash"
+   3106ms stdout#31  stream_event content_block_stop
+   3114ms stdout#32  stream_event message_delta
+   3114ms stdout#33  stream_event message_stop
+   3125ms stdout#34  rate_limit_event
+   6469ms stdout#35  system task_started
+   6469ms stdin#2   user "Reply with exactly: SECOND-DONE"
+  23475ms stdout#36  system task_notification
+  23479ms stdout#37  user tool_result
+  23483ms stdout#38  system status
+  24211ms stdout#39  stream_event message_start
+  24211ms stdout#40  stream_event content_block_start
+  24211ms stdout#41  stream_event content_block_delta
+  24212ms stdout#42  assistant "FIRST-DONE"
+  24212ms stdout#43  stream_event content_block_stop
+  24214ms stdout#44  stream_event message_delta
+  24215ms stdout#45  stream_event message_stop
+  24216ms stdout#46  rate_limit_event
+  24223ms stdout#47  result success "FIRST-DONE"
+  24231ms stdout#48  system init
+  24232ms stdout#49  system status
+  24867ms stdout#50  user "Reply with exactly: SECOND-DONE"
+  24867ms stdout#51  stream_event message_start
+  24867ms stdout#52  stream_event content_block_start
+  24867ms stdout#53  stream_event content_block_delta
+  24888ms stdout#54  assistant "SECOND-DONE"
+  24889ms stdout#55  stream_event content_block_stop
+  24896ms stdout#56  stream_event message_delta
+  24896ms stdout#57  stream_event message_stop
+  24898ms stdout#58  result success "SECOND-DONE"
+  25487ms exit      exit status: 0

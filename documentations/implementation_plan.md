@@ -107,7 +107,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 ### Phase 1 · Integration proofs
 
 ### TASK-004: Claude Code process control is proven
-- Status: pending
+- Status: complete
 - References: [Claude Code integration](4_techspec.md#claude-code-integration-first-harness), FR-003, FR-022
 - Prerequisites: TASK-001
 - Change locations: `crates/formation-core/src/harness/claude/` (spike), recorded fixtures in `testkit/fixtures/`
