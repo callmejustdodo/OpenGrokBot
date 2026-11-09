@@ -30,6 +30,16 @@ OpenGrokBot is currently in the planning stage. This repository contains product
 - [Product plan](documentations/product-plan.md): workflows, permissions, architecture, proposed CLI, and MVP acceptance criteria.
 - [Competitive landscape](documentations/competitive-landscape.md): feature matrix, positioning map, official links, and differentiation hypotheses.
 
+## Acknowledgements
+
+- Agent avatars use body shapes from [open-bot-avatar](https://github.com/DominikScholz/open-bot-avatar) by Dominik Scholz (MIT).
+- The desktop app is built with [Tauri](https://tauri.app) and started from its `create-tauri-app` template.
+- The "an agent is a folder" model is inspired by [Vercel eve](https://github.com/vercel/eve).
+
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for every file copied from another project and its license.
+
+OpenGrokBot is an independent open-source project and is not affiliated with or endorsed by xAI. Grok and Grok Bot are trademarks of their respective owners.
+
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
