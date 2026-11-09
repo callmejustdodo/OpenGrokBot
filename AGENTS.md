@@ -1,19 +1,22 @@
 # Agent guidance
 
-Formation is a proposed open-source macOS app and CLI for collaborating through local Claude Code and Codex sessions; the repository is in the planning stage and holds product documentation only. Keep changes small, reviewable and aligned with the agreed requirements.
+Formation is a proposed open-source macOS app and CLI for collaborating through local Claude Code and Codex sessions; the repository holds the product documentation and an early Rust workspace scaffold. Keep changes small, reviewable and aligned with the agreed requirements.
 
 ## Repository layout
 
 - `documentations/`: product planning documents (one-pager, product requirements, user stories, screens and flows, tech spec, frontend and backend architecture, implementation plan, product plan, competitive landscape) and HTML mockups.
 - `.claude/skills/`: project-scoped Claude Code skills for macOS, SwiftUI and Swift development.
+- `crates/`: the Rust workspace (`formation-proto`, `formation-core`, `formationd`, `formation-cli`), described in the [tech spec](documentations/4_techspec.md#code-layout).
 - `scripts/`: repository tooling, currently the documentation link checker.
 
 ## Checks
 
-No application code exists yet, so the documentation check is the only check so far. It needs Node.js 18 or later and no packages:
+The documentation check needs Node.js 18 or later and no packages. The Rust checks need a stable Rust toolchain with Clippy. CI runs them as the `documentation` and `rust` checks.
 
 ```sh
-node scripts/check-documentation.mjs  # local Markdown links and heading anchors resolve
+node scripts/check-documentation.mjs    # local Markdown links and heading anchors resolve
+cargo test --workspace                  # Rust unit and integration tests
+cargo clippy --workspace -- -D warnings # Rust lint
 ```
 
 ## Working agreements

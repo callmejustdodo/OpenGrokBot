@@ -6,3 +6,6 @@
 # oh-my-claudecode local state (project-scoped skills stay committable)
 **/.omc/*
 !**/.omc/skills/
+
+# Rust
+/target/
