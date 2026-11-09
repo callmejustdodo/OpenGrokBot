@@ -13,6 +13,4 @@
 .switch[data-state="checked"] { background: var(--primary-grad, var(--primary)); }
 .switch[data-state="checked"] > span { left: 16px; background: var(--primary-fg); }
 .switch[disabled] { opacity: .4; cursor: not-allowed; }
-.seg { display: inline-flex; background: var(--sec); border-radius: 999px; padding: 3px; gap: 2px; }
-.seg button { border: 0; background: transparent; padding: 5px 14px; border-radius: 999px; cursor: pointer; font-size: 12.5px; }
 .seg button[data-state="on"] { background: var(--card); box-shadow: var(--soft); font-weight: 600; color: var(--text); }

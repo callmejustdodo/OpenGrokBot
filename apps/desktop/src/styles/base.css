@@ -63,8 +63,8 @@ kbd { font-family: var(--font); }
 .switch[disabled] { opacity: .4; cursor: not-allowed; }
 
 /* Segmented control (Radix ToggleGroup) */
-.seg { display: inline-flex; flex-wrap: wrap; background: var(--sec); border-radius: 999px; padding: 3px; gap: 2px; }
-.seg button { border: 0; background: transparent; padding: 4px 12px; border-radius: 999px; cursor: pointer; font-size: 12.5px; }
+.seg { display: inline-flex; flex-wrap: nowrap; max-width: 100%; background: var(--sec); border-radius: 16px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: transparent; padding: 4px 12px; border-radius: 999px; cursor: pointer; font-size: 12.5px; flex: 0 1 auto; min-width: 0; line-height: 1.25; }
 .seg button[data-state="on"], .seg button[aria-pressed="true"] { background: var(--card); box-shadow: var(--soft); font-weight: 600; }
 .seg button[disabled] { opacity: .5; cursor: not-allowed; }
 
