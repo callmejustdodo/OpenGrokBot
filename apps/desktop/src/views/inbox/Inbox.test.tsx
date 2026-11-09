@@ -32,7 +32,7 @@ describe("Inbox (SC-010)", () => {
     expect(uiStore.getState().sheet).toEqual({ kind: "approval", approvalId: MINSU_APPROVAL });
 
     expect(screen.getByRole("heading", { name: "Questions sent to me" })).toBeInTheDocument();
-    expect(screen.getByLabelText("QuestionsForMe")).toBeInTheDocument();
+    expect(screen.getByText("When will the payment refactor be done?", { exact: false })).toBeInTheDocument();
 
     const alerts = screen.getByRole("list", { name: "Alerts" });
     const stalled = within(alerts).getByRole("button");

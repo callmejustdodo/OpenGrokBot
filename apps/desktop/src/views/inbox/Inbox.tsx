@@ -53,12 +53,8 @@ export default function Inbox() {
         </>
       ) : null}
 
-      {groups.questions.length > 0 ? (
-        <>
-          <h2 className="grp">{t("inbox.questions", "Questions sent to me")}</h2>
-          <QuestionsForMe />
-        </>
-      ) : null}
+      {/* TASK-038's group brings its own heading and renders nothing when empty. */}
+      <QuestionsForMe />
 
       {groups.alerts.length > 0 ? (
         <>
