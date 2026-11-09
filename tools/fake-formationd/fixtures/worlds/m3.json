@@ -174,7 +174,8 @@
         "planned_at": "2026-11-09T00:00:00Z",
         "started_at": "2026-11-09T00:47:00Z",
         "finished_at": "2026-11-09T00:49:00Z",
-        "result": "missed_ran"
+        "result": "missed_ran",
+        "error": null
       }
     }
   ],
