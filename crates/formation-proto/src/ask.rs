@@ -6,7 +6,9 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
-use crate::common::{AgentId, AnswerId, ApiError, MemberId, QuestionId, Timestamp, commands};
+use crate::common::{
+    AgentId, AnswerId, ApiError, MemberId, QuestionId, RunId, Timestamp, commands,
+};
 
 /// Answers built from a transcript entry older than this are marked `possibly_stale`.
 pub const STALE_AFTER_MINUTES: i64 = 60;
@@ -124,9 +126,9 @@ pub struct Ask {
     /// Continue a thread (follow-ups continue the forked session).
     pub thread_id: Option<QuestionId>,
     /// Set by the CLI and MCP server when one of my agents asks (from
-    /// `FORMATION_AGENT_ID`, which formationd sets for each run). formationd then
-    /// continues the chain of that agent's running turn, so FR-019 limits apply.
-    pub from_agent: Option<AgentId>,
+    /// `FORMATION_RUN_ID`, which formationd sets for each run). formationd finds the
+    /// agent and continues that run's chain, so FR-019 limits apply.
+    pub from_run: Option<RunId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -286,7 +288,7 @@ mod tests {
             target: AskTarget::Person { member_id },
             text: "Status?".into(),
             thread_id: None,
-            from_agent: Some(AgentId::generate()),
+            from_run: Some(RunId::generate()),
         });
         let json = roundtrip(&QuestionRouteChoose {
             question_id: QuestionId::generate(),

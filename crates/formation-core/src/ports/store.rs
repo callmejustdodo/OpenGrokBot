@@ -6,7 +6,7 @@
 use std::ops::Range;
 
 use formation_proto::agent::{Activity, Agent, Attention, AttentionTarget, Schedule, ScheduleRun};
-use formation_proto::common::{ActivityId, AgentId, ScheduleId, Timestamp};
+use formation_proto::common::{ActivityId, AgentId, RunId, ScheduleId, Timestamp};
 use formation_proto::harness::SessionInfo;
 use formation_proto::snapshot::Settings;
 
@@ -49,6 +49,9 @@ pub trait AgentRepo {
 pub trait SessionRepo {
     fn main_session(&self, agent_id: AgentId) -> Result<Option<SessionInfo>>;
     fn put_main_session(&self, session: &SessionInfo) -> Result<()>;
+    /// Fork sessions are retained for recovery and follow-ups.
+    fn fork_session(&self, run_id: RunId) -> Result<Option<SessionInfo>>;
+    fn put_fork_session(&self, run_id: RunId, session: &SessionInfo) -> Result<()>;
 }
 
 pub trait ScheduleRepo {

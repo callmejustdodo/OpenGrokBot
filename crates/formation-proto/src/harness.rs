@@ -1,8 +1,7 @@
 //! Owner: A (agent runtime).
 //!
-//! The owner's conversation with an agent's main session (FR-022): items, streaming
-//! deltas, the message queue as the UI sees it, and the session facts the ask
-//! pipeline needs.
+//! Conversations with an agent's main session and request forks: items, streaming
+//! deltas, the message queue, and session facts.
 
 use std::path::PathBuf;
 
@@ -15,13 +14,13 @@ use crate::common::{
 };
 use crate::request::QueueItem;
 
-/// Who wrote a user message in the main session.
+/// Who wrote a user message in a conversation.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 #[ts(export)]
 pub enum Author {
     Owner,
-    /// A teammate's work request, possibly sent by their agent.
+    /// A teammate's work request in that request's fork conversation, possibly sent by their agent.
     Teammate {
         member_id: MemberId,
         via_agent: Option<String>,
@@ -190,6 +189,7 @@ pub enum StreamDelta {
 #[ts(export)]
 pub struct AgentStreamEvent {
     pub agent_id: AgentId,
+    pub session_id: SessionId,
     #[ts(type = "number")]
     pub stream_seq: u64,
     pub delta: StreamDelta,
@@ -211,6 +211,8 @@ pub struct AgentQueueEvent {
 #[ts(export)]
 pub struct ConversationPage {
     pub agent_id: AgentId,
+    /// `None` selects the main session.
+    pub session_id: Option<SessionId>,
     /// Items before this one; the newest items when `None`.
     pub before: Option<ItemId>,
     pub limit: u32,
@@ -323,12 +325,14 @@ mod tests {
         let message_id = MessageId::generate();
         let json = roundtrip(&AgentStreamEvent {
             agent_id,
+            session_id: SessionId("fork-session".into()),
             stream_seq: 4,
             delta: StreamDelta::TextDelta {
                 item_id: ItemId("a2".into()),
                 text: "Look".into(),
             },
         });
+        assert_eq!(json["session_id"], "fork-session");
         assert_eq!(json["delta"]["kind"], "text_delta");
         roundtrip(&StreamDelta::TurnEnded {
             message_id,

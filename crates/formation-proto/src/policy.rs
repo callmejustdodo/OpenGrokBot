@@ -10,7 +10,8 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::common::{
-    AgentId, ApprovalId, ChainId, MemberId, RequestId, RuleId, SessionId, Timestamp, commands,
+    AgentId, ApprovalId, ChainId, MemberId, RequestId, RuleId, RunId, SessionId, Timestamp,
+    commands,
 };
 use crate::peer::SharedAgentView;
 
@@ -201,11 +202,13 @@ pub enum PermissionSource {
 }
 
 /// What `formation mcp --permission` and the hook send to formationd. formationd adds
-/// the caller from the turn that is running.
+/// the caller from the run identified by `FORMATION_RUN_ID`, passed to the process,
+/// permission MCP server, and hook; the permission tool input has no session ID.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct PermissionPrompt {
     pub agent_id: AgentId,
+    pub run_id: RunId,
     pub session_id: Option<SessionId>,
     pub source: PermissionSource,
     pub call: ToolCall,
@@ -447,9 +450,11 @@ mod tests {
             roundtrip(&PermissionVerdict::Defer),
             json!({"behavior": "defer"})
         );
-        roundtrip(&PermissionDecide {
+        let run_id = RunId::generate();
+        let json = roundtrip(&PermissionDecide {
             prompt: PermissionPrompt {
                 agent_id: AgentId::generate(),
+                run_id,
                 session_id: None,
                 source: PermissionSource::PreToolUseHook,
                 call: ToolCall {
@@ -459,5 +464,6 @@ mod tests {
                 },
             },
         });
+        assert_eq!(json["prompt"]["run_id"], run_id.0.to_string());
     }
 }
