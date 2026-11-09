@@ -4,8 +4,16 @@
 //!
 //! The tray icon is created here only, never also in `tauri.conf.json`: defining
 //! it in both places shows two icons (tauri#10912).
+//!
+//! Closing the main window hides it instead of destroying it: the app keeps
+//! running in the menu bar, and the panel, notifications and the Dock icon
+//! show the same window again, with its webview (and its navigation
+//! listener) still alive.
+
+use std::sync::Mutex;
 
 use serde_json::Value;
+use tauri::image::Image;
 use tauri::menu::{Menu, MenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{
@@ -16,6 +24,8 @@ use tauri::{
 pub const MAIN: &str = "main";
 pub const PANEL: &str = "menubar";
 pub const SETTINGS: &str = "settings";
+/// The tray icon's ID.
+pub const TRAY: &str = "formation";
 
 /// Tauri event asking the main window to open an item; the payload is an
 /// `AttentionTarget` (`src/notifications/navigate.ts` handles it).
@@ -29,6 +39,17 @@ pub fn show_main_window(app: &AppHandle) {
     }
     if let Some(panel) = app.get_webview_window(PANEL) {
         let _ = panel.hide();
+    }
+}
+
+/// Shows the main window when the Dock icon is clicked and it is hidden,
+/// even if another window (Settings) is open.
+pub fn on_reopen(app: &AppHandle) {
+    let visible = app
+        .get_webview_window(MAIN)
+        .is_some_and(|w| w.is_visible().unwrap_or(false));
+    if !visible {
+        show_main_window(app);
     }
 }
 
@@ -83,7 +104,7 @@ pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
     let open = MenuItem::with_id(app, "open", "Open Formation", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit Formation", true, Some("Cmd+Q"))?;
     let menu = Menu::with_items(app, &[&open, &quit])?;
-    let mut builder = TrayIconBuilder::with_id("formation")
+    let mut builder = TrayIconBuilder::with_id(TRAY)
         .tooltip("Formation")
         .icon_as_template(true)
         .menu(&menu)
@@ -109,6 +130,84 @@ pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
     }
     builder.build(app)?;
     Ok(())
+}
+
+/// The tray icon in its two looks: plain, and with a dot when something needs
+/// the owner (SC-002). Both are template images, made once from the app icon.
+pub struct TrayIcons {
+    plain: Option<Image<'static>>,
+    dotted: Option<Image<'static>>,
+    attention: Mutex<bool>,
+}
+
+impl TrayIcons {
+    pub fn new(app: &AppHandle) -> Self {
+        let plain = app.default_window_icon().cloned().map(Image::to_owned);
+        let dotted = plain.as_ref().map(|icon| {
+            let (width, height) = (icon.width(), icon.height());
+            Image::new_owned(with_dot(icon.rgba(), width, height), width, height)
+        });
+        Self {
+            plain,
+            dotted,
+            attention: Mutex::new(false),
+        }
+    }
+}
+
+/// Shows or removes the tray icon's dot. The menu bar panel's window calls
+/// this when whether anything needs the owner changes.
+pub fn set_tray_attention(app: &AppHandle, attention: bool) -> tauri::Result<()> {
+    let Some(icons) = app.try_state::<TrayIcons>() else {
+        return Ok(());
+    };
+    {
+        let mut current = icons.attention.lock().unwrap_or_else(|p| p.into_inner());
+        if *current == attention {
+            return Ok(());
+        }
+        *current = attention;
+    }
+    let icon = if attention {
+        &icons.dotted
+    } else {
+        &icons.plain
+    };
+    match (app.tray_by_id(TRAY), icon) {
+        (Some(tray), Some(icon)) => tray.set_icon_with_as_template(Some(icon.clone()), true),
+        _ => Ok(()),
+    }
+}
+
+/// A copy of an RGBA icon with a dot in its top-right corner and a clear ring
+/// around the dot, so the dot stands apart from the icon's shape. The dot is
+/// opaque black: in a template image macOS draws it in the menu bar's text
+/// color like the rest of the icon, so it cannot be orange as in the mockup.
+fn with_dot(rgba: &[u8], width: u32, height: u32) -> Vec<u8> {
+    let mut out = rgba.to_vec();
+    let size = f64::from(width.min(height));
+    let radius = size * 0.2;
+    let ring = radius + size * 0.08;
+    // Pixel centers sit on whole coordinates, so the edges are at -0.5.
+    let (cx, cy) = (f64::from(width) - 0.5 - radius, radius - 0.5);
+    for y in 0..height {
+        for x in 0..width {
+            let i = ((y * width + x) * 4) as usize;
+            let Some(pixel) = out.get_mut(i..i + 4) else {
+                return out;
+            };
+            let distance = (f64::from(x) - cx).hypot(f64::from(y) - cy);
+            // Coverage, anti-aliased over one pixel.
+            let dot = (radius + 0.5 - distance).clamp(0.0, 1.0);
+            let clear = (ring + 0.5 - distance).clamp(0.0, 1.0);
+            let kept = f64::from(pixel[3]) * (1.0 - clear);
+            if dot > 0.0 {
+                pixel[..3].fill(0);
+            }
+            pixel[3] = (dot * 255.0 + kept * (1.0 - dot)).round() as u8;
+        }
+    }
+    out
 }
 
 /// Shows the panel centered under the tray icon, or hides it if it is open.
@@ -147,18 +246,56 @@ fn panel_origin(icon_x: f64, icon_y: f64, icon_w: f64, icon_h: f64, width: f64) 
     )
 }
 
-/// The panel closes when it loses focus, like a menu.
+/// The panel closes when it loses focus, like a menu. Closing the main window
+/// hides it, so it can be shown again on an item.
 pub fn on_window_event(window: &Window, event: &WindowEvent) {
-    if window.label() == PANEL
-        && let WindowEvent::Focused(false) = event
-    {
-        let _ = window.hide();
+    match (window.label(), event) {
+        (PANEL, WindowEvent::Focused(false)) => {
+            let _ = window.hide();
+        }
+        (MAIN, WindowEvent::CloseRequested { api, .. }) => {
+            api.prevent_close();
+            let _ = window.hide();
+        }
+        _ => {}
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::panel_origin;
+    use super::{panel_origin, with_dot};
+
+    fn alpha(rgba: &[u8], width: u32, x: u32, y: u32) -> u8 {
+        rgba[((y * width + x) * 4 + 3) as usize]
+    }
+
+    #[test]
+    fn the_dot_is_drawn_in_the_top_right_corner() {
+        let icon = vec![255; 32 * 32 * 4];
+        let dotted = with_dot(&icon, 32, 32);
+        assert_eq!(dotted.len(), icon.len());
+        // The dot's center is opaque black.
+        let center = ((5 * 32 + 26) * 4) as usize;
+        assert_eq!(&dotted[center..center + 4], &[0, 0, 0, 255]);
+        // A clear ring separates it from the icon.
+        assert_eq!(alpha(&dotted, 32, 18, 5), 0);
+        // The rest of the icon is untouched.
+        assert_eq!(alpha(&dotted, 32, 2, 30), 255);
+        assert_eq!(&dotted[..4], &[255, 255, 255, 255]);
+    }
+
+    #[test]
+    fn the_dot_shows_over_a_transparent_corner() {
+        let icon = vec![0; 16 * 16 * 4];
+        let dotted = with_dot(&icon, 16, 16);
+        assert_eq!(alpha(&dotted, 16, 13, 2), 255);
+        assert_eq!(alpha(&dotted, 16, 2, 13), 0);
+    }
+
+    #[test]
+    fn a_short_buffer_does_not_panic() {
+        assert_eq!(with_dot(&[0; 7], 4, 4).len(), 7);
+    }
 
     #[test]
     fn the_panel_is_centered_under_the_icon() {

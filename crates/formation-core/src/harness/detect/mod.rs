@@ -232,6 +232,16 @@ impl Detect {
             .publish(Event::AgentUpdate(AgentUpdateEvent::Upsert {
                 agent: Box::new(agent.clone()),
             }));
+        // The snapshot carries the reason in `detected.capabilities.state`; say it on `agent.state` too.
+        self.events.publish(Event::AgentState(AgentStateEvent {
+            agent_id: id,
+            state: AgentState::Unknown,
+            reason: agent
+                .detected
+                .as_ref()
+                .and_then(|d| d.capabilities.state.reason.clone()),
+            exit_code: None,
+        }));
         Ok(agent)
     }
 }

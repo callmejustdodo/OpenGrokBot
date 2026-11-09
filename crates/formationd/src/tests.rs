@@ -10,6 +10,7 @@ use tokio::time::{Duration, timeout};
 async fn fake_daemon_serves_snapshot_and_agents() {
     check_wiring("harness", false).await;
     check_wiring("harness,peers", true).await;
+    check_wiring("harness,requests", false).await;
 }
 
 async fn check_wiring(fakes: &str, fake_peers: bool) {
