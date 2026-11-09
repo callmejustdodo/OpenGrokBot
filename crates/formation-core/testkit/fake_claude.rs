@@ -12,6 +12,26 @@ use std::{
 };
 
 fn write_line(out: &mut impl Write, line: &Value) -> io::Result<()> {
+    if env::var_os("FAKE_CLAUDE_WRITE_TRANSCRIPT").is_some()
+        && let Some(session) = line["session_id"].as_str()
+    {
+        let path = formation_core::ask::transcript::transcript_path(
+            &env::var("CLAUDE_CONFIG_DIR")
+                .map(std::path::PathBuf::from)
+                .map_err(io::Error::other)?,
+            &env::current_dir()?,
+            session,
+        )
+        .map_err(io::Error::other)?;
+        fs::create_dir_all(path.parent().unwrap())?;
+        writeln!(
+            fs::OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(path)?,
+            "{line}"
+        )?;
+    }
     writeln!(out, "{line}")?;
     out.flush()
 }
@@ -19,8 +39,12 @@ fn write_line(out: &mut impl Write, line: &Value) -> io::Result<()> {
 fn main() -> Result<(), Box<dyn Error>> {
     let mut args = env::args().skip(1);
     let mut session = None;
+    let mut fork = false;
+    let mut no_tools = false;
     while let Some(arg) = args.next() {
         match arg.as_str() {
+            "--fork-session" => fork = true,
+            "--tools" => no_tools = args.next().is_some_and(|tools| tools.is_empty()),
             "--session-id" | "--resume" => {
                 session = Some(
                     args.next()
@@ -40,6 +64,19 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     }
     let session = session.ok_or("requires --session-id or --resume")?;
+    let session = if fork {
+        formation_proto::common::RunId::generate().to_string()
+    } else {
+        session
+    };
+    if let Ok(path) = env::var("FAKE_CLAUDE_LAUNCH_LOG") {
+        let mut log = fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(path)?;
+        let record = json!({"session":session,"args":env::args().skip(1).collect::<Vec<_>>(),"run_id":env::var("FORMATION_RUN_ID").ok()});
+        log.write_all(format!("{record}\n").as_bytes())?;
+    }
     let accept_steer = env::var_os("FAKE_CLAUDE_ACCEPT_STEER").is_some();
     let delay = env::var("FAKE_CLAUDE_LINE_DELAY_MS").map_or(Ok(0), |v| v.parse::<u64>())?;
     let transcript = fs::read_to_string(env::var("FAKE_CLAUDE_TRANSCRIPT")?)?;
@@ -48,6 +85,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     for line in transcript.lines() {
         let mut value: Value = serde_json::from_str(line)?;
         let end = value["type"] == "result";
+        if no_tools && value["type"] == "system" && value["subtype"] == "init" {
+            value["tools"] = json!([]);
+        }
         if let Some(id) = value.get_mut("session_id") {
             *id = json!(session);
         }
