@@ -42,3 +42,7 @@
   content: ""; width: 14px; height: 14px; background: currentColor;
   -webkit-mask: var(--i-plug) center / contain no-repeat; mask: var(--i-plug) center / contain no-repeat;
 }
+.side-bottom { gap: 6px; }
+.side-bottom .prof { min-width: 0; flex: 1 1 auto; overflow: hidden; }
+.side-bottom .prof b, .side-bottom .prof .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.side-bottom .btn { font-size: 12.5px; padding-inline: 8px; }
