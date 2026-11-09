@@ -277,7 +277,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 ### Phase 3 · Ask a teammate's agent (IC-2)
 
 ### TASK-017: Team creation and joining
-- Status: pending
+- Status: complete
 - References: FR-008, US-008, US-020, SC-001, SC-013, D-046, TASK-007 results
 - Prerequisites: TASK-007, TASK-042 (uses the in-memory `CollabStore` from TASK-042 until TASK-011 merges)
 - Change locations: `crates/formation-core/src/team/`, B's migrations
