@@ -26,7 +26,7 @@ Rev 1 · 2026-11-09 · Implements the [tech spec](4_techspec.md) (Rev 3) for the
 | `schedules` | Timers per schedule; detect missed runs after sleep and run them once; record runs | FR-005 |
 | `policy` | Membership and sharing checks, visibility, always-allowed reads, rule matching, approvals and expiry, chain depth and rate limits | FR-009, FR-015, FR-019, D-024 to D-028 |
 | `ask` | Routing (score shared agents, decide confident or unsure), answer runner (an isolated, tool-less fork; see the tech spec's [ask pipeline](4_techspec.md#ask-pipeline)), excerpts, `as_of` and staleness, secret masking | FR-010 to FR-013, NFR-003, NFR-005 |
-| `requests` | Per-agent ordered queue for work requests and owner messages, idempotency, status machine | FR-014, FR-017 |
+| `requests` | Per-agent ordered queue for work requests, idempotency, status machine; fork execution follows [FR-014](1_product_requirements_documentation.md#work-requests-and-approvals) | FR-014, FR-017 |
 | `peer` | HTTP and WebSocket server on the Tailscale address; client with an outbox and retries; Tailscale WhoIs identity; presence | FR-016, NFR-006 |
 | `team` | Members, invitations, GitHub identity binding, roster changes | FR-008, D-046 |
 | `store` | SQLite schema, migrations, transactions | D-029, FR-020 |
@@ -45,7 +45,7 @@ All enforcement happens in formationd on the owner's Mac. The UI, CLI, MCP clien
 | Rules never widen | `policy::rules` | Match program, argument pattern, and folder exactly as stored; reject command chaining and paths outside the folder |
 | Only the owner approves | `policy::approvals` | Decisions are accepted only from the local socket of the owner's own session, never from peers |
 | A retried request runs once | `requests` with a unique index on (requester, idempotency key) | Insert-or-return in one transaction |
-| One turn at a time per agent | `requests` queue feeding `harness::claude` | Single consumer per agent |
+| Only the owner writes to the main session | `harness::claude` and `requests` | Serialize owner turns; execute teammate requests in separate forks per [FR-014](1_product_requirements_documentation.md#work-requests-and-approvals) |
 | Removed members lose access at once | `team` and `peer` | Roster check on every request; open WebSocket connections of removed members are closed |
 | Chains cannot run away | `policy::limits` | Depth over 3 or over 30 requests per minute per caller returns `rate_limited` |
 
@@ -70,7 +70,7 @@ sequenceDiagram
   end
 ```
 
-Work requests follow the same entry path to `requests`; they wait for the current turn, run in the main session, and every tool call goes through `harness::permission`.
+Work requests follow the same entry path to `requests`; they run per [FR-014](1_product_requirements_documentation.md#work-requests-and-approvals), with the policy context bound at fork startup as specified in the [Claude Code integration](4_techspec.md#claude-code-integration-first-harness), and every tool call goes through `harness::permission`.
 
 ## Error codes
 
@@ -86,9 +86,9 @@ Work requests follow the same entry path to `requests`; they wait for the curren
 
 ## Recovery
 
-- **formationd crash:** launchd restarts it (`KeepAlive`). On start it rebuilds state: resumes running agents with `--resume`, re-queues requests that were `queued`, marks interrupted ones `failed` with a reason, expires approvals past 24 hours, and retries the outbox.
+- **formationd crash:** launchd restarts it (`KeepAlive`). On start it rebuilds state: resumes Formation-managed sessions with `--resume` (never detected originals, per [FR-006](1_product_requirements_documentation.md#managing-agents-owner)), re-queues requests that were `queued`, marks interrupted ones `failed` with a reason, expires approvals past 24 hours, and retries the outbox.
 - **App crash or quit:** no effect on agents; the UI reconnects and takes a fresh snapshot.
-- **Harness crash:** the agent goes to `error` with the exit code; restart resumes the session.
+- **Harness crash:** the agent goes to `error` with the exit code; restart resumes a Formation-managed session; detected originals follow [FR-006](1_product_requirements_documentation.md#managing-agents-owner).
 - **Peer unreachable:** questions and requests wait in the asker's outbox; the owner re-checks membership and sharing when they arrive (FR-016).
 
 ## Identity and team
