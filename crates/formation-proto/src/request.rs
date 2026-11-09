@@ -1,14 +1,14 @@
 //! Owner: B (collaboration core).
 //!
-//! Work requests (FR-014, FR-017) and the per-agent queue that feeds the main
-//! session: owner messages, teammates' requests, and schedule runs share one ordered
-//! queue per agent.
+//! Work requests (FR-014, FR-017) and the per-agent queue: owner messages,
+//! teammates' requests, and schedule runs share one ordered queue per agent.
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::common::{
-    AgentId, ApiError, MemberId, MessageId, QuestionId, RequestId, ScheduleId, Timestamp, commands,
+    AgentId, ApiError, MemberId, MessageId, QuestionId, RequestId, RunId, ScheduleId, Timestamp,
+    commands,
 };
 use crate::policy::Chain;
 
@@ -98,8 +98,8 @@ pub struct RequestCreate {
     /// Built from selected messages of this side conversation (FR-014).
     pub from_question: Option<QuestionId>,
     /// Set by the CLI and MCP server when one of my agents sends the request; see
-    /// [`Ask::from_agent`](crate::ask::Ask::from_agent).
-    pub from_agent: Option<AgentId>,
+    /// [`Ask::from_run`](crate::ask::Ask::from_run).
+    pub from_run: Option<RunId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -192,7 +192,7 @@ mod tests {
             prompt: "Add a health endpoint".into(),
             idempotency_key: "k1".into(),
             from_question: Some(QuestionId::generate()),
-            from_agent: None,
+            from_run: None,
         });
         assert!(RequestStatus::Expired.is_final());
         assert!(!RequestStatus::Queued.is_final());

@@ -161,7 +161,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 - Owner: B
 
 ### TASK-006: Forked answers do not change the original session
-- Status: pending
+- Status: complete
 - References: [ask pipeline](4_techspec.md#ask-pipeline), FR-012, NFR-002
 - Prerequisites: TASK-001
 - Change locations: `crates/formation-core/src/ask/` (spike)
