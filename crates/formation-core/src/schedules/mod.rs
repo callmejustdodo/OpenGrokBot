@@ -18,7 +18,9 @@ use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
 use tokio::sync::Mutex;
 
-use crate::ports::{CommandCall, CommandHandler, EventSink, Harness, Notifier, Result, Store};
+use crate::ports::{
+    CommandCall, CommandHandler, EventSink, ForkRun, ForkTools, Harness, Notifier, Result, Store,
+};
 
 pub struct Schedules {
     store: Arc<dyn Store>,
@@ -107,22 +109,33 @@ impl Schedules {
             let planned = run.planned_at;
             let started = std::time::Instant::now();
             let result = async {
-                self.harness.start(&agent, resume).await?;
-                self.harness
-                    .run_turn(
-                        agent.id,
-                        RunId::generate(),
-                        QueueItem {
-                            id: MessageId::generate(),
-                            agent_id: agent.id,
-                            source: QueueSource::Schedule {
-                                schedule_id: schedule.id,
+                let run_id = RunId::generate();
+                let item = QueueItem {
+                    id: MessageId::generate(),
+                    agent_id: agent.id,
+                    source: QueueSource::Schedule {
+                        schedule_id: schedule.id,
+                    },
+                    text: schedule.prompt.clone(),
+                    queued_at: now,
+                };
+                if let Some(session) = self.harness.session_info(agent.id).await? {
+                    return self
+                        .harness
+                        .run_fork(
+                            agent.id,
+                            ForkRun {
+                                run_id,
+                                from: session.session_id,
+                                item,
+                                tools: ForkTools::Gated,
                             },
-                            text: schedule.prompt.clone(),
-                            queued_at: now,
-                        },
-                    )
-                    .await
+                        )
+                        .await
+                        .map(|fork| fork.result);
+                }
+                self.harness.start(&agent, resume).await?;
+                self.harness.run_turn(agent.id, run_id, item).await
             }
             .await;
             let failed = !matches!(result, Ok(ref turn) if turn.outcome == TurnOutcome::Completed);
