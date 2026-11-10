@@ -6,3 +6,7 @@
 /* v2 frame SC-009: a wider sheet; the agent and capability lists are white cards, the chosen agent a soft grey row. */
 .sheet:has(.connect-body) { width: min(640px, calc(100vw - 40px)); }
 .connect-body .row { padding: 12px 16px; }
+/* #224: search one folder, and group the list by folder. */
+.connect-folder { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.connect-folder > :first-child { margin-right: auto; }
+.connect-group { padding: 8px 16px 4px; font-size: 11px; color: var(--text2); overflow-wrap: anywhere; }

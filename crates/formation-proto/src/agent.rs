@@ -153,6 +153,8 @@ pub struct DetectedAgent {
     pub harness: DetectedHarness,
     pub name: String,
     pub path: PathBuf,
+    /// The session's working folder, or the installation's folder; `name` is its last part.
+    pub folder: PathBuf,
     pub session_id: Option<SessionId>,
     pub last_activity_at: Option<Timestamp>,
     pub capabilities: DetectedCapabilities,
@@ -384,12 +386,22 @@ pub struct AgentStop {
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[ts(export)]
-pub struct AgentsDetect {}
+pub struct AgentsDetect {
+    /// Lists every Claude Code and Codex session that ran in this folder or inside
+    /// it, however old; without it, only sessions active in the last 24 hours.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub folder: Option<PathBuf>,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
 #[ts(export)]
 pub struct AgentConnect {
     pub key: String,
+    /// The `folder` the agent was found with in `agents_detect`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub folder: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]

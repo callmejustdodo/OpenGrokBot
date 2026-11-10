@@ -185,6 +185,7 @@
       "harness_unsupported": "OpenGrokBot은 아직 이 하네스를 지원하지 않아요.",
       "other": "이 에이전트를 연결하지 못했어요. 다시 시도하세요."
     },
+    "findInFolder": "폴더에서 찾기…",
     "found": "탐지된 에이전트",
     "harness": {
       "claude_code": "Claude Code",
@@ -198,11 +199,15 @@
     "noActivity": "아직 활동이 없어요",
     "noChange": "OpenGrokBot은 이 에이전트의 설정을 바꾸지 않아요.",
     "none": "이 맥에서 OpenGrokBot 밖에서 실행 중인 에이전트가 없어요.",
+    "noneInFolder": "이 폴더에서 실행된 Claude Code나 Codex 세션이 없어요.",
     "notSupported": "OpenGrokBot은 아직 이 에이전트를 연결할 수 없어요.",
     "open": "열기",
     "path": "폴더",
+    "pickFailed": "폴더 선택 창을 열지 못했어요. 다시 시도하세요.",
     "readOnly": "읽기 전용: OpenGrokBot에서 이 에이전트의 활동은 볼 수 있지만 팀원을 위해 쓸 수는 없어요.",
+    "recent": "최근 목록으로",
     "retry": "다시 시도",
+    "searching": "{{folder}}의 세션",
     "title": "에이전트 연결",
     "works": "돼요"
   },

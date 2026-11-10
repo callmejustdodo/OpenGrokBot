@@ -358,3 +358,37 @@ async fn lists_external_sessions_in_an_agent_folder_by_session_id() {
         vec!["codex:codex-mine-too"]
     );
 }
+
+#[tokio::test]
+async fn lists_every_session_in_a_named_folder_however_old_and_connects_it() {
+    let f = Fixture::new();
+    let old: Timestamp = (SystemTime::now() - Duration::from_secs(30 * 24 * 60 * 60)).into();
+    f.transcript("rpg", "rpg-session", old);
+    f.transcript("rpg/server", "server-session", old);
+    f.transcript("rpg-other", "other-session", old);
+    f.rollout("rpg", "codex-rpg", old);
+    f.rollout("elsewhere", "codex-elsewhere", old);
+    fs::create_dir(f.root.join("hermes")).unwrap();
+    // Without a folder, only the last 24 hours (and installations) are listed.
+    assert_eq!(Fixture::keys(&f.detected().await), vec!["hermes"]);
+    let folder = f.root.join("rpg");
+    let found: Vec<DetectedAgent> =
+        serde_json::from_value(f.call("agents_detect", json!({"folder": folder})).await).unwrap();
+    assert_eq!(
+        Fixture::keys(&found),
+        vec![
+            "claude_code:rpg-session",
+            "claude_code:server-session",
+            "codex:codex-rpg"
+        ]
+    );
+    assert_eq!(found[1].folder, f.root.join("rpg/server"));
+    for key in ["claude_code:server-session", "codex:codex-rpg"] {
+        let connected: Agent = serde_json::from_value(
+            f.call("agent_connect", json!({"key": key, "folder": folder}))
+                .await,
+        )
+        .unwrap();
+        assert!(connected.folder_path.starts_with(&folder));
+    }
+}

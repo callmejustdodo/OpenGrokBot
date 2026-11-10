@@ -2,8 +2,10 @@ import "./connect.css";
 // SC-009 Connect agents sheet: finds agents running outside Formation on this
 // Mac (`agents_detect`), shows what Formation can do with each, and connects
 // the chosen one (`agent_connect`), which then opens its read-only
-// conversation (SC-005 detected).
+// conversation (SC-005 detected). The owner can also search one folder, which
+// lists its sessions however old; the list is grouped by folder.
 import { useEffect, useState } from "react";
+import { pickFolders, tildePath, useHomeDir } from "../../components/folders/folders";
 import { useTranslation } from "react-i18next";
 import type { CallError } from "../../ipc/client";
 import type { DetectedAgent } from "../../ipc/generated/DetectedAgent";
@@ -29,10 +31,14 @@ export default function ConnectSheet() {
   const [attempt, setAttempt] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const [connectError, setConnectError] = useState<{ key: string; code: string | null } | null>(null);
+  // The folder being searched; null lists the recent sessions.
+  const [folder, setFolder] = useState<string | null>(null);
+  const [pickFailed, setPickFailed] = useState(false);
+  const home = useHomeDir();
 
   useEffect(() => {
     let live = true;
-    act(tauriTransport, DETECT_KEY, "agents_detect", {})
+    act(tauriTransport, DETECT_KEY, "agents_detect", folder ? { folder } : {})
       .then((found) => {
         if (!live) return;
         setAgents(found);
@@ -42,7 +48,21 @@ export default function ConnectSheet() {
     return () => {
       live = false;
     };
-  }, [attempt]);
+  }, [attempt, folder]);
+
+  const search = (next: string | null) => {
+    setAgents(null);
+    setDetectFailed(false);
+    setSelected(null);
+    setFolder(next);
+  };
+  const pick = () => {
+    setPickFailed(false);
+    pickFolders(false).then(
+      ([chosen]) => chosen && search(chosen),
+      () => setPickFailed(true),
+    );
+  };
 
   const close = () => uiStore.getState().closeSheet();
   const open = (agentId: string) => {
@@ -51,7 +71,7 @@ export default function ConnectSheet() {
   };
   const connect = (agent: DetectedAgent) => {
     setConnectError(null);
-    act(tauriTransport, connectKey(agent.key), "agent_connect", { key: agent.key })
+    act(tauriTransport, connectKey(agent.key), "agent_connect", folder ? { key: agent.key, folder } : { key: agent.key })
       .then((connected) => open(connected.id))
       .catch((error: unknown) => setConnectError({ key: agent.key, code: errorCode(error) }));
   };
@@ -86,14 +106,22 @@ export default function ConnectSheet() {
   } else if (agents && agents.length === 0) {
     body = (
       <p className="empty" data-state="empty">
-        {t("connect.none", "No agents are running outside OpenGrokBot on this Mac.")}
+        {folder
+          ? t("connect.noneInFolder", "No Claude Code or Codex sessions ran in this folder.")
+          : t("connect.none", "No agents are running outside OpenGrokBot on this Mac.")}
       </p>
     );
   } else if (agents) {
+    // Grouped by folder, in the order each folder first appears.
+    const folders = [...new Set(agents.map((a) => a.folder))];
     body = (
       <div className="connect-body">
         <ul className="list" aria-label={t("connect.found", "Detected agents")}>
-          {agents.map((a) => (
+          {folders.flatMap((f) => [
+            <li key={`folder:${f}`} role="presentation" className="connect-group mono">
+              {tildePath(f, home)}
+            </li>,
+            ...agents.filter((a) => a.folder === f).map((a) => (
             <li key={a.key} data-state={connectKind(a)}>
               <button type="button" className="row" aria-pressed={a.key === selected} onClick={() => setSelected(a.key)}>
                 <span className="t">
@@ -105,7 +133,8 @@ export default function ConnectSheet() {
                 </span>
               </button>
             </li>
-          ))}
+            )),
+          ])}
         </ul>
         {current && kind ? (
           <section aria-label={current.name} data-state={kind}>
@@ -192,6 +221,26 @@ export default function ConnectSheet() {
         </>
       }
     >
+      <div className="connect-folder">
+        {folder ? (
+          <>
+            <span className="muted small">
+              {t("connect.searching", "Sessions in {{folder}}", { folder: tildePath(folder, home) })}
+            </span>
+            <button type="button" onClick={() => search(null)}>
+              {t("connect.recent", "Back to recent")}
+            </button>
+          </>
+        ) : null}
+        <button type="button" onClick={pick}>
+          {t("connect.findInFolder", "Find in a folder…")}
+        </button>
+        {pickFailed ? (
+          <span role="alert" className="small">
+            {t("connect.pickFailed", "Couldn't open the folder picker. Try again.")}
+          </span>
+        ) : null}
+      </div>
       {body}
     </Sheet>
   );

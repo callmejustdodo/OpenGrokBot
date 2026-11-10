@@ -1,5 +1,6 @@
 //! Read-only discovery of external sessions and registration with Formation.
-//! Claude Code and Codex activity is recent for 24 hours; live state stays unknown.
+//! Claude Code and Codex activity is recent for 24 hours, unless the owner names a
+//! folder to search, which lists its sessions however old; live state stays unknown.
 use std::{
     collections::HashSet,
     fs,
@@ -18,7 +19,7 @@ use formation_proto::{
 use serde_json::Value;
 
 use crate::{
-    ask::transcript::claude_config_dir,
+    ask::transcript::{claude_config_dir, project_dir_name},
     ports::{CommandCall, CommandHandler, EventSink, Result, Store},
 };
 
@@ -75,7 +76,27 @@ impl Detect {
         }
     }
 
-    fn scan(&self) -> Result<Vec<(DetectedAgent, PathBuf)>> {
+    /// Recent sessions, or with `folder`, every session whose working folder is in it.
+    fn scan(&self, folder: Option<&Path>) -> Result<Vec<DetectedAgent>> {
+        // Claude Code records the real path; match the folder as given too.
+        let real = folder.map(|f| f.canonicalize().unwrap_or_else(|_| f.to_path_buf()));
+        let inside = |cwd: &Path| {
+            folder.is_some_and(|f| cwd.starts_with(f))
+                || real.as_ref().is_some_and(|f| cwd.starts_with(f))
+        };
+        // A session is listed when it ran in `folder`, or recently when no folder is given.
+        let cutoff: Timestamp = (SystemTime::now() - Duration::from_secs(24 * 60 * 60)).into();
+        let listed = |cwd: &Path, at: Timestamp| match folder {
+            Some(_) => inside(cwd),
+            None => at >= cutoff,
+        };
+        // Claude Code names a project folder after the path, so a subfolder's name starts
+        // with its parent's (cut to 200 characters for long paths).
+        let project_prefix = real.as_deref().map(|f| {
+            let mut name = project_dir_name(f);
+            name.truncate(200);
+            name
+        });
         let agents = self.store.agents()?;
         // Sessions are skipped by ID, never by folder: Formation's own main and fork
         // sessions, and sessions already connected, wherever they ran.
@@ -96,9 +117,15 @@ impl Detect {
             }
         }
         let mut found = Vec::new();
-        let cutoff: Timestamp = (SystemTime::now() - Duration::from_secs(24 * 60 * 60)).into();
         for project in entries(&self.paths.claude_config.join("projects"))? {
-            if !project.is_dir() {
+            if !project.is_dir()
+                || project_prefix.as_ref().is_some_and(|prefix| {
+                    !project
+                        .file_name()
+                        .and_then(|s| s.to_str())
+                        .is_some_and(|s| s.starts_with(prefix.as_str()))
+                })
+            {
                 continue;
             }
             for path in entries(&project)? {
@@ -131,7 +158,7 @@ impl Detect {
                 let (Some(cwd), Some(session_id), Some(at)) = (cwd, session, latest) else {
                     continue;
                 };
-                if at < cutoff
+                if !listed(&cwd, at)
                     || sessions.contains(&session_id)
                     || self.store.is_formation_session(&session_id)?
                 {
@@ -141,23 +168,21 @@ impl Detect {
                 if path.file_stem().and_then(|s| s.to_str()) != Some(session_id.0.as_str()) {
                     continue;
                 }
-                found.push((
-                    DetectedAgent {
-                        key: format!("claude_code:{}", session_id.0),
-                        harness: DetectedHarness::ClaudeCode,
-                        name: cwd
-                            .file_name()
-                            .unwrap_or(cwd.as_os_str())
-                            .to_string_lossy()
-                            .into_owned(),
-                        path,
-                        session_id: Some(session_id),
-                        last_activity_at: Some(at),
-                        capabilities: capabilities(None, None),
-                        connected_agent: None,
-                    },
-                    cwd,
-                ));
+                found.push(DetectedAgent {
+                    key: format!("claude_code:{}", session_id.0),
+                    harness: DetectedHarness::ClaudeCode,
+                    name: cwd
+                        .file_name()
+                        .unwrap_or(cwd.as_os_str())
+                        .to_string_lossy()
+                        .into_owned(),
+                    path,
+                    folder: cwd,
+                    session_id: Some(session_id),
+                    last_activity_at: Some(at),
+                    capabilities: capabilities(None, None),
+                    connected_agent: None,
+                });
             }
         }
         let mut rollouts = Vec::new();
@@ -165,19 +190,16 @@ impl Detect {
             rollout_files(&self.paths.codex_sessions, &mut rollouts)?;
         }
         for path in rollouts {
-            if fs::metadata(&path)
-                .and_then(|m| m.modified())
-                .is_ok_and(|at| Timestamp::from(at) < cutoff)
+            if folder.is_none()
+                && fs::metadata(&path)
+                    .and_then(|m| m.modified())
+                    .is_ok_and(|at| Timestamp::from(at) < cutoff)
             {
                 continue;
             }
-            let Ok(text) = fs::read_to_string(&path) else {
-                continue;
-            };
-            let Some(meta) = text
-                .lines()
-                .next()
-                .and_then(|line| serde_json::from_str::<Value>(line).ok())
+            // The first line is the session's metadata; read the rest only when it is listed.
+            let Some(meta) = first_line(&path)
+                .and_then(|line| serde_json::from_str::<Value>(&line).ok())
                 .filter(|record| record["type"] == "session_meta")
             else {
                 continue;
@@ -189,6 +211,12 @@ impl Detect {
                 continue;
             };
             let cwd = PathBuf::from(cwd);
+            if folder.is_some() && !inside(&cwd) {
+                continue;
+            }
+            let Ok(text) = fs::read_to_string(&path) else {
+                continue;
+            };
             // The newest record carries the latest activity; scan from the end.
             let latest = text.lines().rev().find_map(|line| {
                 serde_json::from_str::<Value>(line).ok()?["timestamp"]
@@ -203,34 +231,38 @@ impl Detect {
                 .and_then(|s| s.to_str())
                 .is_some_and(|s| s.ends_with(&suffix));
             if !identified
-                || latest.is_none_or(|at| at < cutoff)
+                || latest.is_none_or(|at| !listed(&cwd, at))
                 || codex_sources.iter().any(|s| s.ends_with(&suffix))
                 || self.store.is_formation_session(&SessionId(id.into()))?
             {
                 continue;
             }
-            found.push((
-                DetectedAgent {
-                    key: format!("codex:{id}"),
-                    harness: DetectedHarness::Codex,
-                    name: cwd
-                        .file_name()
-                        .unwrap_or(cwd.as_os_str())
-                        .to_string_lossy()
-                        .into_owned(),
-                    path,
-                    session_id: Some(SessionId(id.into())),
-                    last_activity_at: latest,
-                    capabilities: capabilities(None, Some("Codex agents cannot fork yet")),
-                    connected_agent: None,
-                },
-                cwd,
-            ));
+            found.push(DetectedAgent {
+                key: format!("codex:{id}"),
+                harness: DetectedHarness::Codex,
+                name: cwd
+                    .file_name()
+                    .unwrap_or(cwd.as_os_str())
+                    .to_string_lossy()
+                    .into_owned(),
+                path,
+                folder: cwd,
+                session_id: Some(SessionId(id.into())),
+                last_activity_at: latest,
+                capabilities: capabilities(None, Some("Codex agents cannot fork yet")),
+                connected_agent: None,
+            });
         }
-        for (harness, name, paths) in [
-            (DetectedHarness::Hermes, "Hermes", &self.paths.hermes),
-            (DetectedHarness::OpenClaw, "OpenClaw", &self.paths.openclaw),
-        ] {
+        // Installations are not sessions in a folder; they are listed only without one.
+        let installations = if folder.is_some() {
+            Vec::new()
+        } else {
+            vec![
+                (DetectedHarness::Hermes, "Hermes", &self.paths.hermes),
+                (DetectedHarness::OpenClaw, "OpenClaw", &self.paths.openclaw),
+            ]
+        };
+        for (harness, name, paths) in installations {
             if let Some(path) = paths.iter().find(|p| is_installation(p)) {
                 let connected_agent = agents
                     .iter()
@@ -241,34 +273,32 @@ impl Detect {
                 } else {
                     path.parent().unwrap_or(path).to_path_buf()
                 };
-                found.push((
-                    DetectedAgent {
-                        key: name.to_ascii_lowercase(),
-                        harness,
-                        name: name.into(),
-                        path: path.clone(),
-                        session_id: None,
-                        last_activity_at: None,
-                        capabilities: {
-                            let reason =
-                                "No conversation or fork adapter is available for this harness";
-                            capabilities(Some(reason), Some(reason))
-                        },
-                        connected_agent,
-                    },
+                found.push(DetectedAgent {
+                    key: name.to_ascii_lowercase(),
+                    harness,
+                    name: name.into(),
+                    path: path.clone(),
                     folder,
-                ));
+                    session_id: None,
+                    last_activity_at: None,
+                    capabilities: {
+                        let reason =
+                            "No conversation or fork adapter is available for this harness";
+                        capabilities(Some(reason), Some(reason))
+                    },
+                    connected_agent,
+                });
             }
         }
-        found.sort_by(|a, b| a.0.key.cmp(&b.0.key));
+        found.sort_by(|a, b| a.key.cmp(&b.key));
         Ok(found)
     }
 
-    fn connect(&self, key: &str) -> Result<Agent> {
-        let (detected, folder_path) = self
-            .scan()?
+    fn connect(&self, key: &str, folder: Option<&Path>) -> Result<Agent> {
+        let detected = self
+            .scan(folder)?
             .into_iter()
-            .find(|(d, _)| d.key == key)
+            .find(|d| d.key == key)
             .ok_or_else(|| ApiError::new(ErrorCode::NotFound, "detected agent not found"))?;
         if let Some(id) = detected.connected_agent {
             return self
@@ -283,7 +313,7 @@ impl Detect {
             name: detected.name,
             role: String::new(),
             harness: HarnessKind::Detected,
-            folder_path,
+            folder_path: detected.folder,
             repositories: Vec::new(),
             avatar: Avatar {
                 shape: "round".into(),
@@ -345,16 +375,15 @@ impl CommandHandler for Detect {
             };
             match call.method.as_str() {
                 "agents_detect" => {
-                    serde_json::from_value::<AgentsDetect>(params).map_err(invalid_params)?;
-                    serde_json::to_value(
-                        this.scan()?.into_iter().map(|(d, _)| d).collect::<Vec<_>>(),
-                    )
-                    .map_err(internal)
+                    let args: AgentsDetect =
+                        serde_json::from_value(params).map_err(invalid_params)?;
+                    serde_json::to_value(this.scan(args.folder.as_deref())?).map_err(internal)
                 }
                 "agent_connect" => {
                     let args: AgentConnect =
                         serde_json::from_value(params).map_err(invalid_params)?;
-                    serde_json::to_value(this.connect(&args.key)?).map_err(internal)
+                    serde_json::to_value(this.connect(&args.key, args.folder.as_deref())?)
+                        .map_err(internal)
                 }
                 _ => Err(ApiError::new(
                     ErrorCode::InvalidParams,
@@ -391,6 +420,15 @@ fn rollout_files(dir: &Path, found: &mut Vec<PathBuf>) -> Result<()> {
         }
     }
     Ok(())
+}
+
+fn first_line(path: &Path) -> Option<String> {
+    use std::io::BufRead;
+    let mut line = String::new();
+    std::io::BufReader::new(fs::File::open(path).ok()?)
+        .read_line(&mut line)
+        .ok()?;
+    Some(line)
 }
 
 fn is_installation(path: &Path) -> bool {

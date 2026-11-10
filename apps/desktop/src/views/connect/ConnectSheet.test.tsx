@@ -10,6 +10,8 @@ import { uiStore } from "../../store/ui";
 
 const call = vi.fn();
 vi.mock("../../ipc/transport", () => ({ tauriTransport: { call: (...a: unknown[]) => call(...a) } }));
+const openDialog = vi.fn();
+vi.mock("@tauri-apps/plugin-dialog", () => ({ open: (...a: unknown[]) => openDialog(...a) }));
 
 const { default: ConnectSheet } = await import("./ConnectSheet");
 const { default: DetectedBanner } = await import("./DetectedBanner");
@@ -39,6 +41,7 @@ async function openSheet() {
 
 beforeEach(() => {
   call.mockReset();
+  openDialog.mockReset();
   appStore.setState({ mirror: null, connected: true, stale: false, pending: {} });
   appStore.getState().loadSnapshot(m3 as unknown as Snapshot);
   uiStore.setState({ view: { kind: "home" }, sheet: { kind: "connect" } });
@@ -140,6 +143,25 @@ describe("Connect agents sheet (SC-009)", () => {
     formationd([]);
     fireEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(await screen.findByText("No agents are running outside OpenGrokBot on this Mac.")).toBeInTheDocument();
+  });
+
+  it("searches a chosen folder, connects from it, and goes back to the recent list", async () => {
+    const old = { ...shared, key: "claude_code:old", folder: "/Users/me/rpg/server", connected_agent: null };
+    formationd([old]);
+    await openSheet();
+    openDialog.mockResolvedValueOnce("/Users/me/rpg");
+    fireEvent.click(screen.getByRole("button", { name: "Find in a folder…" }));
+    await act(async () => {});
+    expect(openDialog).toHaveBeenCalledWith({ directory: true, multiple: false });
+    expect(call).toHaveBeenLastCalledWith("agents_detect", { folder: "/Users/me/rpg" });
+    expect(screen.getByText(/Sessions in .*rpg/)).toBeInTheDocument();
+    expect(screen.getByText("/Users/me/rpg/server")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Connect" }));
+    expect(call).toHaveBeenLastCalledWith("agent_connect", { key: "claude_code:old", folder: "/Users/me/rpg" });
+    uiStore.setState({ sheet: { kind: "connect" } });
+    fireEvent.click(screen.getByRole("button", { name: "Back to recent" }));
+    await act(async () => {});
+    expect(call).toHaveBeenLastCalledWith("agents_detect", {});
   });
 
   it("closes on Cancel and Esc", async () => {

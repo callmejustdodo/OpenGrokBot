@@ -196,6 +196,7 @@
           "harness": "claude_code",
           "name": "claude · shared-web",
           "path": "~/Codes/shared-web",
+          "folder": "~/Codes/shared-web",
           "session_id": "session-01930000-0000-7000-8000-000000000106",
           "last_activity_at": "2026-11-08T07:10:00Z",
           "capabilities": {
@@ -211,6 +212,7 @@
           "harness": "hermes",
           "name": "Hermes",
           "path": "~/.hermes/profiles/default",
+          "folder": "~/.hermes/profiles/default",
           "session_id": null,
           "last_activity_at": "2026-11-08T05:00:00Z",
           "capabilities": {
@@ -226,6 +228,7 @@
           "harness": "open_claw",
           "name": "OpenClaw",
           "path": "~/.openclaw",
+          "folder": "~/.openclaw",
           "session_id": null,
           "last_activity_at": null,
           "capabilities": {
