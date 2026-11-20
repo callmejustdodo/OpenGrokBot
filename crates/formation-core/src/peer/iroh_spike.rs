@@ -1,13 +1,17 @@
 //! A spike for a second peer transport that needs no Tailscale: iroh, QUIC
 //! between endpoints addressed by an ed25519 public key, whose handshake proves
-//! the remote key. Nothing in formationd uses it yet. It is built only with the
-//! `iroh-spike` feature, and the `peer_iroh_spike` example runs it between two
-//! processes or two Macs:
+//! the remote key. It is built only with the `iroh` feature, and the
+//! `peer_iroh_spike` example runs it between two processes or two Macs:
 //!
 //! ```text
-//! cargo test -p formation-core --features iroh-spike peer::iroh_spike
-//! cargo clippy -p formation-core --features iroh-spike --all-targets -- -D warnings
+//! cargo test -p formation-core --features iroh peer::iroh_spike
+//! cargo clippy -p formation-core --features iroh --all-targets -- -D warnings
 //! ```
+//!
+//! TASK-046 turned what it proved into the real server,
+//! [`IrohPeerApi`](super::api::IrohPeerApi), and moved [`PeerKey`] and
+//! [`load_or_create_secret_key`] to [`peer::iroh`](super::iroh); they are
+//! re-exported here for the example.
 //!
 //! - [`StreamListener`] is an [`axum::serve::Listener`]: every bidirectional
 //!   stream accepted on any connection to the endpoint is one HTTP/1.1
@@ -17,13 +21,10 @@
 //!   `GET /spike/events` with a WebSocket that sends [`EVENTS`] and closes. A
 //!   caller outside the allow-list gets `403` from both before any handler
 //!   runs.
-//! - [`get`] and [`events`] are the asker's side: a fresh stream per request on
-//!   one shared connection, through hyper's HTTP/1.1 client and
-//!   tokio-tungstenite.
-//! - [`load_or_create_secret_key`] creates this Mac's key file with mode 0600,
-//!   so the endpoint id survives restarts. It refuses an existing file unless
-//!   it is a regular file owned by this user, with no group or other
-//!   permission bits, holding exactly 32 bytes.
+//! - [`request`], [`get`], [`websocket`] and [`events`] are the asker's side: a
+//!   fresh stream per request on one shared connection, through hyper's
+//!   HTTP/1.1 client and tokio-tungstenite. The real server's tests use them
+//!   too.
 //!
 //! What the spike established (iroh 1.4.1 with only its `tls-ring` feature,
 //! axum 0.8.9, hyper 1.12.0, tokio-tungstenite 0.29.0). The tests run
@@ -77,41 +78,24 @@
 //!   are not published, but anyone who knows the id learns its relay.
 //! - Whether iroh's `portmapper` or `fast-apple-datapath` features change hole
 //!   punching or throughput.
-//! - What must change before this serves real routes:
-//!   - Membership is checked once per connection, in the accept loop or with
-//!     iroh's `EndpointHooks::after_handshake`, so strangers hold no streams.
-//!     A route added to the router after the allow-list layer is not covered
-//!     by it, another reason to check at the connection.
-//!   - Limits on connections, per key and in all, and on streams per
-//!     connection; and a header-read timeout: axum's `serve` sets no timer, so
-//!     hyper drops its default 30 s one.
-//!   - Whether 0-RTT is refused: iroh's server configuration enables early
-//!     data.
-//!   - A removed member's open connections are closed.
-//!   - The key file: two processes creating it at once race (`create_new`
-//!     makes the second fail instead of loading the first's key), and a crash
-//!     during the write leaves a short file that loading then refuses. Where
-//!     the key lives (a file today, perhaps the Keychain).
-//!   - How [`PeerApi`](super::api::PeerApi) serves its routes through [`serve`]
-//!     with the key mapped to a member, and how
-//!     [`PeerClient`](super::client::PeerClient) keeps one connection per
-//!     teammate for its requests and events.
+//! - What this spike listed as needed before serving real routes is now in
+//!   [`api::iroh`](super::api::IrohPeerApi): membership checked once per
+//!   connection before any stream, limits on connections and streams, a
+//!   header-read timeout, a removed member's connection closed, and why 0-RTT
+//!   is safe there. The key file's creation race and short-write case are
+//!   still open, in [`peer::iroh`](super::iroh), and so is how
+//!   [`PeerClient`](super::client::PeerClient) keeps one connection per
+//!   teammate.
 
 use std::collections::HashSet;
-use std::fmt;
-use std::fs::{self, File, OpenOptions};
-use std::io::{self, Read, Write};
-use std::os::unix::fs::{MetadataExt, OpenOptionsExt};
-use std::path::Path;
+use std::io;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 use axum::body::{Body, Bytes};
 use axum::extract::connect_info::Connected;
 use axum::extract::ws::{self, WebSocket, WebSocketUpgrade};
 use axum::extract::{ConnectInfo, Request, State};
-use axum::http::{StatusCode, header};
+use axum::http::{Method, StatusCode, header};
 use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get as get_route;
@@ -120,11 +104,14 @@ use axum::{Json, Router};
 use futures_util::StreamExt;
 use hyper_util::rt::TokioIo;
 use iroh::endpoint::{Connection, RecvStream, SendStream};
-use iroh::{Endpoint, EndpointId, SecretKey};
+use iroh::{Endpoint, EndpointId};
 use serde_json::json;
 use tokio::io::Join;
 use tokio::sync::{OwnedSemaphorePermit, Semaphore, mpsc};
+use tokio_tungstenite::WebSocketStream;
 use tokio_tungstenite::tungstenite::{self, Message, client::IntoClientRequest};
+
+pub use super::iroh::{PeerKey, load_or_create_secret_key};
 
 /// The ALPN both sides offer. It names the spike so that no real peer protocol
 /// version can be mistaken for it.
@@ -137,13 +124,12 @@ pub const EVENTS: [&str; 3] = ["first", "second", "third"];
 /// Sent as `Host`. Over iroh the QUIC handshake has already named the server,
 /// so the value carries no meaning.
 const AUTHORITY: &str = "formation-peer";
-/// The largest response body [`get`] reads.
+/// The largest response body [`request`] reads.
 const BODY_LIMIT: usize = 1024 * 1024;
 /// Streams accepted but not yet taken by axum. Each connection has at most one
 /// stream waiting here, and waiting streams are taken in arrival order, so one
 /// connection cannot fill the queue. A peer that opens many connections still
-/// can, until the connection limits the module documentation leaves open
-/// exist.
+/// can; the real server limits connections.
 const PENDING_STREAMS: usize = 16;
 
 /// One HTTP/1.1 connection: a QUIC bidirectional stream.
@@ -152,18 +138,6 @@ pub type PeerStream = Join<RecvStream, SendStream>;
 /// A stream waiting for axum, with its connection's turn: the connection
 /// accepts its next stream only once this one is taken.
 type Pending = (PeerStream, PeerKey, OwnedSemaphorePermit);
-
-/// An endpoint's public key. For an accepted stream it is the remote endpoint's
-/// key, proven by the QUIC handshake; handlers read it as
-/// `ConnectInfo<PeerKey>`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub struct PeerKey(pub EndpointId);
-
-impl fmt::Display for PeerKey {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.0.fmt(f)
-    }
-}
 
 impl Connected<IncomingStream<'_, StreamListener>> for PeerKey {
     fn connect_info(stream: IncomingStream<'_, StreamListener>) -> Self {
@@ -302,17 +276,30 @@ async fn send_events(mut socket: WebSocket) {
     while let Some(Ok(_)) = socket.recv().await {}
 }
 
-/// `GET path` over a fresh stream on `connection`.
-pub async fn get(connection: &Connection, path: &str) -> io::Result<(StatusCode, Bytes)> {
+/// `method path` over a fresh stream on `connection`, with `body` sent as JSON
+/// when given. Returns the status and the body.
+pub async fn request(
+    connection: &Connection,
+    method: Method,
+    path: &str,
+    body: Option<&serde_json::Value>,
+) -> io::Result<(StatusCode, Bytes)> {
     let (send, recv) = connection.open_bi().await.map_err(io::Error::other)?;
     let io = TokioIo::new(tokio::io::join(recv, send));
     let (mut sender, http) = hyper::client::conn::http1::handshake::<_, Body>(io)
         .await
         .map_err(io::Error::other)?;
-    let request = axum::http::Request::get(path)
-        .header(header::HOST, AUTHORITY)
-        .body(Body::empty())
-        .map_err(io::Error::other)?;
+    let request = axum::http::Request::builder()
+        .method(method)
+        .uri(path)
+        .header(header::HOST, AUTHORITY);
+    let request = match body {
+        Some(body) => request
+            .header(header::CONTENT_TYPE, "application/json")
+            .body(Body::from(serde_json::to_vec(body)?)),
+        None => request.body(Body::empty()),
+    }
+    .map_err(io::Error::other)?;
     // `sender` moves in, so the connection shuts the stream down once the body
     // is read.
     let exchange = async move {
@@ -332,16 +319,29 @@ pub async fn get(connection: &Connection, path: &str) -> io::Result<(StatusCode,
     Ok(reply)
 }
 
-/// Opens `GET /spike/events` as a WebSocket over a fresh stream on
-/// `connection` and returns its text messages once the server closes it.
-pub async fn events(connection: &Connection) -> Result<Vec<String>, tungstenite::Error> {
+/// `GET path` over a fresh stream on `connection`.
+pub async fn get(connection: &Connection, path: &str) -> io::Result<(StatusCode, Bytes)> {
+    request(connection, Method::GET, path, None).await
+}
+
+/// Opens `path` as a WebSocket over a fresh stream on `connection`.
+pub async fn websocket(
+    connection: &Connection,
+    path: &str,
+) -> Result<WebSocketStream<PeerStream>, tungstenite::Error> {
     let (send, recv) = connection
         .open_bi()
         .await
         .map_err(|error| tungstenite::Error::Io(io::Error::other(error)))?;
-    let request = format!("ws://{AUTHORITY}{EVENTS_PATH}").into_client_request()?;
-    let (mut socket, _) =
-        tokio_tungstenite::client_async(request, tokio::io::join(recv, send)).await?;
+    let request = format!("ws://{AUTHORITY}{path}").into_client_request()?;
+    let (socket, _) = tokio_tungstenite::client_async(request, tokio::io::join(recv, send)).await?;
+    Ok(socket)
+}
+
+/// Opens `GET /spike/events` as a WebSocket over a fresh stream on
+/// `connection` and returns its text messages once the server closes it.
+pub async fn events(connection: &Connection) -> Result<Vec<String>, tungstenite::Error> {
+    let mut socket = websocket(connection, EVENTS_PATH).await?;
     let mut texts = Vec::new();
     while let Some(message) = socket.next().await {
         if let Message::Text(text) = message? {
@@ -351,112 +351,17 @@ pub async fn events(connection: &Connection) -> Result<Vec<String>, tungstenite:
     Ok(texts)
 }
 
-/// Loads the secret key at `path`, or creates it there readable and writable
-/// by the owner only (0600). The file holds the key's 32 bytes. An existing
-/// file is refused unless it is a regular file owned by this user, with no
-/// group or other permission bits, holding exactly 32 bytes.
-pub fn load_or_create_secret_key(path: &Path) -> io::Result<SecretKey> {
-    // `symlink_metadata` does not follow a link, and checking the type before
-    // opening keeps a FIFO from blocking the open.
-    match fs::symlink_metadata(path) {
-        Ok(metadata) if !metadata.file_type().is_file() => Err(refused(
-            path,
-            io::ErrorKind::InvalidInput,
-            "is not a regular file",
-        )),
-        Ok(_) => load_secret_key(path),
-        Err(error) if error.kind() == io::ErrorKind::NotFound => {
-            let key = SecretKey::generate();
-            let mut file = OpenOptions::new()
-                .write(true)
-                .create_new(true)
-                .mode(0o600)
-                .open(path)?;
-            file.write_all(&key.to_bytes())?;
-            file.sync_all()?;
-            Ok(key)
-        }
-        Err(error) => Err(error),
-    }
-}
-
-/// Checks the open file, so the bytes read are the ones that passed.
-fn load_secret_key(path: &Path) -> io::Result<SecretKey> {
-    let mut file = File::open(path)?;
-    let metadata = file.metadata()?;
-    let uid = current_uid()?;
-    if !metadata.file_type().is_file() {
-        return Err(refused(
-            path,
-            io::ErrorKind::InvalidInput,
-            "is not a regular file",
-        ));
-    }
-    if metadata.uid() != uid {
-        let problem = format!(
-            "is owned by uid {}, not by this user (uid {uid})",
-            metadata.uid()
-        );
-        return Err(refused(path, io::ErrorKind::PermissionDenied, &problem));
-    }
-    if metadata.mode() & 0o077 != 0 {
-        let problem = format!(
-            "has mode {:o}; group and others must have no permissions (use 600)",
-            metadata.mode() & 0o777
-        );
-        return Err(refused(path, io::ErrorKind::PermissionDenied, &problem));
-    }
-    if metadata.len() != 32 {
-        let problem = format!("holds {} bytes, not a 32-byte key", metadata.len());
-        return Err(refused(path, io::ErrorKind::InvalidData, &problem));
-    }
-    let mut bytes = [0; 32];
-    file.read_exact(&mut bytes)?;
-    Ok(SecretKey::from_bytes(&bytes))
-}
-
-fn refused(path: &Path, kind: io::ErrorKind, problem: &str) -> io::Error {
-    io::Error::new(
-        kind,
-        format!("refusing key file {}: it {problem}", path.display()),
-    )
-}
-
-/// This process's effective user id, read as the owner of a file it has just
-/// created: std has no `getuid`, and the spike adds no dependency for one.
-fn current_uid() -> io::Result<u32> {
-    static PROBES: AtomicU64 = AtomicU64::new(0);
-    let nanos = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |elapsed| elapsed.as_nanos());
-    let probe = std::env::temp_dir().join(format!(
-        ".formation-uid-{}-{nanos}-{}",
-        std::process::id(),
-        PROBES.fetch_add(1, Ordering::Relaxed)
-    ));
-    let file = OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .mode(0o600)
-        .open(&probe)?;
-    let owner = file.metadata().map(|metadata| metadata.uid());
-    drop(file);
-    fs::remove_file(&probe)?;
-    owner
-}
-
 #[cfg(test)]
 mod tests {
     use std::future::Future;
     use std::net::Ipv4Addr;
-    use std::os::unix::fs::PermissionsExt;
     use std::time::Duration;
 
+    use iroh::SecretKey;
     use iroh::endpoint::presets;
     use tokio::task::JoinHandle;
 
     use super::*;
-    use crate::ask::test_support::TempDir;
 
     const WAIT: Duration = Duration::from_secs(20);
 
@@ -637,85 +542,5 @@ mod tests {
         let (status, _) = whoami(&connection).await;
         assert_eq!(status, StatusCode::OK);
         server.stop([client]).await;
-    }
-
-    #[tokio::test(flavor = "multi_thread")]
-    async fn the_key_file_is_private_and_keeps_the_endpoint_id() {
-        let dir = TempDir::new("iroh-key");
-        let path = dir.path().join("peer.key");
-
-        let created = load_or_create_secret_key(&path).expect("create");
-        let mode = fs::metadata(&path).expect("metadata").permissions().mode();
-        assert_eq!(mode & 0o777, 0o600);
-        let first = local_endpoint(created, Vec::new()).await;
-        let first_id = first.id();
-        within("close", first.close()).await;
-
-        let loaded = load_or_create_secret_key(&path).expect("load");
-        let second = local_endpoint(loaded, Vec::new()).await;
-        assert_eq!(second.id(), first_id);
-        within("close", second.close()).await;
-    }
-
-    #[tokio::test(flavor = "multi_thread")]
-    async fn another_key_file_gives_another_endpoint_id() {
-        let dir = TempDir::new("iroh-key");
-        let mine = load_or_create_secret_key(&dir.path().join("mine.key")).expect("mine");
-        let theirs = load_or_create_secret_key(&dir.path().join("theirs.key")).expect("theirs");
-
-        let mine = local_endpoint(mine, Vec::new()).await;
-        let theirs = local_endpoint(theirs, Vec::new()).await;
-        assert_ne!(mine.id(), theirs.id());
-        within("close", mine.close()).await;
-        within("close", theirs.close()).await;
-    }
-
-    fn private_file(path: &Path, contents: &[u8]) {
-        let mut file = OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .mode(0o600)
-            .open(path)
-            .expect("create");
-        file.write_all(contents).expect("write");
-    }
-
-    fn assert_refused(path: &Path, kind: io::ErrorKind, problem: &str) {
-        let error = load_or_create_secret_key(path).expect_err("the key file was accepted");
-        assert_eq!(error.kind(), kind, "{error}");
-        let message = error.to_string();
-        assert!(message.contains(&path.display().to_string()), "{message}");
-        assert!(message.contains(problem), "{message}");
-    }
-
-    #[test]
-    fn a_key_file_of_the_wrong_length_is_refused() {
-        let dir = TempDir::new("iroh-key");
-        let short = dir.path().join("short.key");
-        private_file(&short, &[7; 31]);
-        assert_refused(&short, io::ErrorKind::InvalidData, "holds 31 bytes");
-
-        let long = dir.path().join("long.key");
-        private_file(&long, &[7; 33]);
-        assert_refused(&long, io::ErrorKind::InvalidData, "holds 33 bytes");
-    }
-
-    #[test]
-    fn a_key_file_others_may_read_is_refused() {
-        let dir = TempDir::new("iroh-key");
-        let path = dir.path().join("peer.key");
-        load_or_create_secret_key(&path).expect("create");
-        fs::set_permissions(&path, fs::Permissions::from_mode(0o644)).expect("chmod");
-
-        assert_refused(&path, io::ErrorKind::PermissionDenied, "has mode 644");
-    }
-
-    #[test]
-    fn a_key_path_that_is_not_a_regular_file_is_refused() {
-        let dir = TempDir::new("iroh-key");
-        let path = dir.path().join("peer.key");
-        fs::create_dir(&path).expect("mkdir");
-
-        assert_refused(&path, io::ErrorKind::InvalidInput, "is not a regular file");
     }
 }

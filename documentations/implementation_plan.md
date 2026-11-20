@@ -81,7 +81,7 @@ Only the documentation check exists today; the rest are added by TASK-001 and mu
 | 4 · Work requests and approvals | TASK-023 to TASK-027, TASK-044 | **IC-3 = today's milestone** |
 | 5 · Complete the first version | TASK-028 to TASK-040 | **IC-4** |
 | 6 · Codex | TASK-041 | **IC-5** |
-| 7 · Without Tailscale (D-058) | TASK-045 to TASK-051 | **IC-6** |
+| 7 · Without Tailscale (D-058, D-059) | TASK-045 to TASK-053 | **IC-6** |
 
 ## Tasks
 
@@ -447,20 +447,31 @@ Added on 2026-11-20 for D-058; tracked in [issue #234](https://github.com/callme
 - Status: in progress
 - References: D-058, [peer transport without Tailscale](4_techspec.md#peer-transport-without-tailscale-d-058), TASK-007 (the Tailscale spike this one mirrors)
 - Prerequisites: TASK-018
-- Change locations: `crates/formation-core/src/peer/iroh_spike.rs`, `crates/formation-core/examples/peer_iroh_spike.rs` (spike; not wired into formationd, and built only with the `iroh-spike` cargo feature)
+- Change locations: `crates/formation-core/src/peer/iroh_spike.rs`, `crates/formation-core/examples/peer_iroh_spike.rs` (spike; not wired into formationd, and built only with the `iroh` cargo feature)
 - Work: serve an axum router over iroh streams with a custom listener; take the caller's identity from the key that the connection proves; send HTTP requests and hold a WebSocket over those streams from a client; keep this Mac's key in an owner-only file.
 - Acceptance criteria: a listed caller's request returns its own key and an unlisted caller gets `403`; several requests share one connection; the WebSocket delivers every message; the key file gives the same endpoint ID after a reload. The tests need no internet.
-- Verification: `cargo test -p formation-core --features iroh-spike peer::iroh_spike`; manual run of the example between two Macs on different networks, with Tailscale off.
+- Verification: `cargo test -p formation-core --features iroh peer::iroh`; manual run of the example between two Macs on different networks, with Tailscale off.
+- Owner: B (review); written under issue #234
+
+### TASK-046: The peer server serves its real routes over iroh
+- Status: in progress
+- References: D-058, [server rules](4_techspec.md#peer-transport-without-tailscale-d-058), FR-011, NFR-006
+- Prerequisites: TASK-045
+- Change locations: `crates/formation-core/src/peer/iroh.rs`, `crates/formation-core/src/peer/api/iroh.rs`, and small changes in `peer/api/mod.rs` and `peer/api/routes.rs` (behind the `iroh` cargo feature; not wired into formationd)
+- Work: serve the existing routes and state over iroh connections; admit only members, by the key the handshake proved; limit connections and streams and time out slow requests; close a removed member's connection; leave the TCP server's behavior unchanged.
+- Acceptance criteria: a member's calls and events connection work over iroh as they do over TCP; a stranger and this Mac's own member get no stream; each limit holds; a removed member loses the connection; with the feature off, every existing test passes.
+- Verification: `cargo test -p formation-core --features iroh peer::api::iroh`; `cargo test --workspace`.
 - Owner: B (review); written under issue #234
 
 | Task | Outcome | Owner | References | Prerequisites |
 | --- | --- | --- | --- | --- |
-| TASK-046 | `PeerApi` serves the real routes over iroh and `PeerClient` reaches a member over iroh; membership is checked for the connection, with limits on connections and streams; iroh is a normal dependency and the loopback tests pass on both transports | B | FR-011, FR-016, NFR-006, [before it serves real routes](4_techspec.md#peer-transport-without-tailscale-d-058) | TASK-045 |
 | TASK-047 | Invitations carry the creator's key and joining works over iroh; bad invitation codes are limited for each invitation | B | FR-008, NFR-006 | TASK-046 |
-| TASK-048 | A formationd setting selects the transport; Tailscale stays the default | A with B | D-058 | TASK-047 |
+| TASK-048 | A formationd setting selects the transport; Tailscale stays the default. iroh becomes a normal dependency, with the reqwest crypto-provider finding solved and the whole-workspace build checked | A with B and C | D-058, [build finding](4_techspec.md#peer-transport-without-tailscale-d-058) | TASK-047, TASK-052 |
 | TASK-049 | The app shows whether teammates are reachable without naming the tailnet | C with D | SC-002 | TASK-048 |
 | TASK-050 | Default relays are set and a team can set its own | B | D-058 | TASK-046 |
 | TASK-051 | After the two-Mac run passes, iroh is the default and setup needs no Tailscale | A, B, C | D-058, IC-6 | TASK-047 to TASK-050 |
+| TASK-052 | `PeerClient` reaches a member over iroh, and the loopback tests pass on both transports | B | FR-011, FR-016 | TASK-046 |
+| TASK-053 | Joining a team and masking the owner's email addresses need no GitHub CLI; a GitHub account is optional | B with A; the contract change needs all four roles | D-059, FR-008, NFR-003 | TASK-047 |
 
 **IC-6 · No Tailscale:** the two core journeys (ask a teammate's agent; request work with approval) pass between two Macs on different networks with Tailscale turned off.
 

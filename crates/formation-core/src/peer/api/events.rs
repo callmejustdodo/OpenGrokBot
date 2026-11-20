@@ -14,6 +14,7 @@ use std::sync::Arc;
 use axum::body::Bytes;
 use axum::extract::ws::{CloseFrame, Message, WebSocket, close_code};
 use tokio::sync::broadcast::{self, error::RecvError};
+use tokio::sync::watch;
 use tokio::time::{Instant, interval_at};
 
 use formation_proto::common::MemberId;
@@ -58,6 +59,10 @@ pub(crate) enum HubMessage {
 #[derive(Debug, Clone)]
 pub struct PeerEventHub {
     tx: broadcast::Sender<HubMessage>,
+    /// Bumped on every roster event and recheck. A watch, not a broadcast
+    /// subscription, so a listener neither counts as an events connection nor
+    /// falls behind.
+    membership: watch::Sender<u64>,
 }
 
 impl Default for PeerEventHub {
@@ -69,7 +74,8 @@ impl Default for PeerEventHub {
 impl PeerEventHub {
     pub fn new() -> Self {
         let (tx, _) = broadcast::channel(1024);
-        Self { tx }
+        let (membership, _) = watch::channel(0);
+        Self { tx, membership }
     }
 
     /// To one member's connections.
@@ -109,7 +115,23 @@ impl PeerEventHub {
         self.tx.subscribe()
     }
 
+    /// Changes whenever membership may have changed: a roster event or a
+    /// recheck.
+    #[cfg(feature = "iroh")]
+    pub(crate) fn membership_changes(&self) -> watch::Receiver<u64> {
+        self.membership.subscribe()
+    }
+
     fn send(&self, message: HubMessage) {
+        let membership = match &message {
+            HubMessage::Event { event, .. } => matches!(event, PeerEvent::Roster { .. }),
+            HubMessage::Recheck => true,
+            HubMessage::AgentsChanged => false,
+        };
+        if membership {
+            self.membership
+                .send_modify(|count| *count = count.wrapping_add(1));
+        }
         // No receiver just means no teammate is connected.
         let _ = self.tx.send(message);
     }

@@ -1,10 +1,10 @@
 //! iroh spike entry point for a run between two processes or two Macs. It is
-//! built only with the `iroh-spike` feature:
+//! built only with the `iroh` feature:
 //!
 //! ```text
-//! cargo run -p formation-core --features iroh-spike --example peer_iroh_spike -- \
+//! cargo run -p formation-core --features iroh --example peer_iroh_spike -- \
 //!     serve [--key <path>] [--allow <endpoint-id>]...
-//! cargo run -p formation-core --features iroh-spike --example peer_iroh_spike -- \
+//! cargo run -p formation-core --features iroh --example peer_iroh_spike -- \
 //!     call <endpoint-id> [--key <path>]
 //! ```
 //!
