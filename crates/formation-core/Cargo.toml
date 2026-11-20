@@ -7,6 +7,16 @@ publish.workspace = true
 
 [features]
 testkit = []
+# The peer protocol over iroh: the peer server over iroh (TASK-046,
+# `src/peer/api/iroh.rs`) and the transport spike (TASK-045). Off by default
+# until formationd is wired: with iroh in the build, reqwest's rustls feature
+# is turned on for every crate, and each `reqwest::Client` then needs a
+# process-wide crypto provider (see `src/peer/iroh_spike.rs`).
+iroh = ["dep:hyper", "dep:hyper-util", "dep:iroh"]
+
+[[example]]
+name = "peer_iroh_spike"
+required-features = ["iroh"]
 
 [[bin]]
 name = "fake-claude"
@@ -25,6 +35,9 @@ axum = { version = "0.8.9", default-features = false, features = ["http1", "json
 formation-proto = { version = "0.1.0", path = "../formation-proto" }
 futures-util = { version = "0.3.34", default-features = false }
 getrandom = "0.4"
+hyper = { version = "1.12.0", default-features = false, features = ["client", "http1", "server"], optional = true }
+hyper-util = { version = "0.1.21", default-features = false, features = ["service", "tokio"], optional = true }
+iroh = { version = "1.4.1", default-features = false, features = ["tls-ring"], optional = true }
 regex = "1.13"
 reqwest = { version = "0.13.5", default-features = false, features = ["json"] }
 rusqlite = { version = "0.41.1", features = ["bundled"] }

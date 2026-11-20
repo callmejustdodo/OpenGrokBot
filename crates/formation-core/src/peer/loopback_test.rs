@@ -72,10 +72,10 @@ impl CallerIdentity for StubWhoIs {
 }
 
 /// One Mac's roster and the teammates' addresses.
-struct Roster {
-    me: MemberId,
-    members: Mutex<Vec<Member>>,
-    addresses: Mutex<HashMap<MemberId, String>>,
+pub(crate) struct Roster {
+    pub(crate) me: MemberId,
+    pub(crate) members: Mutex<Vec<Member>>,
+    pub(crate) addresses: Mutex<HashMap<MemberId, String>>,
 }
 
 impl TeamRepo for Roster {
@@ -135,10 +135,10 @@ impl PeerDirectory for Roster {
 
 /// Members by Tailscale login; one shared agent (accepts requests) and one
 /// private agent.
-struct TestPolicy {
-    roster: Arc<Roster>,
-    shared: SharedAgentView,
-    private: AgentId,
+pub(crate) struct TestPolicy {
+    pub(crate) roster: Arc<Roster>,
+    pub(crate) shared: SharedAgentView,
+    pub(crate) private: AgentId,
 }
 
 #[async_trait]
@@ -177,10 +177,10 @@ impl Policy for TestPolicy {
 
 /// Answers every question at once and publishes it to the asker; replays return
 /// the original.
-struct TestAsk {
-    hub: PeerEventHub,
-    questions: Mutex<HashMap<QuestionId, Question>>,
-    calls: Mutex<u32>,
+pub(crate) struct TestAsk {
+    pub(crate) hub: PeerEventHub,
+    pub(crate) questions: Mutex<HashMap<QuestionId, Question>>,
+    pub(crate) calls: Mutex<u32>,
 }
 
 impl TestAsk {
@@ -377,7 +377,7 @@ impl JoinEndpoint for TestJoin {
 // Instances
 // ---------------------------------------------------------------------------
 
-fn member(login: &str, role: MemberRole) -> Member {
+pub(crate) fn member(login: &str, role: MemberRole) -> Member {
     Member {
         id: MemberId::generate(),
         github_login: login.into(),
@@ -398,7 +398,7 @@ fn whois_of(member: &Member) -> WhoIs {
     }
 }
 
-fn agent(owner: MemberId, slug: &str) -> SharedAgentView {
+pub(crate) fn agent(owner: MemberId, slug: &str) -> SharedAgentView {
     SharedAgentView {
         owner,
         agent_id: AgentId::generate(),
@@ -547,7 +547,7 @@ async fn pair(b_up: bool) -> (Instance, Instance) {
     (a, b)
 }
 
-fn peer_ask(owner: MemberId, agent_id: AgentId) -> PeerAsk {
+pub(crate) fn peer_ask(owner: MemberId, agent_id: AgentId) -> PeerAsk {
     PeerAsk {
         question_id: QuestionId::generate(),
         thread_id: None,

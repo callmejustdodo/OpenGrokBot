@@ -60,12 +60,26 @@
 //! #179 adds the real adapters formationd wires in: [`tailnet`] identifies
 //! callers through Tailscale WhoIs and finds each teammate's peer server from
 //! their node in Tailscale's peer list.
+//!
+//! A second transport needs no Tailscale: iroh, QUIC between endpoints named by
+//! their public keys. `iroh_spike` (TASK-045) proved an axum router can be
+//! served over iroh streams with the caller identified by the key its handshake
+//! proved; its module documentation records what it established. TASK-046
+//! serves the real routes that way: `iroh` holds what both sides need (ALPN,
+//! the caller's key and its identity, close codes, endpoint settings, the key
+//! file), and `api::IrohPeerApi` is the server. formationd does not run it yet,
+//! and all of it is built only with the `iroh` feature, because iroh in the
+//! build changes how every `reqwest::Client` here must be set up.
 
 pub mod api;
 pub mod client;
 pub mod github;
 pub(crate) mod http;
 pub mod identity;
+#[cfg(feature = "iroh")]
+pub mod iroh;
+#[cfg(feature = "iroh")]
+pub mod iroh_spike;
 pub mod outbox;
 pub mod presence;
 pub mod process;

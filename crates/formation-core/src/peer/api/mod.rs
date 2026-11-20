@@ -21,11 +21,19 @@
 //! | `WS /v1/events` | member, again on roster changes | [`PeerEventHub`] |
 //!
 //! Error codes map to HTTP statuses with [`status_for`].
+//!
+//! With the `iroh` feature, `IrohPeerApi` serves the same router and state over
+//! iroh connections: the caller is the key the QUIC handshake proved, checked
+//! once at the connection, on roster changes, and on every request as above.
+//! It has no join handler, so `POST /v1/team/join` answers `not_found` there
+//! (see `api/iroh.rs`).
 
 mod caller;
 mod error;
 pub(crate) mod events;
 mod handlers;
+#[cfg(feature = "iroh")]
+mod iroh;
 mod routes;
 
 use std::io;
@@ -43,6 +51,8 @@ use formation_proto::team::WhoIs;
 
 use crate::ports::{Policy, Result, TeamRepo};
 
+#[cfg(feature = "iroh")]
+pub use self::iroh::{IrohApiConfig, IrohApiDeps, IrohApiStats, IrohPeerApi};
 pub use caller::{BlockingIdentity, CallerIdentity, not_member};
 pub use error::{PeerError, status_for};
 /// For other modules' tests that read what they publish on the hub.
@@ -98,17 +108,7 @@ impl PeerApi {
         let local_addr = listener.local_addr()?;
         let (stop, stopped) = watch::channel(false);
         let hub = deps.hub.clone();
-        let state = Arc::new(ApiState {
-            identity: deps.identity,
-            policy: deps.policy,
-            team: deps.team,
-            join: deps.join,
-            ask: deps.ask,
-            requests: deps.requests,
-            hub: deps.hub,
-            heartbeat: config.heartbeat,
-            shutdown: stopped.clone(),
-        });
+        let state = ApiState::new(deps, config.heartbeat, stopped.clone());
         let app = routes::router(state).into_make_service_with_connect_info::<SocketAddr>();
         let mut stopped = stopped;
         let task = tokio::spawn(async move {
@@ -187,6 +187,22 @@ pub(crate) struct ApiState {
 }
 
 impl ApiState {
+    /// The state every peer server shares: the TCP one and, with the `iroh`
+    /// feature, the iroh one.
+    fn new(deps: PeerApiDeps, heartbeat: Duration, shutdown: watch::Receiver<bool>) -> Arc<Self> {
+        Arc::new(Self {
+            identity: deps.identity,
+            policy: deps.policy,
+            team: deps.team,
+            join: deps.join,
+            ask: deps.ask,
+            requests: deps.requests,
+            hub: deps.hub,
+            heartbeat,
+            shutdown,
+        })
+    }
+
     /// The member behind `whois`, never this Mac's own.
     async fn authenticate(&self, whois: &WhoIs) -> Result<MemberId> {
         let member_id = self.policy.authenticate(whois).await?;

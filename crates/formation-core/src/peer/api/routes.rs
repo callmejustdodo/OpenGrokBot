@@ -164,7 +164,9 @@ fn parse_id<T: DeserializeOwned>(raw: &str) -> Result<T, PeerError> {
         .map_err(|_| PeerError::new(ErrorCode::InvalidParams, format!("{raw:?} is not an ID")))
 }
 
-/// The caller's Tailscale identity, from the connection's peer address.
+/// The caller's Tailscale identity, from the connection's peer address; over
+/// iroh, the identity of the key the QUIC handshake proved, which only that
+/// server's own code attaches to a request.
 pub(crate) struct Identified(pub WhoIs);
 
 impl FromRequestParts<Arc<ApiState>> for Identified {
@@ -174,6 +176,10 @@ impl FromRequestParts<Arc<ApiState>> for Identified {
         parts: &mut Parts,
         state: &Arc<ApiState>,
     ) -> Result<Self, Self::Rejection> {
+        #[cfg(feature = "iroh")]
+        if let Some(caller) = parts.extensions.get::<super::iroh::IrohCaller>() {
+            return Ok(Self(caller.whois().clone()));
+        }
         let ConnectInfo(addr) = parts
             .extensions
             .get::<ConnectInfo<SocketAddr>>()

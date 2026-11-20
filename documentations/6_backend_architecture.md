@@ -117,7 +117,7 @@ Inspect and copy before writing from scratch. Licenses checked 2026-11-09; keep 
 | `team`, invitations | Reason Network `src/team.rs`, `src/invite.rs` | MIT or Apache-2.0 | Adapt roster and invite flow to Tailscale and GitHub identity |
 | `store` | Reason Network `src/store.rs` | MIT or Apache-2.0 | Reference schema and migration approach |
 | `notify`, tray | Reason Network `src/daemon/notify.rs`, `src/tray.rs` | MIT or Apache-2.0 | Reference macOS notification and menu bar handling |
-| `peer` (after the MVP) | Reason Network `src/net.rs` (iroh peer-to-peer with relay fallback); [Agent Relay](https://github.com/AgentWorkforce/relay) | MIT or Apache-2.0; Apache-2.0 | Candidate replacement for Tailscale before wider release |
+| `peer` (after the MVP) | Reason Network `src/net.rs` (iroh peer-to-peer with relay fallback); [Agent Relay](https://github.com/AgentWorkforce/relay) | MIT or Apache-2.0; Apache-2.0 | Reference. iroh is chosen as the replacement for Tailscale (D-058); the design is in the tech spec's [peer transport without Tailscale](4_techspec.md#peer-transport-without-tailscale-d-058) |
 | CLI messaging patterns | [squad (mco-org)](https://github.com/mco-org/squad) | MIT | Reference |
 | Approvals model | [Happier](https://github.com/happier-dev/happier), [Paperclip](https://github.com/paperclipai/paperclip) | MIT | Reference |
 | Not to copy | HAPI, Claude Squad (AGPL-3.0); Flowpad (no license) | — | Read for ideas only |
