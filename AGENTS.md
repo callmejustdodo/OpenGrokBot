@@ -23,6 +23,8 @@ gh pr view <N> --json body,closingIssuesReferences | node scripts/check-issue-li
 cargo test --workspace                  # Rust unit and integration tests, including the app's Rust side
 cargo fmt --all -- --check              # Rust formatting; run `cargo fmt --all` to fix
 cargo clippy --workspace -- -D warnings # Rust lint
+cargo test -p formation-core --features iroh-spike peer::iroh_spike              # the iroh transport spike (TASK-045); off by default, so the commands above skip it. Keep the filter: other peer tests fail with this feature on
+cargo clippy -p formation-core --features iroh-spike --all-targets -- -D warnings # lint for the same spike
 pnpm -C apps/desktop lint               # ESLint
 pnpm -C apps/desktop typecheck          # TypeScript
 pnpm -C apps/desktop test               # Vitest

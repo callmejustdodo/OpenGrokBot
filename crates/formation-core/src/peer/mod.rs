@@ -60,12 +60,21 @@
 //! #179 adds the real adapters formationd wires in: [`tailnet`] identifies
 //! callers through Tailscale WhoIs and finds each teammate's peer server from
 //! their node in Tailscale's peer list.
+//!
+//! `iroh_spike` (TASK-045) tries a second transport that needs no Tailscale: an
+//! axum router served over iroh QUIC streams, with the caller identified by the
+//! public key its handshake proved. Nothing uses it yet, and it is built only
+//! with the `iroh-spike` feature, because iroh in the build changes how every
+//! `reqwest::Client` here must be set up. The `peer_iroh_spike` example runs
+//! it, and its module documentation records what it established.
 
 pub mod api;
 pub mod client;
 pub mod github;
 pub(crate) mod http;
 pub mod identity;
+#[cfg(feature = "iroh-spike")]
+pub mod iroh_spike;
 pub mod outbox;
 pub mod presence;
 pub mod process;
